@@ -16,6 +16,20 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
     if (!song) return apiError('Música não encontrada.', 404);
     if (!song.chords.trim()) return apiError('Esta música não tem cifra cadastrada.', 404);
 
+    const keys = publishedKeys(song);
+    if (!keys.includes(key)) {
+      return json(
+        {
+          error: {
+            status: 404,
+            message: `O tom de ${key} não está publicado para esta música.`,
+            available_keys: keys,
+          },
+        },
+        { status: 404, cache: 'no-store' }
+      );
+    }
+
     const { chart, source } = chartForKey(song, song.overrides, key);
 
     return json({
@@ -31,7 +45,7 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
       capo: song.capo,
       chords: chart,
       chords_used: uniqueChords(chart),
-      available_keys: publishedKeys(song),
+      available_keys: keys,
       url: chordUrl(song.slug, key),
       updated_at: song.updated_at,
     });

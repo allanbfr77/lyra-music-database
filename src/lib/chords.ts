@@ -203,6 +203,21 @@ export function transposeChart(chart: string, fromKey: string, toKey: string): s
     .join('\n');
 }
 
+/**
+ * Cifra de uma música num tom específico.
+ * Usa a versão manual se existir (modo híbrido); senão transpõe a cifra base.
+ */
+export function chartForKey(
+  song: { chords: string; base_key: string },
+  overrides: { key: string; chords: string }[],
+  key: string
+): { chart: string; source: 'manual' | 'auto' } {
+  const target = normalizeKey(key);
+  const manual = overrides.find((o) => normalizeKey(o.key) === target);
+  if (manual && manual.chords.trim()) return { chart: manual.chords, source: 'manual' };
+  return { chart: transposeChart(song.chords ?? '', normalizeKey(song.base_key), target), source: 'auto' };
+}
+
 /** Lista única de acordes usados, na ordem em que aparecem. */
 export function uniqueChords(chart: string): string[] {
   const seen = new Set<string>();

@@ -23,7 +23,7 @@ export async function GET() {
     site_url: siteUrl(),
     song_count: songs,
     endpoints: {
-      search: `${base}/songs?q={termo}&limit={1-100}&offset={n}`,
+      search: `${base}/songs?q={termo}&fields={title,artist,lyrics}&limit={1-100}&offset={n}`,
       song: `${base}/songs/{slug}`,
       song_with_all_keys: `${base}/songs/{slug}?include=all_keys`,
       chords_in_key: `${base}/songs/{slug}/chords/{key_slug}`,
@@ -33,7 +33,11 @@ export async function GET() {
       description: 'Tom em minúsculo; # vira "s", bemol vira "b", menor recebe "m" no fim.',
       examples: { A: 'a', 'C#': 'cs', Bb: 'bb', 'F#m': 'fsm' },
     },
-    search_fields: ['title', 'artist', 'lyrics'],
+    search_fields: {
+      available: ['title', 'artist', 'lyrics'],
+      default: ['title', 'artist', 'lyrics'],
+      description: 'Use o parâmetro "fields" para restringir onde buscar, separado por vírgula.',
+    },
   });
 }
 

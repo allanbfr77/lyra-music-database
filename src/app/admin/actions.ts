@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { normalizeKey } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
+import { parseYoutubeUrl } from '@/lib/youtube';
 
 export type SongPayload = {
   id?: string | null;
@@ -18,6 +19,7 @@ export type SongPayload = {
   tempo_bpm: number | null;
   time_signature: string | null;
   source_url: string | null;
+  youtube_url: string | null;
   notes: string | null;
   published: boolean;
   overrides: { key: string; chords: string }[];
@@ -48,6 +50,12 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
     const baseKey = normalizeKey(payload.base_key);
     const slug = slugify(payload.slug?.trim() || title);
 
+    const youtubeRaw = payload.youtube_url?.trim() || '';
+    const youtubeUrl = parseYoutubeUrl(youtubeRaw);
+    if (youtubeRaw && !youtubeUrl) {
+      return { ok: false, error: 'Informe um link válido do YouTube (ou deixe o campo vazio).' };
+    }
+
     const record = {
       slug,
       title,
@@ -62,6 +70,7 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       tempo_bpm: payload.tempo_bpm ?? null,
       time_signature: payload.time_signature?.trim() || null,
       source_url: payload.source_url?.trim() || null,
+      youtube_url: youtubeUrl,
       notes: payload.notes?.trim() || null,
       published: payload.published,
     };
@@ -129,6 +138,9 @@ function translate(message: string): string {
   }
   if (message.includes('row-level security')) {
     return 'Sua conta não tem permissão de escrita. Confira se ela está na tabela admins.';
+  }
+  if (message.includes('youtube_url')) {
+    return 'O banco ainda não tem o campo YouTube. Execute supabase/migrations/003_youtube_url.sql no SQL Editor do Supabase.';
   }
   return message;
 }

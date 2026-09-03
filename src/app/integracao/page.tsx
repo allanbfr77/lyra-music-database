@@ -61,10 +61,14 @@ export default function IntegrationPage() {
           Documento de descoberta: versão da API, formato dos dados, contagem de músicas e a lista de endereços.
         </Endpoint>
 
-        <Endpoint method="GET" path="/api/v1/songs?q=termo&limit=20&offset=0">
-          Busca única em <b>título</b>, <b>artista</b> e <b>trecho da letra</b>, com acento ignorado e busca por
+        <Endpoint method="GET" path="/api/v1/songs?q=termo&fields=&limit=20&offset=0">
+          Busca em <b>título</b>, <b>artista</b> e <b>trecho da letra</b>, com acento ignorado e busca por
           prefixo. Cada resultado traz <code>slug</code>, tons disponíveis e o link direto.
           <pre style={box}>{`${base}/api/v1/songs?q=deus%20de%20toda%20a%20terra`}</pre>
+          O parâmetro opcional <code>fields</code> restringe onde procurar — valores{' '}
+          <code>title</code>, <code>artist</code> e <code>lyrics</code>, separados por vírgula. Sem ele, procura
+          nos três. A resposta devolve em <code>fields</code> os campos realmente usados.
+          <pre style={box}>{`${base}/api/v1/songs?q=fernandinho&fields=artist`}</pre>
         </Endpoint>
 
         <Endpoint method="GET" path="/api/v1/songs/{slug}">

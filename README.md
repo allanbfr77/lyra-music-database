@@ -22,6 +22,10 @@ uma API pronta para o programa Lyra consumir.
 2. Cole o conteúdo inteiro de [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
 3. Deve aparecer *Success. No rows returned*.
 
+> **Já tinha criado o banco antes?** Rode também os arquivos de
+> [`supabase/migrations/`](supabase/migrations) que ainda não passaram por lá. Eles são
+> pequenos e podem ser executados mais de uma vez sem estragar nada.
+
 ### Criar o usuário administrador
 
 1. **Authentication** → **Users** → **Add user** → **Create new user**.
@@ -94,6 +98,16 @@ Cada altura tem **uma única grafia oficial** (`Db`, nunca `C#`; `F#`, nunca `Gb
 para que o mesmo tom nunca gere dois links diferentes — os favoritos do usuário
 continuam valendo para sempre.
 
+### Filtro da busca
+
+Abaixo do campo de busca há três caixas: **Artista**, **Música** e **Trecho da letra**.
+Artista e Música vêm marcadas; a letra fica desmarcada porque procurar no corpo das
+músicas costuma trazer muito resultado — é uma escolha do usuário.
+
+O filtro é aplicado no banco, não na tela: a busca consulta apenas os campos marcados.
+A escolha vai para a URL (`?q=terra&c=aml`), então o link de uma busca filtrada pode ser
+compartilhado e continua valendo.
+
 ### Administrativo (com login)
 
 | Endereço | O que faz |
@@ -113,7 +127,7 @@ sua própria URL permanente e é gerado por transposição automática.
 
 Se algum tom sair estranho, escolha-o em *Ajuste manual de um tom*: aparece a
 transposição automática já pronta para você editar. A partir do momento em que
-você mexe, aquele tom passa a usar a sua versão (marcado com ✎), e os demais
+você mexe, aquele tom passa a usar a sua versão (marcada com um lápis), e os demais
 continuam automáticos. O botão **Voltar ao automático** desfaz.
 
 ### Formato da cifra
@@ -146,7 +160,7 @@ Esse endereço descreve todos os outros, então o programa se orienta sozinho.
 | Método | Endpoint | Para quê |
 |---|---|---|
 | GET | `/api/v1` | Descoberta: versão, formato, contagem, lista de endpoints |
-| GET | `/api/v1/songs?q=&limit=&offset=` | Busca em título, artista e letra |
+| GET | `/api/v1/songs?q=&fields=&limit=&offset=` | Busca em título, artista e letra |
 | GET | `/api/v1/songs/{slug}` | Música completa |
 | GET | `/api/v1/songs/{slug}?include=all_keys` | Idem, com a cifra já transposta em todos os tons |
 | GET | `/api/v1/songs/{slug}/chords/{tom}` | Cifra num tom específico |
@@ -157,6 +171,14 @@ Esse endereço descreve todos os outros, então o programa se orienta sozinho.
 ```
 GET /api/v1/songs?q=deus de toda a terra
 ```
+
+Para restringir onde procurar, use `fields` com `title`, `artist` e/ou `lyrics`:
+
+```
+GET /api/v1/songs?q=fernandinho&fields=artist
+```
+
+A resposta devolve em `fields` os campos realmente consultados.
 
 ```json
 {

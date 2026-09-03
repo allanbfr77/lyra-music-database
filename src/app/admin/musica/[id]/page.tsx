@@ -10,11 +10,12 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('songs')
-    .select(`${SONG_COLUMNS}, song_key_overrides(key, chords)`)
-    .eq('id', id)
-    .maybeSingle();
+  const extra = 'song_key_overrides(key, chords)';
+  let { data, error } = await supabase.from('songs').select(`${SONG_COLUMNS}, ${extra}`).eq('id', id).maybeSingle();
+  if (error && error.message.includes('youtube_url')) {
+    const legacy = SONG_COLUMNS.replace(', youtube_url', '');
+    ({ data, error } = await supabase.from('songs').select(`${legacy}, ${extra}`).eq('id', id).maybeSingle());
+  }
 
   if (error || !data) notFound();
 
@@ -33,6 +34,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     tempo_bpm: song.tempo_bpm,
     time_signature: song.time_signature,
     source_url: song.source_url,
+    youtube_url: song.youtube_url ?? null,
     notes: song.notes,
     published: song.published,
     overrides: song.song_key_overrides ?? [],

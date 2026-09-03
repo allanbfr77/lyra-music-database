@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { apiError, clampInt, json, mapSearchHit, preflight } from '@/lib/api';
 import { searchSongs } from '@/lib/songs';
+import { SEARCH_FIELDS, apiFieldsToIds, fieldIdsToWeights } from '@/lib/search-fields';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +15,18 @@ export async function GET(request: NextRequest) {
   const limit = clampInt(params.get('limit'), 20, 1, 100);
   const offset = clampInt(params.get('offset'), 0, 0, 100000);
 
+  // Onde procurar: fields=title,artist,lyrics (padrão: os três)
+  const fieldIds = apiFieldsToIds(params.get('fields'));
+  const API_ORDER = ['title', 'artist', 'lyrics'];
+  const searchedIn = SEARCH_FIELDS.filter((f) => fieldIds.includes(f.id))
+    .map((f) => f.api as string)
+    .sort((a, b) => API_ORDER.indexOf(a) - API_ORDER.indexOf(b));
+
   try {
-    const hits = await searchSongs(q, limit, offset);
+    const hits = await searchSongs(q, limit, offset, fieldIdsToWeights(fieldIds));
     return json({
       query: q,
+      fields: searchedIn,
       limit,
       offset,
       count: hits.length,

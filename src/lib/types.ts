@@ -12,6 +12,7 @@ export type Song = {
   time_signature: string | null;
   language: string | null;
   source_url: string | null;
+  youtube_url: string | null;
   notes: string | null;
   published: boolean;
   created_at: string;

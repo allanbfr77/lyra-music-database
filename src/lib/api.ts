@@ -85,6 +85,7 @@ export function mapSong(song: SongWithOverrides, options: { includeAllKeys: bool
     tempo_bpm: song.tempo_bpm,
     time_signature: song.time_signature,
     source_url: song.source_url,
+    youtube_url: song.youtube_url,
     notes: song.notes,
     lyrics: song.lyrics,
     chords: song.chords || null,

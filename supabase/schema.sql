@@ -62,6 +62,7 @@ create table if not exists public.songs (
   time_signature text,
   language       text default 'pt-BR',
   source_url     text,
+  youtube_url    text,
   notes          text,
   published      boolean not null default true,
   search_vector  tsvector,
@@ -73,6 +74,8 @@ comment on column public.songs.chords is
   'Cifra base no formato texto, acordes em linhas próprias acima da letra.';
 comment on column public.songs.available_keys is
   'Tons que ganham URL pública. O tom base é sempre incluído automaticamente.';
+comment on column public.songs.youtube_url is
+  'Link do vídeo no YouTube. Se vazio, o ícone não aparece na página da música.';
 
 -- ---------------------------------------------------------------------------
 -- Tabela: song_key_overrides
@@ -140,11 +143,18 @@ create index if not exists overrides_song_idx   on public.song_key_overrides (so
 -- ---------------------------------------------------------------------------
 -- Busca usada pelo site e pelo Lyra
 -- Procura em título, artista e trecho da letra, com prefixo ("gali" acha "Galileu").
+--
+-- O parâmetro `fields` restringe onde procurar, usando os pesos do índice:
+--   A = título   B = artista   C = letra
+-- Ex.: fields => 'AB' busca só em título e artista.
 -- ---------------------------------------------------------------------------
+drop function if exists public.search_songs(text, int, int);
+
 create or replace function public.search_songs(
-  q     text,
-  lim   int default 20,
-  off   int default 0
+  q      text,
+  lim    int  default 20,
+  off    int  default 0,
+  fields text default 'ABC'
 )
 returns table (
   id             uuid,
@@ -164,10 +174,18 @@ security definer
 set search_path = public
 as $$
 declare
-  terms text;
-  tsq   tsquery;
+  weights text;
+  terms   text;
+  tsq     tsquery;
+  in_lyrics boolean;
 begin
-  select string_agg(w || ':*', ' & ')
+  weights := regexp_replace(upper(coalesce(fields, 'ABC')), '[^ABC]', '', 'g');
+  if weights = '' then
+    weights := 'ABC';
+  end if;
+  in_lyrics := position('C' in weights) > 0;
+
+  select string_agg(s.w || ':*' || weights, ' & ')
     into terms
   from (
     select regexp_replace(lower(t), '[^[:alnum:]]', '', 'g') as w
@@ -194,12 +212,16 @@ begin
   return query
     select s.id, s.slug, s.title, s.artist, s.base_key, s.available_keys,
            (length(btrim(s.chords)) > 0) as has_chords,
-           ts_headline(
-             'public.pt_unaccent',
-             regexp_replace(s.lyrics, '\s+', ' ', 'g'),
-             tsq,
-             'StartSel=[[,StopSel=]],MaxWords=22,MinWords=8,ShortWord=2,MaxFragments=1'
-           ) as snippet,
+           case when in_lyrics then
+             ts_headline(
+               'public.pt_unaccent',
+               regexp_replace(s.lyrics, '\s+', ' ', 'g'),
+               tsq,
+               'StartSel=[[,StopSel=]],MaxWords=22,MinWords=8,ShortWord=2,MaxFragments=1'
+             )
+           else
+             left(regexp_replace(s.lyrics, '\s+', ' ', 'g'), 160)
+           end as snippet,
            s.updated_at,
            ts_rank(s.search_vector, tsq) as rank
     from public.songs s
@@ -243,7 +265,7 @@ drop policy if exists admins_self_read on public.admins;
 create policy admins_self_read on public.admins
   for select using (user_id = auth.uid());
 
-grant execute on function public.search_songs(text, int, int) to anon, authenticated;
+grant execute on function public.search_songs(text, int, int, text) to anon, authenticated;
 grant execute on function public.is_admin() to anon, authenticated;
 
 -- ============================================================================

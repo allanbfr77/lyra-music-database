@@ -2,11 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseChart, type ChartLine } from '@/lib/chords';
+import {
+  CheckIcon,
+  MinusIcon,
+  PauseIcon,
+  PlayIcon,
+  PlusIcon,
+  ShareIcon,
+  TextLargerIcon,
+  TextSmallerIcon,
+  WrapTextIcon,
+} from '@/components/icons';
 
 const SIZE_KEY = 'lyra:font-size';
 const WRAP_KEY = 'lyra:wrap';
 const MIN = 12;
 const MAX = 30;
+const DEFAULT_SIZE = 15;
 
 type Props = {
   mode: 'chords' | 'lyrics';
@@ -14,9 +26,29 @@ type Props = {
   shareTitle: string;
 };
 
+function readStoredSize(fallback: number) {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const stored = Number(localStorage.getItem(SIZE_KEY));
+    if (stored >= MIN && stored <= MAX) return stored;
+  } catch {
+    /* armazenamento indisponível */
+  }
+  return fallback;
+}
+
+function readStoredWrap() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(WRAP_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function Reader({ mode, text, shareTitle }: Props) {
-  const [size, setSize] = useState(mode === 'chords' ? 15 : 17);
-  const [wrap, setWrap] = useState(false);
+  const [size, setSize] = useState(() => readStoredSize(DEFAULT_SIZE));
+  const [wrap, setWrap] = useState(readStoredWrap);
   const [speed, setSpeed] = useState(0);
   const [copied, setCopied] = useState(false);
   const raf = useRef<number | null>(null);
@@ -121,16 +153,32 @@ export default function Reader({ mode, text, shareTitle }: Props) {
   };
 
   const lines = useMemo<ChartLine[]>(() => (mode === 'chords' ? parseChart(text) : []), [mode, text]);
+  const sizePercent = Math.round((size / DEFAULT_SIZE) * 100);
 
   return (
     <>
       <div className="toolbar no-print">
         <div className="toolbar__group">
-          <button className="icon-btn" onClick={() => changeSize(-1)} aria-label="Diminuir a letra" title="Diminuir">
-            A−
+          <button
+            className="icon-btn"
+            onClick={() => changeSize(-1)}
+            disabled={size <= MIN}
+            aria-label={`Diminuir a letra (${sizePercent}%)`}
+            title="Diminuir a letra"
+          >
+            <TextSmallerIcon size={18} />
           </button>
-          <button className="icon-btn" onClick={() => changeSize(1)} aria-label="Aumentar a letra" title="Aumentar">
-            A+
+          <span className="toolbar__size" aria-live="polite">
+            {sizePercent}%
+          </span>
+          <button
+            className="icon-btn"
+            onClick={() => changeSize(1)}
+            disabled={size >= MAX}
+            aria-label={`Aumentar a letra (${sizePercent}%)`}
+            title="Aumentar a letra"
+          >
+            <TextLargerIcon size={18} />
           </button>
         </div>
 
@@ -141,9 +189,8 @@ export default function Reader({ mode, text, shareTitle }: Props) {
             onClick={toggleWrap}
             aria-label="Quebrar linhas longas"
             title="Quebrar linhas longas"
-            style={{ width: 'auto', padding: '0 10px', fontSize: 12.5 }}
           >
-            ↵ quebra
+            <WrapTextIcon size={18} />
           </button>
         )}
 
@@ -154,26 +201,41 @@ export default function Reader({ mode, text, shareTitle }: Props) {
             className="icon-btn"
             data-active={speed > 0 ? 'true' : 'false'}
             onClick={() => setSpeed((s) => (s > 0 ? 0 : 2))}
-            aria-label={speed > 0 ? 'Parar rolagem' : 'Rolar automaticamente'}
+            aria-label={speed > 0 ? 'Parar rolagem automática' : 'Rolar automaticamente'}
             title="Rolagem automática"
           >
-            {speed > 0 ? '❚❚' : '▶'}
+            {speed > 0 ? <PauseIcon size={17} /> : <PlayIcon size={17} />}
           </button>
           {speed > 0 && (
             <>
-              <button className="icon-btn" onClick={() => setSpeed((s) => Math.max(1, s - 1))} aria-label="Mais devagar">
-                −
+              <button
+                className="icon-btn"
+                onClick={() => setSpeed((s) => Math.max(1, s - 1))}
+                aria-label="Rolar mais devagar"
+                title="Mais devagar"
+              >
+                <MinusIcon size={16} />
               </button>
               <span className="small muted" style={{ minWidth: 18, textAlign: 'center' }}>
                 {speed}
               </span>
-              <button className="icon-btn" onClick={() => setSpeed((s) => Math.min(6, s + 1))} aria-label="Mais rápido">
-                +
+              <button
+                className="icon-btn"
+                onClick={() => setSpeed((s) => Math.min(6, s + 1))}
+                aria-label="Rolar mais rápido"
+                title="Mais rápido"
+              >
+                <PlusIcon size={16} />
               </button>
             </>
           )}
-          <button className="icon-btn" onClick={share} aria-label="Compartilhar link" title="Compartilhar">
-            {copied ? '✓' : '↗'}
+          <button
+            className="icon-btn"
+            onClick={share}
+            aria-label={copied ? 'Link copiado' : 'Compartilhar link'}
+            title={copied ? 'Link copiado' : 'Compartilhar link'}
+          >
+            {copied ? <CheckIcon size={17} /> : <ShareIcon size={17} />}
           </button>
         </div>
       </div>

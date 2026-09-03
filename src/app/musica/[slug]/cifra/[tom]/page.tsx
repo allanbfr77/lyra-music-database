@@ -1,16 +1,14 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import SiteHeader from '@/components/SiteHeader';
-import SongHeader from '@/components/SongHeader';
-import SongTabs from '@/components/SongTabs';
-import KeyBar from '@/components/KeyBar';
-import Reader from '@/components/Reader';
-import { chartForKey, getSongBySlug, publishedKeys } from '@/lib/songs';
-import { keyToSlug, normalizeKey, slugToKey, uniqueChords } from '@/lib/chords';
+import { notFound, redirect } from 'next/navigation';
+import { getSongBySlug, publishedKeys } from '@/lib/songs';
+import { keyToSlug, slugToKey } from '@/lib/chords';
 
 export const dynamic = 'force-dynamic';
 
-type Params = { params: Promise<{ slug: string; tom: string }> };
+type Params = {
+  params: Promise<{ slug: string; tom: string }>;
+  searchParams: Promise<{ tom?: string }>;
+};
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug, tom } = await params;
@@ -31,7 +29,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function ChordPage({ params }: Params) {
+export default async function ChordPage({ params, searchParams }: Params) {
   const { slug, tom } = await params;
 
   const key = slugToKey(tom);
@@ -39,44 +37,24 @@ export default async function ChordPage({ params }: Params) {
 
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
-
   if (!song.chords.trim()) notFound();
 
-  const { chart, source } = chartForKey(song, song.overrides, key);
-  const listed = publishedKeys(song);
-  const keys = listed.includes(key) ? listed : [...listed, key];
-  const manualKeys = song.overrides.map((o) => normalizeKey(o.key));
-  const chordsUsed = uniqueChords(chart);
+  const keys = publishedKeys(song);
+
+  // Tom despublicado: o favorito de alguém não pode virar beco sem saída,
+  // então levamos para o tom original avisando o que aconteceu.
+  if (!keys.includes(key)) {
+    redirect(`/musica/${song.slug}/cifra/${keyToSlug(keys[0])}?tom=${keyToSlug(key)}`);
+  }
+
+  const askedFor = slugToKey((await searchParams).tom ?? '');
+  const removedKey = askedFor && askedFor !== key ? askedFor : null;
+
+  if (!removedKey) return null;
 
   return (
-    <>
-      <SiteHeader />
-      <main className="shell">
-        <SongHeader song={song} currentKey={key} />
-        <SongTabs slug={song.slug} active="cifra" hasChords chordKeySlug={keyToSlug(key)} />
-        <KeyBar slug={song.slug} keys={keys} activeKey={key} manualKeys={manualKeys} />
-
-        <Reader mode="chords" text={chart} shareTitle={`${song.title} — cifra em ${key}`} />
-
-        {chordsUsed.length > 0 && (
-          <div className="no-print">
-            <div className="keybar__label">Acordes desta versão</div>
-            <div className="song-head__meta">
-              {chordsUsed.slice(0, 16).map((chord) => (
-                <span key={chord} className="chip" style={{ fontFamily: 'var(--mono)', color: 'var(--chord)' }}>
-                  {chord}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="notice no-print">
-          {source === 'manual'
-            ? `Cifra revisada manualmente para o tom de ${key}.`
-            : `Cifra transposta automaticamente a partir do tom original (${normalizeKey(song.base_key)}).`}
-        </div>
-      </main>
-    </>
+    <div className="notice notice--warn no-print" style={{ marginTop: 14 }}>
+      O tom de <b>{removedKey}</b> não está mais disponível nesta música. Esta é a cifra em <b>{key}</b>.
+    </div>
   );
 }

@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
 import { allKeysFor, keyToSlug, normalizeKey, transposeChart } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
+import { ExternalLinkIcon, PencilIcon } from '@/components/icons';
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -24,6 +25,7 @@ export type EditorInitial = {
   tempo_bpm: number | null;
   time_signature: string | null;
   source_url: string | null;
+  youtube_url: string | null;
   notes: string | null;
   published: boolean;
   overrides: { key: string; chords: string }[];
@@ -42,6 +44,7 @@ const EMPTY: EditorInitial = {
   tempo_bpm: null,
   time_signature: null,
   source_url: null,
+  youtube_url: null,
   notes: null,
   published: true,
   overrides: [],
@@ -60,10 +63,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [availableKeys, setAvailableKeys] = useState<string[]>(
     (initial.available_keys ?? []).map((k) => normalizeKey(k, '')).filter(Boolean)
   );
+  // Música nova já nasce com os 12 tons publicados; se o admin mexer, respeitamos a escolha.
+  const [keysTouched, setKeysTouched] = useState(Boolean(initial.id));
   const [capo, setCapo] = useState(initial.capo ?? 0);
   const [bpm, setBpm] = useState<string>(initial.tempo_bpm ? String(initial.tempo_bpm) : '');
   const [timeSignature, setTimeSignature] = useState(initial.time_signature ?? '');
   const [sourceUrl, setSourceUrl] = useState(initial.source_url ?? '');
+  const [youtubeUrl, setYoutubeUrl] = useState(initial.youtube_url ?? '');
   const [notes, setNotes] = useState(initial.notes ?? '');
   const [published, setPublished] = useState(initial.published);
 
@@ -73,16 +79,28 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
   const [tab, setTab] = useState<'letra' | 'cifra'>('letra');
   const [tuningKey, setTuningKey] = useState<string | null>(null);
-  const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [savedOpen, setSavedOpen] = useState(false);
+  const pendingHref = useRef<string | null>(null);
+  const okRef = useRef<HTMLButtonElement>(null);
 
   const effectiveSlug = slugTouched ? slugify(slug || title) : slugify(title);
   const twelveKeys = useMemo(() => allKeysFor(baseKey), [baseKey]);
-  const publishedSet = useMemo(() => new Set([normalizeKey(baseKey), ...availableKeys]), [baseKey, availableKeys]);
+  const effectiveKeys = useMemo(
+    () => (keysTouched ? availableKeys : twelveKeys.filter((k) => k !== normalizeKey(baseKey))),
+    [keysTouched, availableKeys, twelveKeys, baseKey]
+  );
+  const publishedSet = useMemo(
+    () => new Set([normalizeKey(baseKey), ...effectiveKeys]),
+    [baseKey, effectiveKeys]
+  );
 
   function toggleKey(key: string) {
     if (key === normalizeKey(baseKey)) return;
-    setAvailableKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    const current = effectiveKeys;
+    setKeysTouched(true);
+    setAvailableKeys(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
   }
 
   const tunedChart =
@@ -91,8 +109,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       : '';
 
   async function onSave() {
+    if (busy || !title.trim()) return;
     setBusy(true);
-    setStatus(null);
+    setError(null);
 
     const payload: SongPayload = {
       id: initial.id,
@@ -102,11 +121,12 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       lyrics,
       chords,
       base_key: normalizeKey(baseKey),
-      available_keys: availableKeys,
+      available_keys: effectiveKeys,
       capo,
       tempo_bpm: bpm.trim() ? Number(bpm) : null,
       time_signature: timeSignature || null,
       source_url: sourceUrl || null,
+      youtube_url: youtubeUrl || null,
       notes: notes || null,
       published,
       overrides: Object.entries(overrides).map(([key, value]) => ({ key, chords: value })),
@@ -116,14 +136,25 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     setBusy(false);
 
     if (!result.ok) {
-      setStatus({ kind: 'error', text: result.error });
+      setError(result.error);
       return;
     }
 
-    setStatus({ kind: 'ok', text: 'Salvo.' });
-    if (!initial.id) router.replace(`/admin/musica/${result.id}`);
+    pendingHref.current = initial.id ? null : `/admin/musica/${result.id}`;
+    setSavedOpen(true);
+  }
+
+  function dismissSaved() {
+    setSavedOpen(false);
+    const href = pendingHref.current;
+    pendingHref.current = null;
+    if (href) router.replace(href);
     else router.refresh();
   }
+
+  useEffect(() => {
+    if (savedOpen) okRef.current?.focus();
+  }, [savedOpen]);
 
   async function onDelete() {
     if (!initial.id) return;
@@ -132,7 +163,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     const result = await deleteSong(initial.id);
     setBusy(false);
     if (!result.ok) {
-      setStatus({ kind: 'error', text: result.error ?? 'Erro ao excluir.' });
+      setError(result.error ?? 'Erro ao excluir.');
       return;
     }
     router.replace('/admin');
@@ -145,7 +176,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         <h1 style={{ fontSize: 22 }}>{initial.id ? 'Editar música' : 'Nova música'}</h1>
       </div>
 
-      {status && <div className={`alert alert--${status.kind === 'ok' ? 'ok' : 'error'}`}>{status.text}</div>}
+      {error && <div className="alert alert--error">{error}</div>}
 
       <div className="card">
         <label className="field">
@@ -220,6 +251,21 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           </span>
         </label>
 
+        <label className="field">
+          <span className="field__label">YouTube</span>
+          <input
+            className="input"
+            inputMode="url"
+            autoComplete="url"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=…"
+          />
+          <span className="field__hint">
+            Se preencher, a página da música mostra o ícone do YouTube com este vídeo.
+          </span>
+        </label>
+
         <label className="field" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
           <span className="field__label" style={{ margin: 0 }}>
@@ -269,7 +315,22 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           </label>
 
           <div className="field">
-            <span className="field__label">Tons disponíveis</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span className="field__label" style={{ margin: 0 }}>
+                Tons disponíveis
+              </span>
+              <span className="header-spacer" />
+              <button
+                type="button"
+                className="btn btn--sm"
+                onClick={() => { setKeysTouched(true); setAvailableKeys(twelveKeys.filter((k) => k !== normalizeKey(baseKey))); }}
+              >
+                Marcar os 12
+              </button>
+              <button type="button" className="btn btn--sm" onClick={() => { setKeysTouched(true); setAvailableKeys([]); }}>
+                Só o original
+              </button>
+            </div>
             <div className="keys-grid">
               {twelveKeys.map((key) => {
                 const isBase = key === normalizeKey(baseKey);
@@ -284,13 +345,14 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                     title={isBase ? 'Tom original — sempre publicado' : 'Publicar/despublicar este tom'}
                   >
                     {key}
-                    {overrides[key] ? ' ✎' : ''}
+                    {overrides[key] ? <PencilIcon size={12} /> : null}
                   </button>
                 );
               })}
             </div>
             <span className="field__hint">
-              Cada tom marcado ganha uma URL própria e permanente. ✎ indica ajuste manual.
+              Cada tom marcado aparece na faixa “Tom” do site e ganha uma URL própria e permanente. O lápis
+              indica ajuste manual.
             </span>
           </div>
 
@@ -303,10 +365,12 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             >
               <option value="">Selecione um tom para revisar…</option>
               {twelveKeys
-                .filter((k) => k !== normalizeKey(baseKey) && publishedSet.has(k))
+                .filter((k) => k !== normalizeKey(baseKey) && (publishedSet.has(k) || overrides[k]))
                 .map((k) => (
                   <option key={k} value={k}>
-                    {k} {overrides[k] ? '(manual)' : '(automático)'}
+                    {k}
+                    {overrides[k] ? ' — manual' : ' — automático'}
+                    {!publishedSet.has(k) ? ' (tom despublicado)' : ''}
                   </option>
                 ))}
             </select>
@@ -351,7 +415,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
       <div className="sticky-actions">
         <button className="btn btn--primary" onClick={onSave} disabled={busy || !title.trim()} type="button">
-          {busy ? 'Salvando…' : 'Salvar'}
+          {busy ? 'Salvando...' : 'Salvar'}
         </button>
         {initial.id && (
           <>
@@ -360,7 +424,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               href={chords.trim() ? `/musica/${effectiveSlug}/cifra/${keyToSlug(normalizeKey(baseKey))}` : `/musica/${effectiveSlug}`}
               target="_blank"
             >
-              Ver no site ↗
+              Ver no site
+              <ExternalLinkIcon size={13} />
             </Link>
             <button className="btn btn--danger" onClick={onDelete} disabled={busy} type="button">
               Excluir
@@ -368,6 +433,17 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           </>
         )}
       </div>
+      {savedOpen && (
+        <div className="dialog-backdrop">
+          <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="saved-title" aria-describedby="saved-desc">
+            <strong id="saved-title">Música salva</strong>
+            <p id="saved-desc">A música foi salva com sucesso.</p>
+            <button ref={okRef} className="btn btn--primary" type="button" onClick={dismissSaved}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

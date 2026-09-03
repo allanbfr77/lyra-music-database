@@ -1,9 +1,12 @@
+import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/public';
-import { allKeysFor, normalizeKey, transposeChart } from '@/lib/chords';
+import { allKeysFor, normalizeKey } from '@/lib/chords';
 import type { KeyOverride, SearchHit, Song } from '@/lib/types';
 
+export { chartForKey } from '@/lib/chords';
+
 export const SONG_COLUMNS =
-  'id, slug, title, artist, lyrics, chords, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, notes, published, created_at, updated_at';
+  'id, slug, title, artist, lyrics, chords, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, created_at, updated_at';
 
 export type SongWithOverrides = Song & { overrides: KeyOverride[] };
 
@@ -16,37 +19,36 @@ export function publishedKeys(song: Pick<Song, 'base_key' | 'available_keys'>): 
   return order.filter((k) => chosen.has(k));
 }
 
-/**
- * Cifra de uma música num tom específico.
- * Usa a versão manual se existir (modo híbrido); senão transpõe a cifra base.
- */
-export function chartForKey(
-  song: Pick<Song, 'chords' | 'base_key'>,
-  overrides: KeyOverride[],
-  key: string
-): { chart: string; source: 'manual' | 'auto' } {
-  const target = normalizeKey(key);
-  const manual = overrides.find((o) => normalizeKey(o.key) === target);
-  if (manual && manual.chords.trim()) return { chart: manual.chords, source: 'manual' };
-  return { chart: transposeChart(song.chords ?? '', normalizeKey(song.base_key), target), source: 'auto' };
-}
-
-export async function getSongBySlug(slug: string): Promise<SongWithOverrides | null> {
+export const getSongBySlug = cache(async function getSongBySlug(slug: string): Promise<SongWithOverrides | null> {
   const supabase = createPublicClient();
-  const { data, error } = await supabase
-    .from('songs')
-    .select(`${SONG_COLUMNS}, song_key_overrides(id, song_id, key, chords, created_at, updated_at)`)
-    .eq('slug', slug)
-    .maybeSingle();
+  const extra = 'song_key_overrides(id, song_id, key, chords, created_at, updated_at)';
+  let { data, error } = await supabase.from('songs').select(`${SONG_COLUMNS}, ${extra}`).eq('slug', slug).maybeSingle();
+
+  // Banco ainda sem a migração 003: lê o restante da música sem o YouTube.
+  if (error && error.message.includes('youtube_url')) {
+    const legacy = SONG_COLUMNS.replace(', youtube_url', '');
+    ({ data, error } = await supabase.from('songs').select(`${legacy}, ${extra}`).eq('slug', slug).maybeSingle());
+  }
 
   if (error || !data) return null;
   const { song_key_overrides, ...song } = data as Song & { song_key_overrides: KeyOverride[] };
-  return { ...song, overrides: song_key_overrides ?? [] };
-}
+  return { ...song, youtube_url: song.youtube_url ?? null, overrides: song_key_overrides ?? [] };
+});
 
-export async function searchSongs(q: string, limit = 20, offset = 0): Promise<SearchHit[]> {
+/** `weights`: A = título, B = artista, C = letra. "ABC" procura em tudo. */
+export async function searchSongs(
+  q: string,
+  limit = 20,
+  offset = 0,
+  weights = 'ABC'
+): Promise<SearchHit[]> {
   const supabase = createPublicClient();
-  const { data, error } = await supabase.rpc('search_songs', { q: q ?? '', lim: limit, off: offset });
+  const { data, error } = await supabase.rpc('search_songs', {
+    q: q ?? '',
+    lim: limit,
+    off: offset,
+    fields: weights,
+  });
   if (error) throw new Error(error.message);
   return (data ?? []) as SearchHit[];
 }

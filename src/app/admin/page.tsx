@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { normalizeKey } from '@/lib/chords';
+import { ChevronRightIcon, PlusIcon, SearchIcon } from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,16 +38,14 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <h1 style={{ fontSize: 22 }}>Músicas</h1>
         <span className="header-spacer" />
         <Link href="/admin/nova" className="btn btn--primary btn--sm">
+          <PlusIcon size={15} />
           Nova música
         </Link>
       </div>
 
       <form action="/admin" className="search" style={{ marginTop: 8 }}>
-        <span className="search__icon" aria-hidden="true">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.2-3.2" />
-          </svg>
+        <span className="search__icon">
+          <SearchIcon size={17} />
         </span>
         <input name="q" defaultValue={q} placeholder="Filtrar por título ou artista" aria-label="Filtrar" />
       </form>
@@ -84,6 +83,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                   </div>
                 </div>
                 <span className="song-item__key">{normalizeKey(song.base_key)}</span>
+                <span className="song-item__chevron">
+                  <ChevronRightIcon size={16} />
+                </span>
               </Link>
             </li>
           ))}

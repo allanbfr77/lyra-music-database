@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { SearchHit } from '@/lib/types';
 import { keyToSlug, normalizeKey } from '@/lib/chords';
+import { ChevronRightIcon } from '@/components/icons';
 
 /** O Postgres marca os trechos com [[ ]]; escapamos tudo e só então viram <mark>. */
 function highlight(snippet: string): string {
@@ -29,10 +30,8 @@ export default function SongList({ songs, showSnippet = false }: { songs: Search
                 ) : null}
               </div>
               {song.has_chords ? <span className="song-item__key">{key}</span> : null}
-              <span className="song-item__chevron" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m9 5 7 7-7 7" />
-                </svg>
+              <span className="song-item__chevron">
+                <ChevronRightIcon size={16} />
               </span>
             </Link>
           </li>
