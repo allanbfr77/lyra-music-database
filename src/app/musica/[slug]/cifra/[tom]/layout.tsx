@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { Suspense } from 'react';
 import SiteHeader from '@/components/SiteHeader';
+import SongBackButton from '@/components/SongBackButton';
 import { getSongBySlug } from '@/lib/songs';
 import { slugToKey } from '@/lib/chords';
 
@@ -19,7 +21,13 @@ export default async function ChordLayout({
 
   return (
     <>
-      <SiteHeader backHref="/" />
+      <SiteHeader
+        left={
+          <Suspense>
+            <SongBackButton />
+          </Suspense>
+        }
+      />
       <main className="shell">{children}</main>
     </>
   );

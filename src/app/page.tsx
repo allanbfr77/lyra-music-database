@@ -3,6 +3,7 @@ import SiteHeader from '@/components/SiteHeader';
 import { LockIcon } from '@/components/icons';
 import SearchBox from '@/components/SearchBox';
 import HomeCatalog from '@/components/HomeCatalog';
+import PlaylistFab from '@/components/PlaylistFab';
 import { searchSongs } from '@/lib/songs';
 import { SEARCH_FIELDS, fieldIdsToWeights, parseFieldIds } from '@/lib/search-fields';
 import type { SearchHit } from '@/lib/types';
@@ -39,7 +40,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         }
       />
 
-      <main className="shell">
+      <main className="shell shell--fab">
         <div style={{ paddingTop: 18 }}>
           <SearchBox initialQuery={query} initialFields={fieldIds} />
         </div>
@@ -58,6 +59,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           />
         )}
       </main>
+      <PlaylistFab />
     </>
   );
 }

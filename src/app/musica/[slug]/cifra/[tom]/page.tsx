@@ -4,12 +4,13 @@ import ChordView from '@/components/ChordView';
 import { availableInstruments, cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from './resolve';
+import { isPlaylistQuery } from '@/lib/playlist';
 
 export const dynamic = 'force-dynamic';
 
 type Params = {
   params: Promise<{ slug: string; tom: string }>;
-  searchParams: Promise<{ tom?: string }>;
+  searchParams: Promise<{ tom?: string; pl?: string }>;
 };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -34,7 +35,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function ChordPage({ params, searchParams }: Params) {
   const { slug, tom } = await params;
-  const askedTom = (await searchParams).tom;
+  const query = await searchParams;
+  const askedTom = query.tom;
+  const inPlaylist = isPlaylistQuery(query.pl);
   const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'teclado', askedTom);
 
   if (!availableInstruments(song, song.overrides).includes('teclado')) notFound();
@@ -53,6 +56,7 @@ export default async function ChordPage({ params, searchParams }: Params) {
       overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
       initialKey={key}
       instrumento="teclado"
+      inPlaylist={inPlaylist}
       notice={notice}
     />
   );

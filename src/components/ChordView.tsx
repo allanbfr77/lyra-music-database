@@ -17,6 +17,8 @@ import {
   uniqueChords,
 } from '@/lib/chords';
 import type { Instrumento, Song } from '@/lib/types';
+import { playlistQuery } from '@/lib/playlist';
+import PlaylistNav from '@/components/PlaylistNav';
 
 type Override = { key: string; chords: string; instrumento?: Instrumento };
 type Tab = 'letra' | 'cifra';
@@ -38,6 +40,7 @@ export default function ChordView({
   initialKey,
   instrumento: initialInstrumento = 'teclado',
   initialTab = 'cifra',
+  inPlaylist = false,
   notice,
 }: {
   song: Song;
@@ -46,6 +49,7 @@ export default function ChordView({
   initialKey: string;
   instrumento?: Instrumento;
   initialTab?: Tab;
+  inPlaylist?: boolean;
   notice?: ReactNode;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -57,10 +61,10 @@ export default function ChordView({
 
   const syncUrl = useCallback(
     (nextTab: Tab, nextKey: string, nextInstrumento: Instrumento) => {
-      const href = nextTab === 'letra' ? `/musica/${song.slug}` : cifraPath(song.slug, nextKey, nextInstrumento);
-      window.history.pushState(null, '', href);
+      const path = nextTab === 'letra' ? `/musica/${song.slug}` : cifraPath(song.slug, nextKey, nextInstrumento);
+      window.history.pushState(null, '', `${path}${playlistQuery(inPlaylist)}`);
     },
-    [song.slug]
+    [song.slug, inPlaylist]
   );
 
   const selectKey = useCallback(
@@ -212,6 +216,7 @@ export default function ChordView({
           </p>
         ) : null}
       </SongControlPanel>
+      {inPlaylist && tab === 'cifra' ? <PlaylistNav slug={song.slug} /> : null}
     </>
   );
 }

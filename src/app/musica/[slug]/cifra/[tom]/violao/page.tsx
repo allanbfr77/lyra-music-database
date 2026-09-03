@@ -3,12 +3,13 @@ import ChordView from '@/components/ChordView';
 import { cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from '../resolve';
+import { isPlaylistQuery } from '@/lib/playlist';
 
 export const dynamic = 'force-dynamic';
 
 type Params = {
   params: Promise<{ slug: string; tom: string }>;
-  searchParams: Promise<{ tom?: string }>;
+  searchParams: Promise<{ tom?: string; pl?: string }>;
 };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -33,7 +34,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function GuitarChordPage({ params, searchParams }: Params) {
   const { slug, tom } = await params;
-  const askedTom = (await searchParams).tom;
+  const query = await searchParams;
+  const askedTom = query.tom;
+  const inPlaylist = isPlaylistQuery(query.pl);
   const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'violao', askedTom);
 
   const { overrides, ...publicSong } = song;
@@ -50,6 +53,7 @@ export default async function GuitarChordPage({ params, searchParams }: Params) 
       overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
       initialKey={key}
       instrumento="violao"
+      inPlaylist={inPlaylist}
       notice={notice}
     />
   );

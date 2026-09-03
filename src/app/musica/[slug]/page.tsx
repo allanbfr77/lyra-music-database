@@ -1,13 +1,16 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
+import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
 import { getSongBySlug, publishedKeys } from '@/lib/songs';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
+import { isPlaylistQuery } from '@/lib/playlist';
 
 export const dynamic = 'force-dynamic';
 
-type Params = { params: Promise<{ slug: string }> };
+type Params = { params: Promise<{ slug: string }>; searchParams: Promise<{ pl?: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
@@ -28,8 +31,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function LyricsPage({ params }: Params) {
+export default async function LyricsPage({ params, searchParams }: Params) {
   const { slug } = await params;
+  const inPlaylist = isPlaylistQuery((await searchParams).pl);
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
 
@@ -39,7 +43,13 @@ export default async function LyricsPage({ params }: Params) {
 
   return (
     <>
-      <SiteHeader backHref="/" />
+      <SiteHeader
+        left={
+          <Suspense>
+            <SongBackButton />
+          </Suspense>
+        }
+      />
       <main className="shell">
         <ChordView
           song={publicSong}
@@ -48,6 +58,7 @@ export default async function LyricsPage({ params }: Params) {
           initialKey={normalizeKey(song.base_key)}
           instrumento={defaultInstrument}
           initialTab="letra"
+          inPlaylist={inPlaylist}
         />
       </main>
     </>
