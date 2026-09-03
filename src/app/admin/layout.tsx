@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SignOutButton from '@/components/SignOutButton';
+import AdminBackButton from '@/components/AdminBackButton';
 import { createClient } from '@/lib/supabase/server';
-import { ExternalLinkIcon, PlusIcon } from '@/components/icons';
+import { ExternalLinkIcon } from '@/components/icons';
 
 export const metadata: Metadata = { title: 'Administração', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -38,14 +39,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <SiteHeader right={<SignOutButton />} />
+      <SiteHeader right={<SignOutButton />} left={<AdminBackButton />} />
       <div className="admin-bar no-print">
         <div className="admin-bar__inner">
-          <Link href="/admin">Músicas</Link>
-          <Link href="/admin/nova" className="admin-bar__action">
-            <PlusIcon size={14} />
-            Nova
-          </Link>
           <Link href="/" target="_blank" className="admin-bar__action">
             Ver site
             <ExternalLinkIcon size={14} />

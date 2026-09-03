@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
+import { LockIcon } from '@/components/icons';
 import SearchBox from '@/components/SearchBox';
 import HomeCatalog from '@/components/HomeCatalog';
 import { searchSongs } from '@/lib/songs';
@@ -31,8 +32,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <>
       <SiteHeader
         right={
-          <Link href="/admin" className="btn btn--ghost btn--sm muted">
-            Admin
+          <Link href="/login" className="btn btn--ghost btn--sm muted">
+            <LockIcon size={14} />
+            Login
           </Link>
         }
       />

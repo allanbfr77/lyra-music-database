@@ -9,6 +9,7 @@ import Reader from '@/components/Reader';
 import {
   availableInstruments,
   chartForKey,
+  chartToLyrics,
   cifraPath,
   keyToSlug,
   normalizeKey,
@@ -18,10 +19,16 @@ import {
 import type { Instrumento, Song } from '@/lib/types';
 
 type Override = { key: string; chords: string; instrumento?: Instrumento };
+type Tab = 'letra' | 'cifra';
 
-function keyFromPath(pathname: string): string | null {
-  const match = pathname.match(/\/cifra\/([^/]+)/);
-  return match ? slugToKey(match[1]) : null;
+function pathFromLocation(pathname: string): { tab: Tab; key: string | null; instrumento: Instrumento } {
+  const match = pathname.match(/\/cifra\/([^/]+)(?:\/(violao))?/);
+  if (!match) return { tab: 'letra', key: null, instrumento: 'teclado' };
+  return {
+    tab: 'cifra',
+    key: slugToKey(match[1]),
+    instrumento: match[2] === 'violao' ? 'violao' : 'teclado',
+  };
 }
 
 export default function ChordView({
@@ -29,7 +36,8 @@ export default function ChordView({
   keys,
   overrides,
   initialKey,
-  instrumento = 'teclado',
+  instrumento: initialInstrumento = 'teclado',
+  initialTab = 'cifra',
   notice,
 }: {
   song: Song;
@@ -37,34 +45,70 @@ export default function ChordView({
   overrides: Override[];
   initialKey: string;
   instrumento?: Instrumento;
+  initialTab?: Tab;
   notice?: ReactNode;
 }) {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [viewKey, setViewKey] = useState(initialKey);
-  const hasGuitar = availableInstruments(song, overrides).includes('violao');
+  const [instrumento, setInstrumento] = useState<Instrumento>(initialInstrumento);
+  const instruments = availableInstruments(song, overrides);
+  const hasGuitar = instruments.includes('violao');
+  const hasChords = instruments.length > 0;
+
+  const syncUrl = useCallback(
+    (nextTab: Tab, nextKey: string, nextInstrumento: Instrumento) => {
+      const href = nextTab === 'letra' ? `/musica/${song.slug}` : cifraPath(song.slug, nextKey, nextInstrumento);
+      window.history.pushState(null, '', href);
+    },
+    [song.slug]
+  );
 
   const selectKey = useCallback(
     (next: string) => {
       if (next === viewKey) return;
       setViewKey(next);
-      window.history.pushState(null, '', cifraPath(song.slug, next, instrumento));
+      if (tab === 'cifra') syncUrl('cifra', next, instrumento);
     },
-    [song.slug, viewKey, instrumento]
+    [viewKey, tab, instrumento, syncUrl]
   );
 
-  // Voltar/avançar do navegador: o endereço já mudou, só alinhamos o tom visível.
+  const selectTab = useCallback(
+    (next: Tab) => {
+      if (next === tab) return;
+      setTab(next);
+      syncUrl(next, viewKey, instrumento);
+    },
+    [tab, viewKey, instrumento, syncUrl]
+  );
+
+  const selectInstrumento = useCallback(
+    (next: Instrumento) => {
+      if (next === instrumento) return;
+      setInstrumento(next);
+      if (tab === 'cifra') syncUrl('cifra', viewKey, next);
+    },
+    [instrumento, tab, viewKey, syncUrl]
+  );
+
   useEffect(() => {
     function syncFromUrl() {
-      const fromPath = keyFromPath(window.location.pathname);
-      if (fromPath) setViewKey(fromPath);
+      const fromPath = pathFromLocation(window.location.pathname);
+      setTab(fromPath.tab);
+      if (fromPath.key) setViewKey(fromPath.key);
+      if (fromPath.tab === 'cifra') setInstrumento(fromPath.instrumento);
     }
     window.addEventListener('popstate', syncFromUrl);
     return () => window.removeEventListener('popstate', syncFromUrl);
   }, []);
 
   useEffect(() => {
+    if (tab === 'letra') {
+      document.title = `${song.title} — Letra · Banco de Músicas do Lyra`;
+      return;
+    }
     const kind = instrumento === 'violao' ? 'Cifra de violão' : 'Cifra';
     document.title = `${song.title} — ${kind} em ${viewKey} · Banco de Músicas do Lyra`;
-  }, [song.title, viewKey, instrumento]);
+  }, [song.title, viewKey, instrumento, tab]);
 
   const { chart, source } = useMemo(
     () => chartForKey(song, overrides, viewKey, instrumento),
@@ -78,6 +122,7 @@ export default function ChordView({
         .map((o) => normalizeKey(o.key)),
     [overrides, instrumento]
   );
+  const lyrics = song.lyrics.trim() || (song.chords.trim() ? chartToLyrics(song.chords) : '');
 
   const emptyMessage =
     instrumento === 'violao'
@@ -85,43 +130,61 @@ export default function ChordView({
       : 'Cifra ainda não cadastrada para esta música';
 
   const chordKeySlug = keyToSlug(viewKey);
-  const shareTitle = `${song.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
+  const shareTitle =
+    tab === 'letra'
+      ? `${song.title} — ${song.artist}`
+      : `${song.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
 
   return (
     <>
       <SongHeader song={song} currentKey={viewKey} />
       <SongControlPanel
         shareTitle={shareTitle}
-        showWrap
+        showWrap={tab === 'cifra'}
         tabs={
           <SongTabs
             slug={song.slug}
-            active="cifra"
-            hasChords
+            active={tab}
+            hasChords={hasChords}
             chordKeySlug={chordKeySlug}
             instrumento={instrumento}
+            onSelect={selectTab}
           />
         }
         keyControl={
-          <KeyBar
-            slug={song.slug}
-            keys={keys}
-            activeKey={viewKey}
-            baseKey={normalizeKey(song.base_key)}
-            manualKeys={manualKeys}
-            instrumento={instrumento}
-            onSelect={selectKey}
-          />
+          tab === 'cifra' ? (
+            <KeyBar
+              slug={song.slug}
+              keys={keys}
+              activeKey={viewKey}
+              baseKey={normalizeKey(song.base_key)}
+              manualKeys={manualKeys}
+              instrumento={instrumento}
+              onSelect={selectKey}
+            />
+          ) : null
         }
       >
-        <InstrumentTabs
-          slug={song.slug}
-          chordKeySlug={chordKeySlug}
-          instrumento={instrumento}
-          hasGuitar={hasGuitar || instrumento === 'violao'}
-        />
-        {notice}
-        {chart.trim() ? (
+        {tab === 'cifra' ? (
+          <InstrumentTabs
+            slug={song.slug}
+            chordKeySlug={chordKeySlug}
+            instrumento={instrumento}
+            hasGuitar={hasGuitar || instrumento === 'violao'}
+            onSelect={selectInstrumento}
+          />
+        ) : null}
+        {tab === 'cifra' ? notice : null}
+        {tab === 'letra' ? (
+          lyrics ? (
+            <Reader mode="lyrics" text={lyrics} />
+          ) : (
+            <div className="empty">
+              <strong>Letra ainda não cadastrada</strong>
+              <span className="small">Esta música foi cadastrada sem letra.</span>
+            </div>
+          )
+        ) : chart.trim() ? (
           <Reader mode="chords" text={chart} />
         ) : (
           <div className="empty">
@@ -129,7 +192,7 @@ export default function ChordView({
             <span className="small">A letra continua disponível na outra aba.</span>
           </div>
         )}
-        {chordsUsed.length > 0 && (
+        {tab === 'cifra' && chordsUsed.length > 0 && (
           <div className="no-print">
             <div className="keybar__label">Acordes usados neste tom</div>
             <div className="song-head__meta">
@@ -141,7 +204,7 @@ export default function ChordView({
             </div>
           </div>
         )}
-        {chart.trim() ? (
+        {tab === 'cifra' && chart.trim() ? (
           <p className="hint no-print">
             {source === 'manual'
               ? `Cifra revisada manualmente para o tom de ${viewKey}.`

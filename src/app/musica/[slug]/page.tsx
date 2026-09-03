@@ -1,12 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
-import SongHeader from '@/components/SongHeader';
-import SongControlPanel from '@/components/SongControlPanel';
-import SongTabs from '@/components/SongTabs';
-import Reader from '@/components/Reader';
-import { getSongBySlug } from '@/lib/songs';
-import { availableInstruments, chartToLyrics, keyToSlug, normalizeKey } from '@/lib/chords';
+import ChordView from '@/components/ChordView';
+import { getSongBySlug, publishedKeys } from '@/lib/songs';
+import { availableInstruments, normalizeKey } from '@/lib/chords';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,36 +34,21 @@ export default async function LyricsPage({ params }: Params) {
   if (!song) notFound();
 
   const instruments = availableInstruments(song, song.overrides);
-  const hasChords = instruments.length > 0;
   const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
-  const lyrics = song.lyrics.trim() || (song.chords.trim() ? chartToLyrics(song.chords) : '');
+  const { overrides, ...publicSong } = song;
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader backHref="/" />
       <main className="shell">
-        <SongHeader song={song} />
-        <SongControlPanel
-          shareTitle={`${song.title} — ${song.artist}`}
-          tabs={
-            <SongTabs
-              slug={song.slug}
-              active="letra"
-              hasChords={hasChords}
-              chordKeySlug={keyToSlug(normalizeKey(song.base_key))}
-              instrumento={defaultInstrument}
-            />
-          }
-        >
-          {lyrics ? (
-            <Reader mode="lyrics" text={lyrics} />
-          ) : (
-            <div className="empty">
-              <strong>Letra ainda não cadastrada</strong>
-              <span className="small">Esta música foi cadastrada sem letra.</span>
-            </div>
-          )}
-        </SongControlPanel>
+        <ChordView
+          song={publicSong}
+          keys={publishedKeys(song)}
+          overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
+          initialKey={normalizeKey(song.base_key)}
+          instrumento={defaultInstrument}
+          initialTab="letra"
+        />
       </main>
     </>
   );

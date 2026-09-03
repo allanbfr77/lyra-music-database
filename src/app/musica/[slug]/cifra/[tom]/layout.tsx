@@ -19,7 +19,7 @@ export default async function ChordLayout({
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader backHref="/" />
       <main className="shell">{children}</main>
     </>
   );

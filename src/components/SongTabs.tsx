@@ -1,6 +1,17 @@
+import type { MouseEvent } from 'react';
 import Link from 'next/link';
 import { cifraPath, slugToKey } from '@/lib/chords';
 import type { Instrumento } from '@/lib/types';
+
+function sameTabClick(
+  event: MouseEvent<HTMLAnchorElement>,
+  onSelect?: () => void
+) {
+  if (!onSelect) return;
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  onSelect();
+}
 
 export default function SongTabs({
   slug,
@@ -8,6 +19,7 @@ export default function SongTabs({
   chordKeySlug,
   hasChords,
   instrumento = 'teclado',
+  onSelect,
 }: {
   slug: string;
   active: 'letra' | 'cifra';
@@ -15,17 +27,28 @@ export default function SongTabs({
   hasChords: boolean;
   instrumento?: Instrumento;
   hasGuitar?: boolean;
+  onSelect?: (tab: 'letra' | 'cifra') => void;
 }) {
   const key = slugToKey(chordKeySlug) ?? chordKeySlug;
   const cifraHref = hasChords ? cifraPath(slug, key, instrumento) : null;
 
   return (
     <nav className="seg no-print" aria-label="Letra ou cifra">
-      <Link href={`/musica/${slug}`} className="seg__item" data-active={active === 'letra'}>
+      <Link
+        href={`/musica/${slug}`}
+        className="seg__item"
+        data-active={active === 'letra'}
+        onClick={(event) => sameTabClick(event, onSelect ? () => onSelect('letra') : undefined)}
+      >
         Letra
       </Link>
       {cifraHref ? (
-        <Link href={cifraHref} className="seg__item" data-active={active === 'cifra'}>
+        <Link
+          href={cifraHref}
+          className="seg__item"
+          data-active={active === 'cifra'}
+          onClick={(event) => sameTabClick(event, onSelect ? () => onSelect('cifra') : undefined)}
+        >
           Cifra
         </Link>
       ) : (
@@ -42,21 +65,33 @@ export function InstrumentTabs({
   chordKeySlug,
   instrumento = 'teclado',
   hasGuitar = false,
+  onSelect,
 }: {
   slug: string;
   chordKeySlug: string;
   instrumento?: Instrumento;
   hasGuitar?: boolean;
+  onSelect?: (instrumento: Instrumento) => void;
 }) {
   if (!hasGuitar) return null;
   const key = slugToKey(chordKeySlug) ?? chordKeySlug;
 
   return (
     <nav className="instrument-tabs no-print" aria-label="Instrumento">
-      <Link href={cifraPath(slug, key, 'teclado')} className="tab" data-active={instrumento === 'teclado'}>
+      <Link
+        href={cifraPath(slug, key, 'teclado')}
+        className="tab"
+        data-active={instrumento === 'teclado'}
+        onClick={(event) => sameTabClick(event, onSelect ? () => onSelect('teclado') : undefined)}
+      >
         Teclado
       </Link>
-      <Link href={cifraPath(slug, key, 'violao')} className="tab" data-active={instrumento === 'violao'}>
+      <Link
+        href={cifraPath(slug, key, 'violao')}
+        className="tab"
+        data-active={instrumento === 'violao'}
+        onClick={(event) => sameTabClick(event, onSelect ? () => onSelect('violao') : undefined)}
+      >
         Violão
       </Link>
     </nav>

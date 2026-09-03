@@ -79,6 +79,14 @@ export function ChevronRightIcon(props: IconProps) {
   );
 }
 
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2.2} {...props}>
+      <path d="m15 5-7 7 7 7" />
+    </Line>
+  );
+}
+
 export function ChevronDownIcon(props: IconProps) {
   return (
     <Line strokeWidth={2.2} {...props}>
@@ -231,6 +239,15 @@ export function MoonIcon(props: IconProps) {
   return (
     <Line strokeWidth={2} {...props}>
       <path d="M20.2 14.4A8.4 8.4 0 0 1 9.6 3.8a8.4 8.4 0 1 0 10.6 10.6Z" />
+    </Line>
+  );
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2} {...props}>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </Line>
   );
 }

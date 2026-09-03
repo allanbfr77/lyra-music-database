@@ -122,6 +122,26 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 
 .header-spacer { flex: 1; }
 
+/* ---------------------------------------------------------- botão Voltar */
+
+.back-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  margin-right: 4px;
+  transition: color .15s ease, background .15s ease, border-color .15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.back-btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--bg-sunk); }
+.back-btn:active { transform: translateY(1px); }
+.back-btn svg { display: block; }
+
 /* ------------------------------------------------------- alternador de tema */
 
 .theme-toggle {
@@ -591,7 +611,7 @@ button.chip[data-active='true'] {
 .icon-btn:disabled { opacity: .35; cursor: default; }
 .icon-btn:disabled:active { transform: none; }
 
-:is(.icon-btn, .play-btn, .size-btn, .seg__item, .tab, .key-chip, .key-picker__step, .key-picker__cell, .theme-toggle):focus-visible {
+:is(.icon-btn, .play-btn, .size-btn, .seg__item, .tab, .key-chip, .key-picker__step, .key-picker__cell, .theme-toggle, .back-btn):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
