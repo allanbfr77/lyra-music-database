@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { normalizeKey } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import { parseYoutubeUrl } from '@/lib/youtube';
+import type { Instrumento } from '@/lib/types';
 
 export type SongPayload = {
   id?: string | null;
@@ -13,6 +14,7 @@ export type SongPayload = {
   artist: string;
   lyrics: string;
   chords: string;
+  chords_guitar: string;
   base_key: string;
   available_keys: string[];
   capo: number;
@@ -22,7 +24,7 @@ export type SongPayload = {
   youtube_url: string | null;
   notes: string | null;
   published: boolean;
-  overrides: { key: string; chords: string }[];
+  overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
 type Result = { ok: true; id: string; slug: string } | { ok: false; error: string };
@@ -62,6 +64,7 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       artist: payload.artist.trim(),
       lyrics: payload.lyrics ?? '',
       chords: payload.chords ?? '',
+      chords_guitar: payload.chords_guitar ?? '',
       base_key: baseKey,
       available_keys: Array.from(
         new Set([baseKey, ...payload.available_keys.map((k) => normalizeKey(k, '')).filter(Boolean)])
@@ -86,26 +89,35 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       songId = data.id as string;
     }
 
-    // Ajustes manuais de tom (modo híbrido)
+    // Ajustes manuais de tom (modo híbrido), independentes por instrumento
     const wanted = payload.overrides
-      .map((o) => ({ key: normalizeKey(o.key, ''), chords: o.chords }))
+      .map((o) => ({
+        key: normalizeKey(o.key, ''),
+        chords: o.chords,
+        instrumento: (o.instrumento === 'violao' ? 'violao' : 'teclado') as Instrumento,
+      }))
       .filter((o) => o.key && o.chords.trim().length > 0);
 
-    const { data: existing } = await supabase.from('song_key_overrides').select('id, key').eq('song_id', songId);
+    const { data: existing } = await supabase
+      .from('song_key_overrides')
+      .select('id, key, instrumento')
+      .eq('song_id', songId);
 
-    const keepKeys = new Set(wanted.map((o) => o.key));
-    const toDelete = (existing ?? []).filter((row) => !keepKeys.has(normalizeKey(row.key))).map((row) => row.id);
+    const pair = (key: string, instrumento?: string) =>
+      `${normalizeKey(key)}:${instrumento === 'violao' ? 'violao' : 'teclado'}`;
+    const keepKeys = new Set(wanted.map((o) => pair(o.key, o.instrumento)));
+    const toDelete = (existing ?? [])
+      .filter((row) => !keepKeys.has(pair(row.key as string, row.instrumento as string | undefined)))
+      .map((row) => row.id);
     if (toDelete.length) {
       await supabase.from('song_key_overrides').delete().in('id', toDelete);
     }
 
     if (wanted.length) {
-      const { error } = await supabase
-        .from('song_key_overrides')
-        .upsert(
-          wanted.map((o) => ({ song_id: songId, key: o.key, chords: o.chords })),
-          { onConflict: 'song_id,key' }
-        );
+      const { error } = await supabase.from('song_key_overrides').upsert(
+        wanted.map((o) => ({ song_id: songId, key: o.key, chords: o.chords, instrumento: o.instrumento })),
+        { onConflict: 'song_id,key,instrumento' }
+      );
       if (error) return { ok: false, error: translate(error.message) };
     }
 
@@ -141,6 +153,9 @@ function translate(message: string): string {
   }
   if (message.includes('youtube_url')) {
     return 'O banco ainda não tem o campo YouTube. Execute supabase/migrations/003_youtube_url.sql no SQL Editor do Supabase.';
+  }
+  if (message.includes('chords_guitar') || message.includes('instrumento')) {
+    return 'O banco ainda não tem a cifra de violão. Execute supabase/migrations/004_violao.sql no SQL Editor do Supabase.';
   }
   return message;
 }

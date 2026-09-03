@@ -6,20 +6,41 @@ import type { KeyOverride, Song } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
+const OVERRIDE_FULL = 'song_key_overrides(key, chords, instrumento)';
+const OVERRIDE_LEGACY = 'song_key_overrides(key, chords)';
+
 export default async function EditSongPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const extra = 'song_key_overrides(key, chords)';
-  let { data, error } = await supabase.from('songs').select(`${SONG_COLUMNS}, ${extra}`).eq('id', id).maybeSingle();
-  if (error && error.message.includes('youtube_url')) {
-    const legacy = SONG_COLUMNS.replace(', youtube_url', '');
-    ({ data, error } = await supabase.from('songs').select(`${legacy}, ${extra}`).eq('id', id).maybeSingle());
+  let columns = SONG_COLUMNS;
+  let extra = OVERRIDE_FULL;
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const result = await supabase.from('songs').select(`${columns}, ${extra}`).eq('id', id).maybeSingle();
+    data = result.data;
+    error = result.error;
+    if (!error) break;
+    if (error.message.includes('youtube_url') && columns.includes('youtube_url')) {
+      columns = columns.replace(', youtube_url', '');
+      continue;
+    }
+    if (error.message.includes('chords_guitar') && columns.includes('chords_guitar')) {
+      columns = columns.replace(', chords_guitar', '');
+      continue;
+    }
+    if (error.message.includes('instrumento') && extra.includes('instrumento')) {
+      extra = OVERRIDE_LEGACY;
+      continue;
+    }
+    break;
   }
 
   if (error || !data) notFound();
 
-  const song = data as Song & { song_key_overrides: Pick<KeyOverride, 'key' | 'chords'>[] };
+  const song = data as Song & { song_key_overrides: Pick<KeyOverride, 'key' | 'chords' | 'instrumento'>[] };
 
   const initial: EditorInitial = {
     id: song.id,
@@ -28,6 +49,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     artist: song.artist,
     lyrics: song.lyrics,
     chords: song.chords,
+    chords_guitar: song.chords_guitar ?? '',
     base_key: song.base_key,
     available_keys: song.available_keys ?? [],
     capo: song.capo ?? 0,
@@ -37,7 +59,11 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     youtube_url: song.youtube_url ?? null,
     notes: song.notes,
     published: song.published,
-    overrides: song.song_key_overrides ?? [],
+    overrides: (song.song_key_overrides ?? []).map((o) => ({
+      key: o.key,
+      chords: o.chords,
+      instrumento: o.instrumento === 'violao' ? 'violao' : 'teclado',
+    })),
   };
 
   return <SongEditor initial={initial} />;

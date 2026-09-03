@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { allKeysFor, keyToSlug, normalizeKey } from '@/lib/chords';
+import { allKeysFor, cifraPath, normalizeKey } from '@/lib/chords';
+import type { Instrumento } from '@/lib/types';
 import { ChevronDownIcon, UndoIcon } from '@/components/icons';
 
 function stepPublished(current: string, dir: 1 | -1, published: string[]): string {
@@ -28,6 +29,7 @@ export default function KeyBar({
   activeKey,
   baseKey,
   manualKeys = [],
+  instrumento = 'teclado',
   onSelect,
 }: {
   slug: string;
@@ -35,6 +37,7 @@ export default function KeyBar({
   activeKey: string;
   baseKey: string;
   manualKeys?: string[];
+  instrumento?: Instrumento;
   onSelect?: (key: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -118,7 +121,7 @@ export default function KeyBar({
 
           <div className="key-picker__grid">
             {ordered.map((key) => {
-              const href = `/musica/${slug}/cifra/${keyToSlug(key)}`;
+              const href = cifraPath(slug, key, instrumento);
               const active = key === activeKey;
               return (
                 <a

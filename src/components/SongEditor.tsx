@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
-import { allKeysFor, keyToSlug, normalizeKey, transposeChart } from '@/lib/chords';
+import { allKeysFor, cifraPath, normalizeKey, transposeChart } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
+import type { Instrumento } from '@/lib/types';
 import { ExternalLinkIcon, PencilIcon } from '@/components/icons';
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
@@ -19,6 +20,7 @@ export type EditorInitial = {
   artist: string;
   lyrics: string;
   chords: string;
+  chords_guitar: string;
   base_key: string;
   available_keys: string[];
   capo: number;
@@ -28,7 +30,7 @@ export type EditorInitial = {
   youtube_url: string | null;
   notes: string | null;
   published: boolean;
-  overrides: { key: string; chords: string }[];
+  overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
 const EMPTY: EditorInitial = {
@@ -38,6 +40,7 @@ const EMPTY: EditorInitial = {
   artist: '',
   lyrics: '',
   chords: '',
+  chords_guitar: '',
   base_key: 'G',
   available_keys: [],
   capo: 0,
@@ -60,6 +63,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [baseKey, setBaseKey] = useState(normalizeKey(initial.base_key, 'G'));
   const [lyrics, setLyrics] = useState(initial.lyrics);
   const [chords, setChords] = useState(initial.chords);
+  const [chordsGuitar, setChordsGuitar] = useState(initial.chords_guitar ?? '');
   const [availableKeys, setAvailableKeys] = useState<string[]>(
     (initial.available_keys ?? []).map((k) => normalizeKey(k, '')).filter(Boolean)
   );
@@ -73,11 +77,18 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [notes, setNotes] = useState(initial.notes ?? '');
   const [published, setPublished] = useState(initial.published);
 
-  const [overrides, setOverrides] = useState<Record<string, string>>(() =>
-    Object.fromEntries(initial.overrides.map((o) => [normalizeKey(o.key), o.chords]))
-  );
+  const [overridesByInst, setOverridesByInst] = useState<Record<Instrumento, Record<string, string>>>(() => {
+    const teclado: Record<string, string> = {};
+    const violao: Record<string, string> = {};
+    for (const o of initial.overrides) {
+      const inst: Instrumento = o.instrumento === 'violao' ? 'violao' : 'teclado';
+      (inst === 'violao' ? violao : teclado)[normalizeKey(o.key)] = o.chords;
+    }
+    return { teclado, violao };
+  });
 
   const [tab, setTab] = useState<'letra' | 'cifra'>('letra');
+  const [instrumentTab, setInstrumentTab] = useState<Instrumento>('teclado');
   const [tuningKey, setTuningKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -103,9 +114,21 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     setAvailableKeys(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
   }
 
+  const activeChords = instrumentTab === 'violao' ? chordsGuitar : chords;
+  const overrides = overridesByInst[instrumentTab];
+
+  function setActiveChords(value: string) {
+    if (instrumentTab === 'violao') setChordsGuitar(value);
+    else setChords(value);
+  }
+
+  function patchOverrides(updater: (prev: Record<string, string>) => Record<string, string>) {
+    setOverridesByInst((prev) => ({ ...prev, [instrumentTab]: updater(prev[instrumentTab]) }));
+  }
+
   const tunedChart =
     tuningKey !== null
-      ? overrides[tuningKey] ?? transposeChart(chords, normalizeKey(baseKey), tuningKey)
+      ? overrides[tuningKey] ?? transposeChart(activeChords, normalizeKey(baseKey), tuningKey)
       : '';
 
   async function onSave() {
@@ -120,6 +143,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       artist,
       lyrics,
       chords,
+      chords_guitar: chordsGuitar,
       base_key: normalizeKey(baseKey),
       available_keys: effectiveKeys,
       capo,
@@ -129,7 +153,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       youtube_url: youtubeUrl || null,
       notes: notes || null,
       published,
-      overrides: Object.entries(overrides).map(([key, value]) => ({ key, chords: value })),
+      overrides: (['teclado', 'violao'] as Instrumento[]).flatMap((inst) =>
+        Object.entries(overridesByInst[inst]).map(([key, value]) => ({ key, chords: value, instrumento: inst }))
+      ),
     };
 
     const result = await saveSong(payload);
@@ -299,18 +325,40 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </div>
       ) : (
         <div style={{ paddingTop: 16 }}>
+          <nav className="tabs" style={{ position: 'static', paddingTop: 0 }} aria-label="Instrumento da cifra">
+            <button
+              className="tab"
+              data-active={instrumentTab === 'teclado'}
+              onClick={() => setInstrumentTab('teclado')}
+              type="button"
+            >
+              Teclado
+            </button>
+            <button
+              className="tab"
+              data-active={instrumentTab === 'violao'}
+              onClick={() => setInstrumentTab('violao')}
+              type="button"
+            >
+              Violão
+            </button>
+          </nav>
+
           <label className="field">
-            <span className="field__label">Cifra no tom de {normalizeKey(baseKey)}</span>
+            <span className="field__label">
+              Cifra de {instrumentTab === 'violao' ? 'violão' : 'teclado'} no tom de {normalizeKey(baseKey)}
+            </span>
             <textarea
               className="textarea textarea--mono"
-              value={chords}
-              onChange={(e) => setChords(e.target.value)}
+              value={activeChords}
+              onChange={(e) => setActiveChords(e.target.value)}
               rows={16}
               spellCheck={false}
               placeholder={'[Intro] G  D  Em  C\n\nG            D/F#      Em\nTu és o Deus de toda a terra'}
             />
             <span className="field__hint">
-              Acordes em linhas próprias, acima da letra. Os demais tons saem daqui automaticamente.
+              Acordes em linhas próprias, acima da letra. Os demais tons deste instrumento saem daqui
+              automaticamente.
             </span>
           </label>
 
@@ -351,8 +399,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               })}
             </div>
             <span className="field__hint">
-              Cada tom marcado aparece na faixa “Tom” do site e ganha uma URL própria e permanente. O lápis
-              indica ajuste manual.
+              Cada tom marcado aparece na faixa “Tom” do site e ganha uma URL própria e permanente — a lista é
+              a mesma para teclado e violão. O lápis indica ajuste manual no instrumento selecionado.
             </span>
           </div>
 
@@ -375,7 +423,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                 ))}
             </select>
             <span className="field__hint">
-              Abre a transposição automática já pronta. Se você editar, aquele tom passa a usar sua versão.
+              Abre a transposição automática já pronta deste instrumento. Se você editar, aquele tom passa a
+              usar sua versão.
             </span>
           </div>
 
@@ -390,7 +439,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                     type="button"
                     className="btn btn--sm"
                     onClick={() =>
-                      setOverrides((prev) => {
+                      patchOverrides((prev) => {
                         const next = { ...prev };
                         delete next[tuningKey];
                         return next;
@@ -406,7 +455,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                 rows={14}
                 spellCheck={false}
                 value={tunedChart}
-                onChange={(e) => setOverrides((prev) => ({ ...prev, [tuningKey]: e.target.value }))}
+                onChange={(e) => patchOverrides((prev) => ({ ...prev, [tuningKey]: e.target.value }))}
               />
             </div>
           )}
@@ -421,7 +470,11 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           <>
             <Link
               className="btn"
-              href={chords.trim() ? `/musica/${effectiveSlug}/cifra/${keyToSlug(normalizeKey(baseKey))}` : `/musica/${effectiveSlug}`}
+              href={
+                (instrumentTab === 'violao' ? chordsGuitar : chords).trim()
+                  ? cifraPath(effectiveSlug, normalizeKey(baseKey), instrumentTab)
+                  : `/musica/${effectiveSlug}`
+              }
               target="_blank"
             >
               Ver no site

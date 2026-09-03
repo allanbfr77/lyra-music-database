@@ -1,3 +1,10 @@
+export type Instrumento = 'teclado' | 'violao';
+
+/** Query string / valor inválido vira teclado — o padrão de todos os links antigos. */
+export function parseInstrumento(value: string | null | undefined): Instrumento {
+  return value === 'violao' ? 'violao' : 'teclado';
+}
+
 export type Song = {
   id: string;
   slug: string;
@@ -5,6 +12,7 @@ export type Song = {
   artist: string;
   lyrics: string;
   chords: string;
+  chords_guitar: string;
   base_key: string;
   available_keys: string[];
   capo: number;
@@ -24,6 +32,7 @@ export type KeyOverride = {
   song_id: string;
   key: string;
   chords: string;
+  instrumento: Instrumento;
   created_at: string;
   updated_at: string;
 };

@@ -4,7 +4,7 @@
    - estáticos do Next: cache primeiro
    - API: sempre rede (dados precisam estar atuais)
 */
-const VERSION = 'lyra-v1';
+const VERSION = 'lyra-v2';
 const SHELL = `${VERSION}-shell`;
 const PAGES = `${VERSION}-pages`;
 

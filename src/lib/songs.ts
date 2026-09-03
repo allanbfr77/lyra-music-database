@@ -1,12 +1,15 @@
 import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/public';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
-import type { KeyOverride, SearchHit, Song } from '@/lib/types';
+import type { Instrumento, KeyOverride, SearchHit, Song } from '@/lib/types';
 
-export { chartForKey } from '@/lib/chords';
+export { availableInstruments, chartForKey, cifraPath } from '@/lib/chords';
 
 export const SONG_COLUMNS =
-  'id, slug, title, artist, lyrics, chords, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, created_at, updated_at';
+  'id, slug, title, artist, lyrics, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, created_at, updated_at';
+
+const OVERRIDE_COLUMNS = 'id, song_id, key, chords, instrumento, created_at, updated_at';
+const OVERRIDE_COLUMNS_LEGACY = 'id, song_id, key, chords, created_at, updated_at';
 
 export type SongWithOverrides = Song & { overrides: KeyOverride[] };
 
@@ -19,20 +22,67 @@ export function publishedKeys(song: Pick<Song, 'base_key' | 'available_keys'>): 
   return order.filter((k) => chosen.has(k));
 }
 
+function overrideInstrumento(value: string | null | undefined): Instrumento {
+  return value === 'violao' ? 'violao' : 'teclado';
+}
+
+function normalizeSongRow(
+  data: Song & { song_key_overrides: (KeyOverride & { instrumento?: string })[] }
+): SongWithOverrides {
+  const { song_key_overrides, ...song } = data;
+  const overrides: KeyOverride[] = (song_key_overrides ?? []).map((o) => ({
+    ...o,
+    instrumento: overrideInstrumento(o.instrumento),
+  }));
+  return {
+    ...song,
+    chords_guitar: song.chords_guitar ?? '',
+    youtube_url: song.youtube_url ?? null,
+    overrides,
+  };
+}
+
+function dropMissingColumn(
+  columns: string,
+  extra: string,
+  message: string
+): { columns: string; extra: string; changed: boolean } {
+  if (message.includes('youtube_url') && columns.includes('youtube_url')) {
+    return { columns: columns.replace(', youtube_url', ''), extra, changed: true };
+  }
+  if (message.includes('chords_guitar') && columns.includes('chords_guitar')) {
+    return { columns: columns.replace(', chords_guitar', ''), extra, changed: true };
+  }
+  if (message.includes('instrumento') && extra.includes('instrumento')) {
+    return { columns, extra: extra.replace(OVERRIDE_COLUMNS, OVERRIDE_COLUMNS_LEGACY), changed: true };
+  }
+  return { columns, extra, changed: false };
+}
+
 export const getSongBySlug = cache(async function getSongBySlug(slug: string): Promise<SongWithOverrides | null> {
   const supabase = createPublicClient();
-  const extra = 'song_key_overrides(id, song_id, key, chords, created_at, updated_at)';
-  let { data, error } = await supabase.from('songs').select(`${SONG_COLUMNS}, ${extra}`).eq('slug', slug).maybeSingle();
+  let columns = SONG_COLUMNS;
+  let extra = OVERRIDE_COLUMNS;
 
-  // Banco ainda sem a migração 003: lê o restante da música sem o YouTube.
-  if (error && error.message.includes('youtube_url')) {
-    const legacy = SONG_COLUMNS.replace(', youtube_url', '');
-    ({ data, error } = await supabase.from('songs').select(`${legacy}, ${extra}`).eq('slug', slug).maybeSingle());
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const { data, error } = await supabase
+      .from('songs')
+      .select(`${columns}, song_key_overrides(${extra})`)
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (!error && data) {
+      return normalizeSongRow(data as unknown as Song & { song_key_overrides: KeyOverride[] });
+    }
+    if (!error) return null;
+
+    const next = dropMissingColumn(columns, extra, error.message);
+    if (!next.changed) return null;
+    columns = next.columns;
+    extra = next.extra;
   }
 
-  if (error || !data) return null;
-  const { song_key_overrides, ...song } = data as Song & { song_key_overrides: KeyOverride[] };
-  return { ...song, youtube_url: song.youtube_url ?? null, overrides: song_key_overrides ?? [] };
+  return null;
 });
 
 /** `weights`: A = título, B = artista, C = letra. "ABC" procura em tudo. */

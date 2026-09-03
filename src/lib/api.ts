@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { siteUrl } from '@/lib/env';
-import { keyToSlug, normalizeKey } from '@/lib/chords';
+import { availableInstruments, cifraPath, keyToSlug, normalizeKey } from '@/lib/chords';
 import { chartForKey, publishedKeys, type SongWithOverrides } from '@/lib/songs';
-import type { SearchHit } from '@/lib/types';
+import type { Instrumento, SearchHit } from '@/lib/types';
 
 export const API_VERSION = 'v1';
 
@@ -43,8 +43,13 @@ export function songUrl(slug: string) {
   return `${siteUrl()}/musica/${slug}`;
 }
 
-export function chordUrl(slug: string, key: string) {
-  return `${siteUrl()}/musica/${slug}/cifra/${keyToSlug(key)}`;
+export function chordUrl(slug: string, key: string, instrumento: Instrumento = 'teclado') {
+  return `${siteUrl()}${cifraPath(slug, key, instrumento)}`;
+}
+
+function chordsApiUrl(slug: string, key: string, instrumento: Instrumento) {
+  const path = `${siteUrl()}/api/${API_VERSION}/songs/${slug}/chords/${keyToSlug(key)}`;
+  return instrumento === 'violao' ? `${path}?instrumento=violao` : path;
 }
 
 /** Resultado de busca no formato consumido pelo Lyra. */
@@ -68,10 +73,20 @@ export function mapSearchHit(hit: SearchHit) {
 }
 
 /** Música completa, pronta para o Lyra importar para a biblioteca local. */
-export function mapSong(song: SongWithOverrides, options: { includeAllKeys: boolean }) {
+export function mapSong(
+  song: SongWithOverrides,
+  options: { includeAllKeys: boolean; instrumento?: Instrumento }
+) {
+  const instrumento = options.instrumento ?? 'teclado';
+  const instrumentos = availableInstruments(song, song.overrides);
   const baseKey = normalizeKey(song.base_key);
   const keys = publishedKeys(song);
-  const manual = new Set(song.overrides.map((o) => normalizeKey(o.key)));
+  const baseChords = instrumento === 'violao' ? (song.chords_guitar ?? '') : song.chords;
+  const manual = new Set(
+    song.overrides
+      .filter((o) => (o.instrumento ?? 'teclado') === instrumento)
+      .map((o) => normalizeKey(o.key))
+  );
 
   return {
     format: 'lyra.song.v1',
@@ -88,15 +103,17 @@ export function mapSong(song: SongWithOverrides, options: { includeAllKeys: bool
     youtube_url: song.youtube_url,
     notes: song.notes,
     lyrics: song.lyrics,
-    chords: song.chords || null,
-    has_chords: Boolean(song.chords.trim()),
+    instrumento,
+    instrumentos,
+    chords: baseChords || null,
+    has_chords: Boolean(baseChords.trim()),
     keys: keys.map((key) => ({
       key,
       key_slug: keyToSlug(key),
       source: manual.has(key) ? ('manual' as const) : ('auto' as const),
-      url: chordUrl(song.slug, key),
-      api_url: `${siteUrl()}/api/${API_VERSION}/songs/${song.slug}/chords/${keyToSlug(key)}`,
-      ...(options.includeAllKeys ? { chords: chartForKey(song, song.overrides, key).chart } : {}),
+      url: chordUrl(song.slug, key, instrumento),
+      api_url: chordsApiUrl(song.slug, key, instrumento),
+      ...(options.includeAllKeys ? { chords: chartForKey(song, song.overrides, key, instrumento).chart } : {}),
     })),
     url: songUrl(song.slug),
     created_at: song.created_at,

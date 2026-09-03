@@ -27,6 +27,7 @@ export async function GET() {
       song: `${base}/songs/{slug}`,
       song_with_all_keys: `${base}/songs/{slug}?include=all_keys`,
       chords_in_key: `${base}/songs/{slug}/chords/{key_slug}`,
+      guitar_chords: `${base}/songs/{slug}/chords/{key_slug}?instrumento=violao`,
       sync: `${base}/sync?since={iso8601}&limit={1-500}`,
     },
     key_slugs: {

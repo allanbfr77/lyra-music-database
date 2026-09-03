@@ -3,7 +3,10 @@
  */
 import {
   allKeysFor,
+  availableInstruments,
+  chartForKey,
   chartToLyrics,
+  cifraPath,
   keyToSlug,
   parseChart,
   slugToKey,
@@ -70,6 +73,31 @@ check(
   'letra extraída da cifra',
   chartToLyrics(chart),
   'Tu és o Deus de toda a terra\nEm teu nome eu vou vencer'
+);
+
+console.log('\nInstrumentos');
+const song = { chords: 'G  D', chords_guitar: 'C  G', base_key: 'G' };
+check('URL de teclado sem sufixo', cifraPath('galileu', 'A'), '/musica/galileu/cifra/a');
+check('URL de violão com sufixo', cifraPath('galileu', 'A', 'violao'), '/musica/galileu/cifra/a/violao');
+check(
+  'chartForKey teclado ignora override de violão',
+  chartForKey(song, [{ key: 'A', chords: 'A  E  (violao)', instrumento: 'violao' }], 'A').chart,
+  'A  E'
+);
+check(
+  'chartForKey violão usa cifra de guitarra',
+  chartForKey(song, [], 'A', 'violao').chart,
+  'D  A'
+);
+check(
+  'instrumentos disponíveis',
+  availableInstruments(song, []),
+  ['teclado', 'violao']
+);
+check(
+  'sem cifra de violão não lista violão',
+  availableInstruments({ chords: 'G', chords_guitar: '' }, []),
+  ['teclado']
 );
 
 console.log(failures === 0 ? '\n✅ Todos os testes passaram.\n' : `\n❌ ${failures} teste(s) falharam.\n`);

@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import ChordView from '@/components/ChordView';
-import { availableInstruments, cifraPath, slugToKey } from '@/lib/chords';
+import { cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
-import { resolveChordPage } from './resolve';
+import { resolveChordPage } from '../resolve';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +19,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) return { title: 'Música não encontrada' };
 
-  const title = `${song.title} — Cifra em ${key}`;
-  const description = `Cifra de ${song.title}${song.artist ? ` (${song.artist})` : ''} no tom de ${key}.`;
-  const url = cifraPath(song.slug, key, 'teclado');
+  const title = `${song.title} — Cifra de violão em ${key}`;
+  const description = `Cifra de violão de ${song.title}${song.artist ? ` (${song.artist})` : ''} no tom de ${key}.`;
+  const url = cifraPath(song.slug, key, 'violao');
 
   return {
     title,
@@ -32,12 +31,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function ChordPage({ params, searchParams }: Params) {
+export default async function GuitarChordPage({ params, searchParams }: Params) {
   const { slug, tom } = await params;
   const askedTom = (await searchParams).tom;
-  const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'teclado', askedTom);
-
-  if (!availableInstruments(song, song.overrides).includes('teclado')) notFound();
+  const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'violao', askedTom);
 
   const { overrides, ...publicSong } = song;
   const notice = removedKey ? (
@@ -52,7 +49,7 @@ export default async function ChordPage({ params, searchParams }: Params) {
       keys={keys}
       overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
       initialKey={key}
-      instrumento="teclado"
+      instrumento="violao"
       notice={notice}
     />
   );

@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SongHeader from '@/components/SongHeader';
+import SongControlPanel from '@/components/SongControlPanel';
 import SongTabs from '@/components/SongTabs';
 import Reader from '@/components/Reader';
 import { getSongBySlug } from '@/lib/songs';
-import { chartToLyrics, keyToSlug, normalizeKey } from '@/lib/chords';
+import { availableInstruments, chartToLyrics, keyToSlug, normalizeKey } from '@/lib/chords';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,23 +36,37 @@ export default async function LyricsPage({ params }: Params) {
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
 
-  const hasChords = song.chords.trim().length > 0;
-  const lyrics = song.lyrics.trim() || (hasChords ? chartToLyrics(song.chords) : '');
+  const instruments = availableInstruments(song, song.overrides);
+  const hasChords = instruments.length > 0;
+  const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
+  const lyrics = song.lyrics.trim() || (song.chords.trim() ? chartToLyrics(song.chords) : '');
 
   return (
     <>
       <SiteHeader />
       <main className="shell">
         <SongHeader song={song} />
-        <SongTabs slug={song.slug} active="letra" hasChords={hasChords} chordKeySlug={keyToSlug(normalizeKey(song.base_key))} />
-        {lyrics ? (
-          <Reader mode="lyrics" text={lyrics} shareTitle={`${song.title} — ${song.artist}`} />
-        ) : (
-          <div className="empty">
-            <strong>Letra ainda não cadastrada</strong>
-            <span className="small">Esta música foi cadastrada sem letra.</span>
-          </div>
-        )}
+        <SongControlPanel
+          shareTitle={`${song.title} — ${song.artist}`}
+          tabs={
+            <SongTabs
+              slug={song.slug}
+              active="letra"
+              hasChords={hasChords}
+              chordKeySlug={keyToSlug(normalizeKey(song.base_key))}
+              instrumento={defaultInstrument}
+            />
+          }
+        >
+          {lyrics ? (
+            <Reader mode="lyrics" text={lyrics} />
+          ) : (
+            <div className="empty">
+              <strong>Letra ainda não cadastrada</strong>
+              <span className="small">Esta música foi cadastrada sem letra.</span>
+            </div>
+          )}
+        </SongControlPanel>
       </main>
     </>
   );

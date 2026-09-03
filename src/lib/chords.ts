@@ -206,16 +206,43 @@ export function transposeChart(chart: string, fromKey: string, toKey: string): s
 /**
  * Cifra de uma música num tom específico.
  * Usa a versão manual se existir (modo híbrido); senão transpõe a cifra base.
+ * `instrumento` escolhe a cifra de teclado ou de violão (padrão: teclado).
  */
 export function chartForKey(
-  song: { chords: string; base_key: string },
-  overrides: { key: string; chords: string }[],
-  key: string
+  song: { chords: string; chords_guitar?: string; base_key: string },
+  overrides: { key: string; chords: string; instrumento?: 'teclado' | 'violao' }[],
+  key: string,
+  instrumento: 'teclado' | 'violao' = 'teclado'
 ): { chart: string; source: 'manual' | 'auto' } {
   const target = normalizeKey(key);
-  const manual = overrides.find((o) => normalizeKey(o.key) === target);
+  const inst = instrumento === 'violao' ? 'violao' : 'teclado';
+  const manual = overrides.find(
+    (o) => normalizeKey(o.key) === target && (o.instrumento ?? 'teclado') === inst
+  );
   if (manual && manual.chords.trim()) return { chart: manual.chords, source: 'manual' };
-  return { chart: transposeChart(song.chords ?? '', normalizeKey(song.base_key), target), source: 'auto' };
+  const base = inst === 'violao' ? (song.chords_guitar ?? '') : (song.chords ?? '');
+  return { chart: transposeChart(base, normalizeKey(song.base_key), target), source: 'auto' };
+}
+
+/** URL pública da cifra. Teclado não leva sufixo — links antigos continuam válidos. */
+export function cifraPath(slug: string, key: string, instrumento: 'teclado' | 'violao' = 'teclado'): string {
+  const path = `/musica/${slug}/cifra/${keyToSlug(key)}`;
+  return instrumento === 'violao' ? `${path}/violao` : path;
+}
+
+/** Quais instrumentos têm cifra (base ou ajuste manual) nesta música. */
+export function availableInstruments(
+  song: { chords?: string | null; chords_guitar?: string | null },
+  overrides: { chords: string; instrumento?: 'teclado' | 'violao' }[] = []
+): Array<'teclado' | 'violao'> {
+  const list: Array<'teclado' | 'violao'> = [];
+  if ((song.chords ?? '').trim()) list.push('teclado');
+  const hasGuitarBase = Boolean((song.chords_guitar ?? '').trim());
+  const hasGuitarOverride = overrides.some(
+    (o) => (o.instrumento ?? 'teclado') === 'violao' && o.chords.trim()
+  );
+  if (hasGuitarBase || hasGuitarOverride) list.push('violao');
+  return list;
 }
 
 /** Lista única de acordes usados, na ordem em que aparecem. */

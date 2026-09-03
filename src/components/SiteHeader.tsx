@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { MusicNoteIcon } from '@/components/icons';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function SiteHeader({ right }: { right?: React.ReactNode }) {
@@ -8,7 +7,20 @@ export default function SiteHeader({ right }: { right?: React.ReactNode }) {
       <div className="site-header__inner">
         <Link href="/" className="brand">
           <span className="brand__mark">
-            <MusicNoteIcon size={15} />
+            <img
+              className="brand__logo brand__logo--dark"
+              src="/icons/icon-64.png"
+              alt=""
+              width={26}
+              height={26}
+            />
+            <img
+              className="brand__logo brand__logo--light"
+              src="/icons/icon-192-light.png"
+              alt=""
+              width={26}
+              height={26}
+            />
           </span>
           <span>
             Lyra <span className="brand__sub">banco de músicas</span>

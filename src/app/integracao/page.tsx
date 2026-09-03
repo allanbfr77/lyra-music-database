@@ -74,14 +74,19 @@ export default function IntegrationPage() {
         <Endpoint method="GET" path="/api/v1/songs/{slug}">
           Música completa: letra, cifra base, tom original, capotraste e a lista de tons com o link de cada um.
           Acrescente <code>?include=all_keys</code> para receber a cifra já transposta em todos os tons — uma
-          requisição só, pronta para gravar na biblioteca local.
-          <pre style={box}>{`${base}/api/v1/songs/galileu?include=all_keys`}</pre>
+          requisição só, pronta para gravar na biblioteca local. O padrão é a cifra de teclado; use{' '}
+          <code>?instrumento=violao</code> para a de violão. A resposta traz <code>instrumentos</code> com as
+          versões cadastradas.
+          <pre style={box}>{`${base}/api/v1/songs/galileu?include=all_keys
+${base}/api/v1/songs/galileu?instrumento=violao`}</pre>
         </Endpoint>
 
         <Endpoint method="GET" path="/api/v1/songs/{slug}/chords/{tom}">
           Cifra num tom específico. O tom vai em minúsculo: <code>a</code>, <code>bb</code>, <code>cs</code>,{' '}
-          <code>fsm</code>.
-          <pre style={box}>{`${base}/api/v1/songs/galileu/chords/a`}</pre>
+          <code>fsm</code>. Sem parâmetro, devolve teclado; <code>?instrumento=violao</code> pede a cifra de
+          violão.
+          <pre style={box}>{`${base}/api/v1/songs/galileu/chords/a
+${base}/api/v1/songs/galileu/chords/a?instrumento=violao`}</pre>
         </Endpoint>
 
         <Endpoint method="GET" path="/api/v1/sync?since={data}">
@@ -95,10 +100,11 @@ export default function IntegrationPage() {
           Todo conteúdo também tem página pública e permanente — dá para favoritar e compartilhar sem login.
         </p>
         <pre style={box}>{`${base}/musica/galileu            → letra
-${base}/musica/galileu/cifra      → cifra no tom original
-${base}/musica/galileu/cifra/a    → cifra em A
-${base}/musica/galileu/cifra/bb   → cifra em Bb
-${base}/musica/galileu/cifra/fsm  → cifra em F#m`}</pre>
+${base}/musica/galileu/cifra      → cifra de teclado no tom original
+${base}/musica/galileu/cifra/a    → cifra de teclado em A
+${base}/musica/galileu/cifra/a/violao → cifra de violão em A
+${base}/musica/galileu/cifra/bb   → cifra de teclado em Bb
+${base}/musica/galileu/cifra/fsm  → cifra de teclado em F#m`}</pre>
 
         <div className="section-title">Formato da cifra</div>
         <p className="muted small">
