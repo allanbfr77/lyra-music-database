@@ -70,8 +70,9 @@ export default function KeyBar({
 
   if (published.length < 2) return null;
 
-  function choose(next: string) {
+  function choose(next: string, keepOpen = false) {
     onSelect?.(next);
+    if (!keepOpen) setOpen(false);
   }
 
   return (
@@ -103,10 +104,10 @@ export default function KeyBar({
             >
               <UndoIcon size={16} />
             </button>
-            <button type="button" className="key-picker__step" onClick={() => choose(stepPublished(activeKey, -1, published))}>
+            <button type="button" className="key-picker__step" onClick={() => choose(stepPublished(activeKey, -1, published), true)}>
               −1/2 tom
             </button>
-            <button type="button" className="key-picker__step" onClick={() => choose(stepPublished(activeKey, 1, published))}>
+            <button type="button" className="key-picker__step" onClick={() => choose(stepPublished(activeKey, 1, published), true)}>
               +1/2 tom
             </button>
             <button
