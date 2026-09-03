@@ -1,0 +1,42 @@
+import { API_VERSION, json, preflight } from '@/lib/api';
+import { siteUrl } from '@/lib/env';
+import { countSongs } from '@/lib/songs';
+
+export const dynamic = 'force-dynamic';
+
+/** Documento de descoberta: o Lyra aponta para cá e aprende o resto sozinho. */
+export async function GET() {
+  const base = `${siteUrl()}/api/${API_VERSION}`;
+  let songs: number | null = null;
+  try {
+    songs = await countSongs();
+  } catch {
+    songs = null;
+  }
+
+  return json({
+    name: 'Banco de Músicas do Lyra',
+    provider: 'lyra-songbank',
+    api_version: API_VERSION,
+    format: 'lyra.song.v1',
+    auth: 'none',
+    site_url: siteUrl(),
+    song_count: songs,
+    endpoints: {
+      search: `${base}/songs?q={termo}&limit={1-100}&offset={n}`,
+      song: `${base}/songs/{slug}`,
+      song_with_all_keys: `${base}/songs/{slug}?include=all_keys`,
+      chords_in_key: `${base}/songs/{slug}/chords/{key_slug}`,
+      sync: `${base}/sync?since={iso8601}&limit={1-500}`,
+    },
+    key_slugs: {
+      description: 'Tom em minúsculo; # vira "s", bemol vira "b", menor recebe "m" no fim.',
+      examples: { A: 'a', 'C#': 'cs', Bb: 'bb', 'F#m': 'fsm' },
+    },
+    search_fields: ['title', 'artist', 'lyrics'],
+  });
+}
+
+export async function OPTIONS() {
+  return preflight();
+}
