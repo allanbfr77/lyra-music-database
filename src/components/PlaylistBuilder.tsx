@@ -53,6 +53,10 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
     });
   }
 
+  function clear() {
+    persist([]);
+  }
+
   const addedSlugs = useMemo(() => new Set(items.map((item) => item.slug)), [items]);
   const catalog = useMemo(() => {
     const q = fold(query.trim());
@@ -67,8 +71,15 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
         Monte a ordem das músicas. Depois abra uma cifra para avançar ou voltar nesta sequência.
       </p>
 
-      <div className="section-title">
-        {items.length === 0 ? 'Nenhuma música na playlist' : `${items.length} na playlist`}
+      <div className="playlist-page__head">
+        <div className="section-title" style={{ margin: 0 }}>
+          {items.length === 0 ? 'Nenhuma música na playlist' : `${items.length} na playlist`}
+        </div>
+        {items.length > 0 ? (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={clear}>
+            Limpar
+          </button>
+        ) : null}
       </div>
 
       {items.length === 0 ? (

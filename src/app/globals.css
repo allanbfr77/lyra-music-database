@@ -90,7 +90,7 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   padding: 0 16px calc(56px + env(safe-area-inset-bottom));
 }
 .shell--fab {
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  padding-bottom: calc(74px + env(safe-area-inset-bottom));
 }
 
 .site-header {
@@ -758,8 +758,8 @@ button.chip[data-active='true'] {
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 28;
-  width: 56px;
-  height: 56px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   background: var(--accent);
   color: var(--on-accent);
@@ -772,6 +772,13 @@ button.chip[data-active='true'] {
 
 .playlist-page { padding-top: 18px; }
 .playlist-page__title { font-size: 22px; margin-bottom: 6px; }
+.playlist-page__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 10px;
+}
 
 .playlist-list,
 .playlist-catalog {
