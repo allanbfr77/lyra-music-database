@@ -595,6 +595,7 @@ button.chip[data-active='true'] {
   border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
   border-radius: var(--radius-sm);
 }
+button.key-picker__cell { font: inherit; cursor: pointer; }
 .key-picker__cell[data-active='true'] {
   background: var(--text); border-color: var(--text); color: var(--bg);
 }
@@ -794,6 +795,15 @@ button.chip[data-active='true'] {
   gap: 10px;
   padding: 10px 0;
   min-height: 56px;
+}
+.playlist-item { position: relative; }
+.playlist-key { position: relative; flex: none; }
+.playlist-key .key-picker {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  width: min(320px, calc(100vw - 32px));
 }
 
 .playlist-item__link {

@@ -10,8 +10,15 @@ export type PlaylistItem = {
   title: string;
   artist: string;
   base_key: string;
+  /** Tom escolhido só nesta playlist. Sem valor = tom original. */
+  playlist_key?: string;
+  available_keys?: string[];
   has_chords: boolean;
 };
+
+export function itemPlaylistKey(item: PlaylistItem) {
+  return normalizeKey(item.playlist_key || item.base_key);
+}
 
 export function isPlaylistQuery(value: string | null | undefined) {
   return value === '1';
@@ -22,12 +29,15 @@ export function playlistQuery(inPlaylist: boolean) {
 }
 
 export function itemFromHit(song: SearchHit): PlaylistItem {
+  const base = normalizeKey(song.base_key);
   return {
     id: song.id,
     slug: song.slug,
     title: song.title,
     artist: song.artist,
-    base_key: song.base_key,
+    base_key: base,
+    playlist_key: base,
+    available_keys: song.available_keys ?? [],
     has_chords: song.has_chords,
   };
 }
@@ -35,7 +45,7 @@ export function itemFromHit(song: SearchHit): PlaylistItem {
 export function playlistSongHref(item: PlaylistItem) {
   const suffix = playlistQuery(true);
   if (!item.has_chords) return `/musica/${item.slug}${suffix}`;
-  return `${cifraPath(item.slug, normalizeKey(item.base_key))}${suffix}`;
+  return `${cifraPath(item.slug, itemPlaylistKey(item))}${suffix}`;
 }
 
 export function readPlaylist(): PlaylistItem[] {
@@ -45,7 +55,14 @@ export function readPlaylist(): PlaylistItem[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as PlaylistItem[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item && typeof item.slug === 'string' && typeof item.title === 'string');
+    return parsed
+      .filter((item) => item && typeof item.slug === 'string' && typeof item.title === 'string')
+      .map((item) => ({
+        ...item,
+        base_key: normalizeKey(item.base_key),
+        playlist_key: itemPlaylistKey(item),
+        available_keys: item.available_keys ?? [],
+      }));
   } catch {
     return [];
   }

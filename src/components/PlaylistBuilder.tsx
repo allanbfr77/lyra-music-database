@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/icons';
+import { CheckIcon, ChevronDownIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/icons';
+import { normalizeKey } from '@/lib/chords';
+import { publishedKeys } from '@/lib/songs';
 import {
   itemFromHit,
+  itemPlaylistKey,
   playlistSongHref,
   readPlaylist,
   writePlaylist,
@@ -57,6 +60,14 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
     persist([]);
   }
 
+  function setKey(slug: string, key: string) {
+    setItems((current) => {
+      const next = current.map((item) => (item.slug === slug ? { ...item, playlist_key: key } : item));
+      writePlaylist(next);
+      return next;
+    });
+  }
+
   const addedSlugs = useMemo(() => new Set(items.map((item) => item.slug)), [items]);
   const catalog = useMemo(() => {
     const q = fold(query.trim());
@@ -68,7 +79,7 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
     <div className="playlist-page">
       <h1 className="playlist-page__title">Playlist</h1>
       <p className="muted small" style={{ marginTop: 0 }}>
-        Monte a ordem das músicas. Depois abra uma cifra para avançar ou voltar nesta sequência.
+        Monte a ordem e, se quiser, toque no tom de cada música para mudar só nesta playlist.
       </p>
 
       <div className="playlist-page__head">
@@ -98,6 +109,11 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
                   <span className="song-item__artist">{item.artist || 'Sem artista'}</span>
                 </span>
               </Link>
+              <PlaylistKeyChip
+                item={item}
+                fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
+                onChange={(key) => setKey(item.slug, key)}
+              />
               <button
                 type="button"
                 className="icon-btn"
@@ -164,6 +180,89 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+function PlaylistKeyChip({
+  item,
+  fallbackKeys,
+  onChange,
+}: {
+  item: PlaylistItem;
+  fallbackKeys?: string[];
+  onChange: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const pickerId = useId();
+  const active = itemPlaylistKey(item);
+  const keys = publishedKeys({
+    base_key: item.base_key,
+    available_keys: item.available_keys?.length ? item.available_keys : fallbackKeys ?? [],
+  });
+  const canChange = item.has_chords && keys.length > 1;
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: MouseEvent) {
+      if (root.current && !root.current.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  if (!canChange) {
+    return (
+      <span className="key-chip" title="Tom original">
+        {active}
+      </span>
+    );
+  }
+
+  return (
+    <div className="playlist-key" ref={root}>
+      <button
+        type="button"
+        className="key-chip key-chip--trigger"
+        data-active="true"
+        aria-expanded={open}
+        aria-controls={pickerId}
+        aria-label={`Tom ${active}. Toque para alterar nesta playlist`}
+        title="Toque para alterar o tom nesta playlist"
+        onClick={() => setOpen((v) => !v)}
+      >
+        {active}
+        <ChevronDownIcon size={14} />
+      </button>
+      {open ? (
+        <div className="key-picker" id={pickerId} role="dialog" aria-label="Escolher tom da playlist">
+          <div className="key-picker__grid">
+            {keys.map((key) => (
+              <button
+                key={key}
+                type="button"
+                className="key-picker__cell"
+                data-active={key === active}
+                aria-current={key === active ? 'true' : undefined}
+                onClick={() => {
+                  onChange(key);
+                  setOpen(false);
+                }}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
