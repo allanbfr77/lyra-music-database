@@ -48,10 +48,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/login' && user) {
-    const admin = request.nextUrl.clone();
-    admin.pathname = '/admin';
-    admin.search = '';
-    return NextResponse.redirect(admin);
+    const next = request.nextUrl.searchParams.get('next');
+    const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/playlist';
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
   return response;

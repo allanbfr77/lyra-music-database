@@ -3,9 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
-import { neighborsInPlaylist, playlistSongHref, readPlaylist, type PlaylistItem } from '@/lib/playlist';
+import { neighborsInPlaylist, playlistItemHref, readPlaylist, type PlaylistItem } from '@/lib/playlist';
 
-export default function PlaylistNav({ slug }: { slug: string }) {
+export default function PlaylistNav({
+  slug,
+  mode = 'cifra',
+}: {
+  slug: string;
+  mode?: 'slides' | 'cifra';
+}) {
   const [items, setItems] = useState<PlaylistItem[]>([]);
 
   useEffect(() => {
@@ -18,13 +24,13 @@ export default function PlaylistNav({ slug }: { slug: string }) {
   return (
     <nav className="playlist-nav no-print" aria-label="Navegação da playlist">
       {prev ? (
-        <Link href={playlistSongHref(prev)} className="btn playlist-nav__btn">
+        <Link href={playlistItemHref(prev, mode)} className="btn playlist-nav__btn">
           <ChevronLeftIcon size={18} />
           Anterior
         </Link>
       ) : null}
       {next ? (
-        <Link href={playlistSongHref(next)} className="btn btn--primary playlist-nav__btn">
+        <Link href={playlistItemHref(next, mode)} className="btn btn--primary playlist-nav__btn">
           Próximo
           <ChevronRightIcon size={18} />
         </Link>

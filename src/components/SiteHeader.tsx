@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import HeaderTools from '@/components/HeaderTools';
 import { ChevronLeftIcon } from '@/components/icons';
-import { getAuthUser } from '@/lib/auth';
+import { accountLabelFromEmail, getAuthUser } from '@/lib/auth';
 
 export default async function SiteHeader({
   left,
@@ -43,12 +43,10 @@ export default async function SiteHeader({
                 height={26}
               />
             </span>
-            <span>
-              Lyra <span className="brand__sub">banco de músicas</span>
-            </span>
+            <span className="brand__name">Lyra</span>
           </Link>
         </div>
-        <HeaderTools signedIn={signedIn} email={user?.email ?? ''} />
+        <HeaderTools signedIn={signedIn} accountLabel={accountLabelFromEmail(user?.email)} />
       </div>
     </header>
   );

@@ -14,12 +14,15 @@ export default function LoginForm({ next }: { next: string }) {
       {state.error && <div className="alert alert--error">{state.error}</div>}
 
       <label className="field">
-        <span className="field__label">E-mail</span>
+        <span className="field__label">Nome</span>
         <input
           className="input"
-          type="email"
-          name="email"
+          type="text"
+          name="login"
           autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
         />
       </label>

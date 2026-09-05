@@ -1,4 +1,5 @@
 import { cifraPath, normalizeKey } from '@/lib/chords';
+import { slidesPath } from '@/lib/slides';
 import type { SearchHit } from '@/lib/types';
 
 export const PLAYLIST_QUERY = 'pl';
@@ -46,6 +47,15 @@ export function playlistSongHref(item: PlaylistItem) {
   const suffix = playlistQuery(true);
   if (!item.has_chords) return `/musica/${item.slug}${suffix}`;
   return `${cifraPath(item.slug, itemPlaylistKey(item))}${suffix}`;
+}
+
+/** No culto, a música abre direto nos slides e volta com ?pl=1. */
+export function playlistSlidesHref(item: PlaylistItem) {
+  return `${slidesPath(item.slug)}${playlistQuery(true)}`;
+}
+
+export function playlistItemHref(item: PlaylistItem, mode: 'slides' | 'cifra' = 'cifra') {
+  return mode === 'slides' ? playlistSlidesHref(item) : playlistSongHref(item);
 }
 
 export function readPlaylist(): PlaylistItem[] {

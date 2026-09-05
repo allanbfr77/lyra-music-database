@@ -1,25 +1,31 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { resolveLoginEmail, safeNextPath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export type SignInState = { error: string | null };
 
 export async function signIn(_prev: SignInState, formData: FormData): Promise<SignInState> {
-  const email = String(formData.get('email') ?? '').trim();
+  const login = String(formData.get('login') ?? '');
   const password = String(formData.get('password') ?? '');
-  const nextRaw = String(formData.get('next') ?? '/admin');
-  const next = nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/admin';
+  const next = safeNextPath(String(formData.get('next') ?? ''));
 
-  if (!email || !password) return { error: 'Informe e-mail e senha.' };
+  if (!password) return { error: 'Informe o nome e a senha.' };
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const resolved = await resolveLoginEmail(supabase, login);
+    if ('error' in resolved) return { error: resolved.error };
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: resolved.email,
+      password,
+    });
     if (error) {
       return {
         error:
-          error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message,
+          error.message === 'Invalid login credentials' ? 'Nome ou senha incorretos.' : error.message,
       };
     }
   } catch (err) {

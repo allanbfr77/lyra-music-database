@@ -253,7 +253,8 @@ export default function ChordView({
           </p>
         ) : null}
       </SongControlPanel>
-      {inPlaylist && tab === 'cifra' ? <PlaylistNav slug={song.slug} /> : null}
+      {inPlaylist && tab === 'cifra' ? <PlaylistNav slug={song.slug} mode="cifra" /> : null}
+      {inPlaylist && tab === 'slides' ? <PlaylistNav slug={song.slug} mode="slides" /> : null}
     </>
   );
 }

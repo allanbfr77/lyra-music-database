@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckIcon, ChevronDownIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/icons';
-import { normalizeKey } from '@/lib/chords';
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { publishedKeys } from '@/lib/songs';
 import {
   itemFromHit,
   itemPlaylistKey,
-  playlistSongHref,
+  playlistItemHref,
   readPlaylist,
   writePlaylist,
   type PlaylistItem,
 } from '@/lib/playlist';
 import type { SearchHit } from '@/lib/types';
+
+const MOVE_MS = 220;
 
 function fold(text: string) {
   return text
@@ -22,14 +23,111 @@ function fold(text: string) {
     .toLocaleLowerCase('pt-BR');
 }
 
-export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
+function playlistRows(list: HTMLOListElement | null) {
+  if (!list) return [] as HTMLLIElement[];
+  return Array.from(list.querySelectorAll<HTMLLIElement>(':scope > [data-slug]'));
+}
+
+function readRowTops(list: HTMLOListElement | null) {
+  const tops = new Map<string, number>();
+  for (const el of playlistRows(list)) {
+    const slug = el.dataset.slug;
+    if (slug) tops.set(slug, el.getBoundingClientRect().top);
+  }
+  return tops;
+}
+
+function clearRowMotion(list: HTMLOListElement | null) {
+  for (const el of playlistRows(list)) {
+    el.style.transition = 'none';
+    el.style.transform = '';
+    el.classList.remove('playlist-item--moving', 'playlist-item--settling');
+  }
+}
+
+export default function PlaylistBuilder({
+  songs,
+  cultoMode = false,
+  isAdmin = false,
+}: {
+  songs: SearchHit[];
+  cultoMode?: boolean;
+  isAdmin?: boolean;
+}) {
   const [items, setItems] = useState<PlaylistItem[]>([]);
   const [query, setQuery] = useState('');
   const listRef = useRef<HTMLOListElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const catalogRef = useRef<HTMLDivElement>(null);
+  const pendingFlip = useRef<{ prev: Map<string, number>; slug: string } | null>(null);
+  const hrefMode = cultoMode ? 'slides' : 'cifra';
 
   useEffect(() => {
     setItems(readPlaylist());
   }, []);
+
+  useLayoutEffect(() => {
+    const pending = pendingFlip.current;
+    if (!pending) return;
+    pendingFlip.current = null;
+
+    const list = listRef.current;
+    if (!list) return;
+
+    const rows = playlistRows(list);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    for (const el of rows) {
+      const slug = el.dataset.slug;
+      if (!slug) continue;
+      const first = pending.prev.get(slug);
+      if (first == null) continue;
+      const dy = first - el.getBoundingClientRect().top;
+      if (Math.abs(dy) < 0.5) continue;
+      el.style.transition = 'none';
+      el.style.transform = `translate3d(0, ${dy}px, 0)`;
+      if (slug === pending.slug) el.classList.add('playlist-item--moving');
+    }
+
+    void list.offsetHeight;
+
+    if (reduce) {
+      clearRowMotion(list);
+      return;
+    }
+
+    let raf2 = 0;
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        for (const el of rows) {
+          el.style.transition = `transform ${MOVE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+          el.style.transform = 'translate3d(0, 0, 0)';
+        }
+      });
+    });
+
+    let settleTimer = 0;
+    const doneTimer = window.setTimeout(() => {
+      for (const el of rows) {
+        const moved = el.dataset.slug === pending.slug;
+        el.style.transition = '';
+        el.style.transform = '';
+        el.classList.remove('playlist-item--moving');
+        if (moved) el.classList.add('playlist-item--settling');
+      }
+      settleTimer = window.setTimeout(() => {
+        for (const el of rows) el.classList.remove('playlist-item--settling');
+      }, 380);
+    }, MOVE_MS + 24);
+
+    return () => {
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+      window.clearTimeout(doneTimer);
+      window.clearTimeout(settleTimer);
+      if (!pendingFlip.current) clearRowMotion(list);
+    };
+  }, [items]);
 
   function persist(next: PlaylistItem[]) {
     setItems(next);
@@ -57,7 +155,29 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
   }
 
   function clear() {
+    if (items.length > 0 && !window.confirm('Começar uma playlist nova? As músicas atuais saem da lista.')) {
+      return;
+    }
     persist([]);
+  }
+
+  function move(slug: string, delta: -1 | 1) {
+    const index = items.findIndex((item) => item.slug === slug);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= items.length) return;
+
+    clearRowMotion(listRef.current);
+    pendingFlip.current = { prev: readRowTops(listRef.current), slug };
+
+    const next = [...items];
+    const [row] = next.splice(index, 1);
+    next.splice(target, 0, row);
+    persist(next);
+  }
+
+  function focusAdd() {
+    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    searchRef.current?.focus();
   }
 
   function setKey(slug: string, key: string) {
@@ -77,43 +197,84 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
 
   return (
     <div className="playlist-page">
-      <h1 className="playlist-page__title">Playlist</h1>
+      <h1 className="playlist-page__title">{cultoMode ? 'Playlist do Culto' : 'Playlist'}</h1>
       <p className="muted small" style={{ marginTop: 0 }}>
-        Monte a ordem e, se quiser, toque no tom de cada música para mudar só nesta playlist.
+        {cultoMode
+          ? 'Adicione as músicas, organize a ordem e toque em uma para abrir os slides.'
+          : 'Monte a ordem e, se quiser, toque no tom de cada música para mudar só nesta playlist.'}
       </p>
+
+      <div className="playlist-page__actions">
+        <button type="button" className="btn btn--primary" onClick={focusAdd}>
+          Adicionar música
+        </button>
+        {items.length > 0 ? (
+          <button type="button" className="btn btn--ghost" onClick={clear}>
+            {cultoMode ? 'Nova playlist' : 'Limpar'}
+          </button>
+        ) : null}
+        {isAdmin ? (
+          <Link href="/admin" className="btn btn--ghost">
+            Administração
+          </Link>
+        ) : null}
+      </div>
 
       <div className="playlist-page__head">
         <div className="section-title" style={{ margin: 0 }}>
-          {items.length === 0 ? 'Nenhuma música na playlist' : `${items.length} na playlist`}
+          {items.length === 0
+            ? 'Nenhuma música na playlist'
+            : `${items.length} ${items.length === 1 ? 'música' : 'músicas'}`}
         </div>
-        {items.length > 0 ? (
-          <button type="button" className="btn btn--ghost btn--sm" onClick={clear}>
-            Limpar
-          </button>
-        ) : null}
       </div>
 
       {items.length === 0 ? (
         <div className="empty" style={{ marginTop: 8 }}>
           <strong>Playlist vazia</strong>
-          <span className="small">Toque no + ao lado da música para incluir.</span>
+          <span className="small">
+            {cultoMode
+              ? 'Toque em Adicionar música e escolha o repertório do culto.'
+              : 'Toque no + ao lado da música para incluir.'}
+          </span>
         </div>
       ) : (
         <ol className="playlist-list" ref={listRef}>
           {items.map((item, index) => (
-            <li key={item.slug} className="playlist-item">
-              <Link href={playlistSongHref(item)} className="playlist-item__link">
+            <li key={item.slug} data-slug={item.slug} className="playlist-item">
+              <div className="playlist-move">
+                <button
+                  type="button"
+                  className="playlist-move__btn"
+                  aria-label={`Subir ${item.title}`}
+                  disabled={index === 0}
+                  onClick={() => move(item.slug, -1)}
+                >
+                  <ChevronUpIcon size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="playlist-move__btn"
+                  aria-label={`Descer ${item.title}`}
+                  disabled={index === items.length - 1}
+                  onClick={() => move(item.slug, 1)}
+                >
+                  <ChevronDownIcon size={16} />
+                </button>
+              </div>
+              <Link href={playlistItemHref(item, hrefMode)} className="playlist-item__link">
                 <span className="playlist-badge">{index + 1}</span>
                 <span className="playlist-item__body">
                   <span className="song-item__title">{item.title}</span>
                   <span className="song-item__artist">{item.artist || 'Sem artista'}</span>
                 </span>
               </Link>
-              <PlaylistKeyChip
-                item={item}
-                fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
-                onChange={(key) => setKey(item.slug, key)}
-              />
+              {cultoMode ? null : (
+                <PlaylistKeyChip
+                  item={item}
+                  fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
+                  onChange={(key) => setKey(item.slug, key)}
+                />
+              )}
               <button
                 type="button"
                 className="icon-btn"
@@ -127,12 +288,15 @@ export default function PlaylistBuilder({ songs }: { songs: SearchHit[] }) {
         </ol>
       )}
 
-      <div className="section-title">Adicionar músicas</div>
+      <div className="section-title" ref={catalogRef} id="adicionar-musica">
+        Adicionar músicas
+      </div>
       <div className="search">
         <span className="search__icon">
           <SearchIcon size={17} />
         </span>
         <input
+          ref={searchRef}
           type="search"
           inputMode="search"
           autoComplete="off"

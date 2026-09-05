@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import AdminBackButton from '@/components/AdminBackButton';
+import { accountLabelFromEmail } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ExternalLinkIcon } from '@/components/icons';
 
@@ -19,22 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: isAdmin } = await supabase.rpc('is_admin');
 
-  if (!isAdmin) {
-    return (
-      <>
-        <SiteHeader />
-        <main className="shell">
-          <div className="empty" style={{ marginTop: 40 }}>
-            <strong>Sem permissão</strong>
-            <span className="small">
-              A conta <b>{user.email}</b> está autenticada, mas não é administradora. Adicione-a na tabela{' '}
-              <code>admins</code> do Supabase.
-            </span>
-          </div>
-        </main>
-      </>
-    );
-  }
+  if (!isAdmin) redirect('/playlist');
 
   return (
     <>
@@ -46,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <ExternalLinkIcon size={14} />
           </Link>
           <span className="header-spacer" />
-          <span className="muted small">{user.email}</span>
+          <span className="muted small">{accountLabelFromEmail(user.email)}</span>
         </div>
       </div>
       {children}

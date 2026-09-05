@@ -4,16 +4,26 @@ import SignOutButton from '@/components/SignOutButton';
 import { LockIcon } from '@/components/icons';
 
 export default function HeaderTools({
-  email,
+  accountLabel,
   signedIn,
 }: {
-  email: string;
+  accountLabel: string;
   signedIn: boolean;
 }) {
   return (
-    <div className="header-tools" role="group" aria-label="Controles do site">
+    <div
+      className="header-tools"
+      data-signed={signedIn ? 'true' : 'false'}
+      role="group"
+      aria-label="Controles do site"
+    >
       <div className="header-slot header-slot--status">
-        <span className="header-status" data-on={signedIn ? 'true' : 'false'}>
+        <span
+          className="header-status"
+          data-on={signedIn ? 'true' : 'false'}
+          title={signedIn ? 'Online' : 'Visitante'}
+          aria-label={signedIn ? 'Online' : 'Visitante'}
+        >
           <span className="header-status__dot" aria-hidden="true" />
           <span className="header-status__text">{signedIn ? 'Online' : 'Visitante'}</span>
         </span>
@@ -21,8 +31,8 @@ export default function HeaderTools({
 
       <div className="header-slot header-slot--account">
         {signedIn ? (
-          <span className="header-ctrl header-ctrl--static" title={email}>
-            <span className="header-ctrl__text">{email || 'Conta'}</span>
+          <span className="header-ctrl header-ctrl--static" title={accountLabel}>
+            <span className="header-ctrl__text">{accountLabel || 'Conta'}</span>
           </span>
         ) : (
           <Link href="/login" className="header-ctrl" title="Entrar">

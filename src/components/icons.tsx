@@ -95,6 +95,14 @@ export function ChevronDownIcon(props: IconProps) {
   );
 }
 
+export function ChevronUpIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2.2} {...props}>
+      <path d="m5 15 7-7 7 7" />
+    </Line>
+  );
+}
+
 export function UndoIcon(props: IconProps) {
   return (
     <Line strokeWidth={2.2} {...props}>
