@@ -25,14 +25,14 @@ export default function PlaylistNav({
     <nav className="playlist-nav no-print" aria-label="Navegação da playlist">
       {prev ? (
         <Link href={playlistItemHref(prev, mode)} className="btn playlist-nav__btn">
-          <ChevronLeftIcon size={18} />
+          <ChevronLeftIcon size={15} />
           Anterior
         </Link>
       ) : null}
       {next ? (
         <Link href={playlistItemHref(next, mode)} className="btn btn--primary playlist-nav__btn">
           Próximo
-          <ChevronRightIcon size={18} />
+          <ChevronRightIcon size={15} />
         </Link>
       ) : null}
     </nav>

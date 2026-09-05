@@ -182,10 +182,6 @@ export default function ChordView({
   if (tab === 'slides' && canAccessSlides) {
     return (
       <div className="slides-page">
-        <div className="slides-toolbar no-print">
-          {tabs}
-          <p className="slides-toolbar__title">{song.title}</p>
-        </div>
         <SlidesEditor
           songId={song.id}
           savedSlides={userSlides}
@@ -193,6 +189,8 @@ export default function ChordView({
           sourceLyrics={slideSourceLyrics}
           publishedSlides={publishedSlides}
           publishedAt={publishedAt}
+          toolbarLeading={tabs}
+          toolbarTrailing={<p className="slides-toolbar__title">{song.title}</p>}
         />
         {inPlaylist ? <PlaylistNav slug={song.slug} mode="slides" /> : null}
       </div>

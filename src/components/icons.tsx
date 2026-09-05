@@ -186,6 +186,15 @@ export function MinusIcon(props: IconProps) {
   );
 }
 
+/** Avião de papel no estilo de envio (Telegram / Material). */
+export function SendIcon(props: IconProps) {
+  return (
+    <Solid {...props}>
+      <path d="M3.2 20.6a.95.95 0 0 0 1.28.32L21.7 12.7a1.05 1.05 0 0 0 0-1.4L4.48 3.08A.95.95 0 0 0 3.2 3.4l.08 6.55 10.72 2.05L3.28 14.05Z" />
+    </Solid>
+  );
+}
+
 /** Padrão dos três pontos conectados (Android, WhatsApp, web em geral). */
 export function ShareIcon(props: IconProps) {
   return (

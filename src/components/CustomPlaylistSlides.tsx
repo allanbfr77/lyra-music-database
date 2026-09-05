@@ -128,38 +128,6 @@ export default function CustomPlaylistSlides({
 
   return (
     <div className="slides-page">
-      <div className="slides-toolbar no-print">
-        <p className="slides-toolbar__title">{item.title || 'Música em branco'}</p>
-      </div>
-      <div className="slides-source no-print slides-source--alt">
-        <p>
-          Música personalizada <strong>desta conta</strong> — não altera o catálogo. Só vai para o Lyra se você
-          enviar.
-        </p>
-        <div className="slides-source__actions">
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setLyricsOpen((open) => !open)}>
-            {lyricsOpen ? 'Fechar letra' : 'Editar letra'}
-          </button>
-        </div>
-        {lyricsOpen ? (
-          <label className="field" style={{ marginTop: 12, marginBottom: 0 }}>
-            <span className="field__label">Letra do medley ou sequência</span>
-            <textarea
-              className="textarea"
-              rows={8}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Cole os trechos. Separe as estrofes com uma linha em branco."
-            />
-            <span className="field__hint">Isso gera os slides desta faixa. A letra original das músicas do banco não muda.</span>
-            <div className="slides-source__actions">
-              <button type="button" className="btn btn--primary btn--sm" onClick={applyLyrics}>
-                Usar esta letra nos slides
-              </button>
-            </div>
-          </label>
-        ) : null}
-      </div>
       <SlidesEditor
         key={`${item.id}:${lyrics}`}
         songId={item.id}
@@ -172,7 +140,38 @@ export default function CustomPlaylistSlides({
         editionTitle={item.title}
         publishedSlides={edition?.publishedSlides ?? null}
         publishedAt={edition?.publishedAt ?? null}
-      />
+        toolbarTrailing={<p className="slides-toolbar__title">{item.title || 'Música em branco'}</p>}
+      >
+        <div className="slides-source no-print slides-source--alt">
+          <p>
+            Música personalizada <strong>desta conta</strong> — não altera o catálogo. Só vai para o Lyra se você
+            enviar.
+          </p>
+          <div className="slides-source__actions">
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setLyricsOpen((open) => !open)}>
+              {lyricsOpen ? 'Fechar letra' : 'Editar letra'}
+            </button>
+          </div>
+          {lyricsOpen ? (
+            <label className="field" style={{ marginTop: 12, marginBottom: 0 }}>
+              <span className="field__label">Letra do medley ou sequência</span>
+              <textarea
+                className="textarea"
+                rows={8}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder="Cole os trechos. Separe as estrofes com uma linha em branco."
+              />
+              <span className="field__hint">Isso gera os slides desta faixa. A letra original das músicas do banco não muda.</span>
+              <div className="slides-source__actions">
+                <button type="button" className="btn btn--primary btn--sm" onClick={applyLyrics}>
+                  Usar esta letra nos slides
+                </button>
+              </div>
+            </label>
+          ) : null}
+        </div>
+      </SlidesEditor>
       <PlaylistNav slug={item.slug} mode="slides" />
     </div>
   );

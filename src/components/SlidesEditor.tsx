@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   importSlideLyrics,
   publishCustomSlidesToLyra,
@@ -8,7 +8,7 @@ import {
   restoreOriginalSlideLyrics,
   saveSongSlides,
 } from '@/app/slides/actions';
-import { AlertTriangleIcon, CheckIcon } from '@/components/icons';
+import { AlertTriangleIcon, SendIcon } from '@/components/icons';
 import { hasAlternateSlideSource, lyricsToSlides, resolveSlideBlocks } from '@/lib/slides';
 
 function sameSlides(left: string[] | null | undefined, right: string[]) {
@@ -27,6 +27,9 @@ export default function SlidesEditor({
   editionTitle = '',
   publishedSlides = null,
   publishedAt = null,
+  toolbarLeading,
+  toolbarTrailing,
+  children,
 }: {
   songId: string;
   savedSlides: string[] | null;
@@ -39,6 +42,9 @@ export default function SlidesEditor({
   editionTitle?: string;
   publishedSlides?: string[] | null;
   publishedAt?: string | null;
+  toolbarLeading?: ReactNode;
+  toolbarTrailing?: ReactNode;
+  children?: ReactNode;
 }) {
   const [slides, setSlides] = useState(() => resolveSlideBlocks(savedSlides, lyricsSeed));
   const [alternateSource, setAlternateSource] = useState(sourceLyrics);
@@ -161,8 +167,35 @@ export default function SlidesEditor({
     skipPersist.current = false;
   }
 
+  const sent = sameSlides(sentSlides, slides);
+  const publishLabel =
+    publishState === 'sending'
+      ? 'Enviando para o programa'
+      : sent
+        ? 'Enviado para o programa'
+        : 'Enviar para o programa';
+
   return (
-    <div className="slides-workspace">
+    <>
+      <div className="slides-toolbar no-print">
+        <div className="slides-toolbar__leading">{toolbarLeading}</div>
+        <div className="slides-toolbar__center">{toolbarTrailing}</div>
+        <div className="slides-toolbar__trailing">
+          <button
+            type="button"
+            className={`slides-publish__btn${sent ? ' slides-publish__btn--sent' : ''}`}
+            disabled={publishState === 'sending' || slides.every((slide) => !slide.trim())}
+            title={sent && sentAt ? `${publishLabel} · ${sentAt}` : publishLabel}
+            aria-label={publishLabel}
+            aria-busy={publishState === 'sending'}
+            onClick={() => void sendToLyra()}
+          >
+            <SendIcon size={17} />
+          </button>
+        </div>
+      </div>
+      {children}
+      <div className="slides-workspace">
       {showSourceControls ? (
       <div className={`slides-source no-print${usingAlternate ? ' slides-source--alt' : ''}`}>
         {usingAlternate ? (
@@ -203,31 +236,7 @@ export default function SlidesEditor({
       </div>
       ) : null}
 
-      <div className="slides-publish no-print">
-        <button
-          type="button"
-          className={`slides-publish__btn${sameSlides(sentSlides, slides) ? ' slides-publish__btn--sent' : ''}`}
-          disabled={publishState === 'sending' || slides.every((slide) => !slide.trim())}
-          title={sentAt && sameSlides(sentSlides, slides) ? `Enviado em ${sentAt}` : undefined}
-          onClick={() => void sendToLyra()}
-        >
-          {publishState === 'sending' ? (
-            'Enviando...'
-          ) : sameSlides(sentSlides, slides) ? (
-            <>
-              <CheckIcon size={16} /> Enviado para o programa
-            </>
-          ) : (
-            'Enviar para o programa'
-          )}
-        </button>
-        <span className="slides-publish__hint">
-          {sameSlides(sentSlides, slides)
-            ? 'O Lyra já pode importar esta versão. Continuar editando não atualiza o programa até enviar de novo.'
-            : 'Salvo automaticamente nesta conta. Só vai para o Lyra quando você enviar.'}
-        </span>
-        {publishError ? <p className="slides-source__error">{publishError}</p> : null}
-      </div>
+      {publishError ? <p className="slides-source__error slides-publish__error">{publishError}</p> : null}
 
       {slides.length === 0 ? (
         <div className="empty slides-empty">
@@ -254,6 +263,7 @@ export default function SlidesEditor({
         />
       ) : null}
     </div>
+    </>
   );
 }
 
@@ -350,12 +360,10 @@ function SlideCard({
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bodyRef = useRef<HTMLLabelElement>(null);
-  const indexRef = useRef<HTMLSpanElement>(null);
 
   const fitText = useCallback(() => {
     const el = inputRef.current;
     const box = bodyRef.current;
-    const num = indexRef.current;
     if (!el || !box) return;
 
     const maxW = box.clientWidth;
@@ -365,14 +373,10 @@ function SlideCard({
     el.style.width = `${maxW}px`;
 
     const applySize = (lyricPx: number) => {
-      const numberPx = lyricPx * 1.28;
       el.style.fontSize = `${lyricPx}px`;
-      if (num) num.style.fontSize = `${numberPx}px`;
       el.style.height = '0px';
       const lyricsH = el.scrollHeight;
-      const numberH = num?.offsetHeight ?? 0;
-      const gap = num ? 6 : 0;
-      return { w: el.scrollWidth, h: numberH + gap + lyricsH, lyricsH };
+      return { w: el.scrollWidth, h: lyricsH, lyricsH };
     };
 
     const min = 7;
@@ -419,11 +423,11 @@ function SlideCard({
 
   return (
     <article className="slides-card">
+      <span className="slides-card__index" aria-hidden="true">
+        {index + 1}
+      </span>
       <label ref={bodyRef} className="slides-card__body">
         <span className="visually-hidden">Texto do slide {index + 1}</span>
-        <span ref={indexRef} className="slides-card__index" aria-hidden="true">
-          {index + 1}
-        </span>
         <textarea
           ref={inputRef}
           className="slides-card__input"
