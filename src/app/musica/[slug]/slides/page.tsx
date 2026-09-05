@@ -40,7 +40,7 @@ export default async function SlidesPage({ params, searchParams }: Params) {
 
   const instruments = availableInstruments(song, song.overrides);
   const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
-  const userSlides = await loadUserSongSlides(song.id);
+  const slideCopy = await loadUserSongSlides(song.id);
   const { overrides, ...publicSong } = song;
 
   return (
@@ -62,7 +62,8 @@ export default async function SlidesPage({ params, searchParams }: Params) {
           initialTab="slides"
           inPlaylist={inPlaylist}
           canAccessSlides
-          userSlides={userSlides}
+          userSlides={slideCopy.slides}
+          slideSourceLyrics={slideCopy.sourceLyrics}
         />
       </main>
     </>

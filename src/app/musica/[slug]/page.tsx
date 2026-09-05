@@ -6,7 +6,7 @@ import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
 import { currentUserCanAccessSlides } from '@/lib/auth';
 import { getSongBySlug, publishedKeys } from '@/lib/songs';
-import { loadUserSongSlides } from '@/lib/user-slides';
+import { emptySlideCopy, loadUserSongSlides } from '@/lib/user-slides';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
 import { isPlaylistQuery } from '@/lib/playlist';
 
@@ -41,7 +41,7 @@ export default async function LyricsPage({ params, searchParams }: Params) {
     currentUserCanAccessSlides(),
   ]);
   if (!song) notFound();
-  const userSlides = canAccessSlides ? await loadUserSongSlides(song.id) : null;
+  const slideCopy = canAccessSlides ? await loadUserSongSlides(song.id) : emptySlideCopy();
 
   const instruments = availableInstruments(song, song.overrides);
   const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
@@ -66,7 +66,8 @@ export default async function LyricsPage({ params, searchParams }: Params) {
           initialTab="letra"
           inPlaylist={inPlaylist}
           canAccessSlides={canAccessSlides}
-          userSlides={userSlides}
+          userSlides={slideCopy.slides}
+          slideSourceLyrics={slideCopy.sourceLyrics}
         />
       </main>
     </>

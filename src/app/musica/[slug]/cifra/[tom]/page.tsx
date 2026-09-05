@@ -6,7 +6,7 @@ import { availableInstruments, cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from './resolve';
 import { isPlaylistQuery } from '@/lib/playlist';
-import { loadUserSongSlides } from '@/lib/user-slides';
+import { emptySlideCopy, loadUserSongSlides } from '@/lib/user-slides';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +47,7 @@ export default async function ChordPage({ params, searchParams }: Params) {
 
   if (!availableInstruments(song, song.overrides).includes('teclado')) notFound();
 
-  const userSlides = canAccessSlides ? await loadUserSongSlides(song.id) : null;
+  const slideCopy = canAccessSlides ? await loadUserSongSlides(song.id) : emptySlideCopy();
   const { overrides, ...publicSong } = song;
   const notice = removedKey ? (
     <div className="notice notice--warn no-print" style={{ marginTop: 14 }}>
@@ -64,7 +64,8 @@ export default async function ChordPage({ params, searchParams }: Params) {
       instrumento="teclado"
       inPlaylist={inPlaylist}
       canAccessSlides={canAccessSlides}
-      userSlides={userSlides}
+      userSlides={slideCopy.slides}
+      slideSourceLyrics={slideCopy.sourceLyrics}
       notice={notice}
     />
   );

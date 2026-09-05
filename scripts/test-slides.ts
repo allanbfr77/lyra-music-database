@@ -1,7 +1,7 @@
 /**
  * Testes da divisão da letra em slides.  Rode com:  npm run test:slides
  */
-import { hasSavedSlides, lyricsToSlides, resolveSlideBlocks, slidesPath } from '../src/lib/slides.ts';
+import { hasAlternateSlideSource, hasSavedSlides, lyricsToSlides, resolveSlideBlocks, slidesPath } from '../src/lib/slides.ts';
 
 let failures = 0;
 
@@ -40,6 +40,9 @@ check('versão pessoal prevalece sobre a letra', resolveSlideBlocks(['X', 'Y'], 
 check('array vazio ainda é versão pessoal', resolveSlideBlocks([], 'A\n\nB'), []);
 check('null não conta como salvo', hasSavedSlides(null), false);
 check('array (mesmo vazio) conta como salvo', hasSavedSlides([]), true);
+check('sem letra alternativa usa a original', hasAlternateSlideSource(null), false);
+check('letra alternativa preenchida', hasAlternateSlideSource('A\n\nB'), true);
+check('letra alternativa só com espaço não conta', hasAlternateSlideSource('   '), false);
 
 if (failures) {
   console.log(`\n${failures} teste(s) falharam.\n`);

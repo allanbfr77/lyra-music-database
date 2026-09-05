@@ -1,24 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { saveSongSlides } from '@/app/slides/actions';
-import { resolveSlideBlocks } from '@/lib/slides';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { importSlideLyrics, restoreOriginalSlideLyrics, saveSongSlides } from '@/app/slides/actions';
+import { hasAlternateSlideSource, lyricsToSlides, resolveSlideBlocks } from '@/lib/slides';
 
 export default function SlidesEditor({
   songId,
   savedSlides,
   lyricsSeed,
+  sourceLyrics = null,
 }: {
   songId: string;
   savedSlides: string[] | null;
   lyricsSeed: string;
+  sourceLyrics?: string | null;
 }) {
   const [slides, setSlides] = useState(() => resolveSlideBlocks(savedSlides, lyricsSeed));
+  const [alternateSource, setAlternateSource] = useState(sourceLyrics);
+  const [importerOpen, setImporterOpen] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipPersist = useRef(false);
+  const justRestored = useRef(false);
+  const usingAlternate = hasAlternateSlideSource(alternateSource);
 
   useEffect(() => {
+    justRestored.current = false;
+  }, [songId]);
+
+  useEffect(() => {
+    if (justRestored.current) {
+      if (hasAlternateSlideSource(sourceLyrics)) return;
+      justRestored.current = false;
+    }
     setSlides(resolveSlideBlocks(savedSlides, lyricsSeed));
-  }, [songId, savedSlides, lyricsSeed]);
+    setAlternateSource(sourceLyrics);
+  }, [songId, savedSlides, lyricsSeed, sourceLyrics]);
 
   useEffect(() => {
     return () => {
@@ -27,7 +44,7 @@ export default function SlidesEditor({
   }, []);
 
   function persist(next: string[]) {
-    if (!songId) return;
+    if (!songId || skipPersist.current) return;
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
       void saveSongSlides(songId, next);
@@ -42,23 +59,175 @@ export default function SlidesEditor({
     });
   }
 
-  if (slides.length === 0) {
-    return (
-      <div className="slides-workspace">
-        <div className="empty slides-empty">
-          <strong>Nenhum slide para exibir</strong>
-          <span className="small">Cadastre a letra desta música. Cada estrofe separada por uma linha em branco vira um slide.</span>
-        </div>
-      </div>
-    );
+  function applyImported(next: string[], source: string) {
+    setRestoreError(null);
+    setSlides(next);
+    setAlternateSource(source);
+    setImporterOpen(false);
+  }
+
+  async function restoreOriginal() {
+    if (
+      !window.confirm(
+        'Restaurar a letra original nos slides? A versão alternativa desta conta será removida. A letra cadastrada da música não muda.'
+      )
+    ) {
+      return;
+    }
+
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    skipPersist.current = true;
+    setRestoreError(null);
+
+    const result = await restoreOriginalSlideLyrics(songId);
+    if (!result.ok) {
+      skipPersist.current = false;
+      setRestoreError(result.error);
+      return;
+    }
+
+    justRestored.current = true;
+    setAlternateSource(null);
+    setSlides(result.slides ?? lyricsToSlides(lyricsSeed));
+    skipPersist.current = false;
   }
 
   return (
     <div className="slides-workspace">
-      <div className="slides-board">
-        {slides.map((text, index) => (
-          <SlideCard key={index} index={index} text={text} onChange={(value) => updateSlide(index, value)} />
-        ))}
+      <div className={`slides-source no-print${usingAlternate ? ' slides-source--alt' : ''}`}>
+        {usingAlternate ? (
+          <>
+            <p>
+              Estes slides usam uma <strong>versão alternativa</strong> da letra. A letra original da música não muda.
+            </p>
+            <p>
+              <button type="button" className="slides-source__link" onClick={() => setImporterOpen(true)}>
+                Clique aqui
+              </button>{' '}
+              para colar outra versão.
+            </p>
+            <div className="slides-source__actions">
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => void restoreOriginal()}>
+                Restaurar versão original
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p>Esta letra foi importada da versão original.</p>
+            <p>
+              <button type="button" className="slides-source__link" onClick={() => setImporterOpen(true)}>
+                Clique aqui
+              </button>{' '}
+              para adicionar uma versão diferente.
+            </p>
+          </>
+        )}
+        {restoreError ? <p className="slides-source__error">{restoreError}</p> : null}
+      </div>
+
+      {slides.length === 0 ? (
+        <div className="empty slides-empty">
+          <strong>Nenhum slide para exibir</strong>
+          <span className="small">Cadastre a letra desta música. Cada estrofe separada por uma linha em branco vira um slide.</span>
+        </div>
+      ) : (
+        <div className="slides-board">
+          {slides.map((text, index) => (
+            <SlideCard key={index} index={index} text={text} onChange={(value) => updateSlide(index, value)} />
+          ))}
+        </div>
+      )}
+
+      {importerOpen ? (
+        <SlideLyricsImporter
+          songId={songId}
+          initial={alternateSource ?? ''}
+          onClose={() => setImporterOpen(false)}
+          onImported={applyImported}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function SlideLyricsImporter({
+  songId,
+  initial,
+  onClose,
+  onImported,
+}: {
+  songId: string;
+  initial: string;
+  onClose: () => void;
+  onImported: (slides: string[], source: string) => void;
+}) {
+  const titleId = useId();
+  const descId = useId();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [draft, setDraft] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !busy) onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [busy, onClose]);
+
+  async function submit() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    const result = await importSlideLyrics(songId, draft);
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    onImported(result.slides ?? [], draft.replace(/\r\n/g, '\n').trim());
+  }
+
+  return (
+    <div className="dialog-backdrop" onClick={() => (busy ? undefined : onClose())}>
+      <div
+        className="dialog dialog--wide"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <strong id={titleId}>Versão para os slides</strong>
+        <p id={descId}>Cole a letra alternativa. A letra original da música não será alterada.</p>
+        {error ? <div className="alert alert--error">{error}</div> : null}
+        <label className="field">
+          <span className="field__label">Letra alternativa</span>
+          <textarea
+            ref={inputRef}
+            className="textarea"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            rows={12}
+            placeholder="Cole aqui a letra que deve aparecer só nos slides"
+            disabled={busy}
+          />
+          <span className="field__hint">Separe as estrofes com uma linha em branco para virar slides.</span>
+        </label>
+        <div className="dialog-actions">
+          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>
+            Cancelar
+          </button>
+          <button type="button" className="btn btn--primary" onClick={() => void submit()} disabled={busy}>
+            {busy ? 'Gerando…' : 'Usar nos slides'}
+          </button>
+        </div>
       </div>
     </div>
   );

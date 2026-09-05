@@ -18,6 +18,11 @@ export function hasSavedSlides(slides: string[] | null | undefined): boolean {
   return Array.isArray(slides);
 }
 
+/** Os slides foram gerados a partir de uma letra colada, não da letra original. */
+export function hasAlternateSlideSource(sourceLyrics: string | null | undefined): boolean {
+  return Boolean(sourceLyrics && sourceLyrics.trim());
+}
+
 export function resolveSlideBlocks(saved: string[] | null | undefined, lyricsSeed: string): string[] {
   if (hasSavedSlides(saved)) return saved!.map((slide) => slide.replace(/\r\n/g, '\n'));
   return lyricsToSlides(lyricsSeed);

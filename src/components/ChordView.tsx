@@ -45,6 +45,7 @@ export default function ChordView({
   inPlaylist = false,
   canAccessSlides = false,
   userSlides = null,
+  slideSourceLyrics = null,
   notice,
 }: {
   song: Song;
@@ -56,6 +57,7 @@ export default function ChordView({
   inPlaylist?: boolean;
   canAccessSlides?: boolean;
   userSlides?: string[] | null;
+  slideSourceLyrics?: string | null;
   notice?: ReactNode;
 }) {
   const [tab, setTab] = useState<SongTab>(canAccessSlides ? initialTab : initialTab === 'slides' ? 'letra' : initialTab);
@@ -180,7 +182,12 @@ export default function ChordView({
           {tabs}
           <p className="slides-toolbar__title">{song.title}</p>
         </div>
-        <SlidesEditor songId={song.id} savedSlides={userSlides} lyricsSeed={lyrics} />
+        <SlidesEditor
+          songId={song.id}
+          savedSlides={userSlides}
+          lyricsSeed={lyrics}
+          sourceLyrics={slideSourceLyrics}
+        />
       </div>
     );
   }
