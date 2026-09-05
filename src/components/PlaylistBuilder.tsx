@@ -3,8 +3,12 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/icons';
+import { saveCustomSlides } from '@/app/slides/actions';
+import { lyricsToSlides } from '@/lib/slides';
 import { publishedKeys } from '@/lib/songs';
 import {
+  createBlankPlaylistItem,
+  isCustomPlaylistItem,
   itemFromHit,
   itemPlaylistKey,
   playlistItemHref,
@@ -56,6 +60,7 @@ export default function PlaylistBuilder({
 }) {
   const [items, setItems] = useState<PlaylistItem[]>([]);
   const [query, setQuery] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const listRef = useRef<HTMLOListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
@@ -134,6 +139,41 @@ export default function PlaylistBuilder({
     writePlaylist(next);
   }
 
+  function addBlank() {
+    const item = createBlankPlaylistItem();
+    persist([...items, item]);
+    setEditingId(item.id);
+    void saveCustomSlides({
+      id: item.id,
+      title: item.title,
+      sourceLyrics: '',
+      slides: [],
+    });
+    requestAnimationFrame(() => {
+      listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const title = listRef.current?.querySelector<HTMLInputElement>(`[data-slug="${item.slug}"] .playlist-item__title-input`);
+      title?.focus();
+      title?.select();
+    });
+  }
+
+  function patchItem(slug: string, patch: Partial<PlaylistItem>) {
+    setItems((current) => {
+      const next = current.map((item) => (item.slug === slug ? { ...item, ...patch } : item));
+      writePlaylist(next);
+      const updated = next.find((item) => item.slug === slug);
+      if (updated && isCustomPlaylistItem(updated)) {
+        void saveCustomSlides({
+          id: updated.id,
+          title: updated.title,
+          sourceLyrics: updated.customLyrics ?? '',
+          slides: updated.customSlides ?? lyricsToSlides(updated.customLyrics ?? ''),
+        });
+      }
+      return next;
+    });
+  }
+
   function add(song: SearchHit) {
     setItems((current) => {
       if (current.some((item) => item.slug === song.slug)) return current;
@@ -208,6 +248,9 @@ export default function PlaylistBuilder({
         <button type="button" className="btn btn--primary" onClick={focusAdd}>
           Adicionar música
         </button>
+        <button type="button" className="btn btn--ghost" onClick={addBlank}>
+          + Música em branco
+        </button>
         {items.length > 0 ? (
           <button type="button" className="btn btn--ghost" onClick={clear}>
             {cultoMode ? 'Nova playlist' : 'Limpar'}
@@ -233,58 +276,116 @@ export default function PlaylistBuilder({
           <strong>Playlist vazia</strong>
           <span className="small">
             {cultoMode
-              ? 'Toque em Adicionar música e escolha o repertório do culto.'
+              ? 'Toque em Adicionar música ou crie uma música em branco para medley.'
               : 'Toque no + ao lado da música para incluir.'}
           </span>
         </div>
       ) : (
         <ol className="playlist-list" ref={listRef}>
-          {items.map((item, index) => (
-            <li key={item.slug} data-slug={item.slug} className="playlist-item">
-              <div className="playlist-move">
-                <button
-                  type="button"
-                  className="playlist-move__btn"
-                  aria-label={`Subir ${item.title}`}
-                  disabled={index === 0}
-                  onClick={() => move(item.slug, -1)}
-                >
-                  <ChevronUpIcon size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="playlist-move__btn"
-                  aria-label={`Descer ${item.title}`}
-                  disabled={index === items.length - 1}
-                  onClick={() => move(item.slug, 1)}
-                >
-                  <ChevronDownIcon size={16} />
-                </button>
-              </div>
-              <Link href={playlistItemHref(item, hrefMode)} className="playlist-item__link">
-                <span className="playlist-badge">{index + 1}</span>
-                <span className="playlist-item__body">
-                  <span className="song-item__title">{item.title}</span>
-                  <span className="song-item__artist">{item.artist || 'Sem artista'}</span>
-                </span>
-              </Link>
-              {cultoMode ? null : (
-                <PlaylistKeyChip
-                  item={item}
-                  fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
-                  onChange={(key) => setKey(item.slug, key)}
-                />
-              )}
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label={`Remover ${item.title}`}
-                onClick={() => remove(item.slug)}
+          {items.map((item, index) => {
+            const custom = isCustomPlaylistItem(item);
+            const editing = custom && editingId === item.id;
+            return (
+              <li
+                key={item.slug}
+                data-slug={item.slug}
+                className={`playlist-item${custom ? ' playlist-item--custom' : ''}`}
               >
-                <CloseIcon size={16} />
-              </button>
-            </li>
-          ))}
+                <div className="playlist-item__row">
+                  <div className="playlist-move">
+                    <button
+                      type="button"
+                      className="playlist-move__btn"
+                      aria-label={`Subir ${item.title}`}
+                      disabled={index === 0}
+                      onClick={() => move(item.slug, -1)}
+                    >
+                      <ChevronUpIcon size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="playlist-move__btn"
+                      aria-label={`Descer ${item.title}`}
+                      disabled={index === items.length - 1}
+                      onClick={() => move(item.slug, 1)}
+                    >
+                      <ChevronDownIcon size={16} />
+                    </button>
+                  </div>
+                  {custom ? (
+                    <div className="playlist-item__link">
+                      <span className="playlist-badge">{index + 1}</span>
+                      <span className="playlist-item__body">
+                        <input
+                          className="playlist-item__title-input"
+                          value={item.title}
+                          aria-label="Nome da música personalizada"
+                          onChange={(event) => patchItem(item.slug, { title: event.target.value })}
+                          onBlur={(event) => {
+                            if (!event.target.value.trim()) {
+                              patchItem(item.slug, { title: 'Música em branco' });
+                            }
+                          }}
+                        />
+                        <span className="song-item__artist">Só nesta playlist</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <Link href={playlistItemHref(item, hrefMode)} className="playlist-item__link">
+                      <span className="playlist-badge">{index + 1}</span>
+                      <span className="playlist-item__body">
+                        <span className="song-item__title">{item.title}</span>
+                        <span className="song-item__artist">{item.artist || 'Sem artista'}</span>
+                      </span>
+                    </Link>
+                  )}
+                  {custom ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => setEditingId(editing ? null : item.id)}
+                      >
+                        {editing ? 'Fechar letra' : 'Editar letra'}
+                      </button>
+                      <Link href={playlistItemHref(item, 'slides')} className="btn btn--primary btn--sm">
+                        Slides
+                      </Link>
+                    </>
+                  ) : null}
+                  {!custom && !cultoMode ? (
+                    <PlaylistKeyChip
+                      item={item}
+                      fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
+                      onChange={(key) => setKey(item.slug, key)}
+                    />
+                  ) : null}
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={`Remover ${item.title}`}
+                    onClick={() => remove(item.slug)}
+                  >
+                    <CloseIcon size={16} />
+                  </button>
+                </div>
+                {editing ? (
+                  <label className="playlist-item__editor">
+                    <span className="field__label">Letra personalizada (só os slides desta faixa)</span>
+                    <textarea
+                      className="textarea"
+                      rows={7}
+                      value={item.customLyrics ?? ''}
+                      placeholder="Cole o medley ou a sequência. Separe as estrofes com uma linha em branco."
+                      onChange={(event) =>
+                        patchItem(item.slug, { customLyrics: event.target.value, customSlides: null })
+                      }
+                    />
+                  </label>
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
       )}
 

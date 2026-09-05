@@ -46,6 +46,8 @@ export default function ChordView({
   canAccessSlides = false,
   userSlides = null,
   slideSourceLyrics = null,
+  publishedSlides = null,
+  publishedAt = null,
   notice,
 }: {
   song: Song;
@@ -58,6 +60,8 @@ export default function ChordView({
   canAccessSlides?: boolean;
   userSlides?: string[] | null;
   slideSourceLyrics?: string | null;
+  publishedSlides?: string[] | null;
+  publishedAt?: string | null;
   notice?: ReactNode;
 }) {
   const [tab, setTab] = useState<SongTab>(canAccessSlides ? initialTab : initialTab === 'slides' ? 'letra' : initialTab);
@@ -187,7 +191,10 @@ export default function ChordView({
           savedSlides={userSlides}
           lyricsSeed={lyrics}
           sourceLyrics={slideSourceLyrics}
+          publishedSlides={publishedSlides}
+          publishedAt={publishedAt}
         />
+        {inPlaylist ? <PlaylistNav slug={song.slug} mode="slides" /> : null}
       </div>
     );
   }

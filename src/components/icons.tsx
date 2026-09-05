@@ -103,6 +103,16 @@ export function ChevronUpIcon(props: IconProps) {
   );
 }
 
+export function AlertTriangleIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2.2} {...props}>
+      <path d="m10.3 4.2-8.1 14A2 2 0 0 0 3.9 21h16.2a2 2 0 0 0 1.7-2.8l-8.1-14a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </Line>
+  );
+}
+
 export function UndoIcon(props: IconProps) {
   return (
     <Line strokeWidth={2.2} {...props}>

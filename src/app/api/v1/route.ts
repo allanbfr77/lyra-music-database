@@ -26,9 +26,18 @@ export async function GET() {
       search: `${base}/songs?q={termo}&fields={title,artist,lyrics}&limit={1-100}&offset={n}`,
       song: `${base}/songs/{slug}`,
       song_with_all_keys: `${base}/songs/{slug}?include=all_keys`,
+      song_slide_versions: `${base}/songs/{slug}/slide-versions`,
+      song_slide_versions_with_slides: `${base}/songs/{slug}/slide-versions?include=slides`,
+      slide_version: `${base}/slide-versions/{id}`,
+      custom_slide_versions: `${base}/slide-versions`,
       chords_in_key: `${base}/songs/{slug}/chords/{key_slug}`,
       guitar_chords: `${base}/songs/{slug}/chords/{key_slug}?instrumento=violao`,
       sync: `${base}/sync?since={iso8601}&limit={1-500}`,
+    },
+    slide_versions: {
+      description:
+        'Só entram edições marcadas como enviadas ao programa. Salvar slides no site não publica para o Lyra.',
+      kinds: ['original', 'user', 'custom'],
     },
     key_slugs: {
       description: 'Tom em minúsculo; # vira "s", bemol vira "b", menor recebe "m" no fim.',

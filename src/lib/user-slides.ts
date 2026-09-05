@@ -6,10 +6,25 @@ export type UserSlideCopy = {
   slides: string[] | null;
   /** Letra alternativa só para slides. null = fonte é a letra original. */
   sourceLyrics: string | null;
+  publishedSlides: string[] | null;
+  publishedAt: string | null;
+};
+
+export type CustomSlideEdition = {
+  id: string;
+  title: string;
+  sourceLyrics: string;
+  slides: string[];
+  publishedSlides: string[] | null;
+  publishedAt: string | null;
 };
 
 export function emptySlideCopy(): UserSlideCopy {
-  return { slides: null, sourceLyrics: null };
+  return { slides: null, sourceLyrics: null, publishedSlides: null, publishedAt: null };
+}
+
+function asSlides(value: unknown): string[] | null {
+  return Array.isArray(value) ? value.map((slide) => String(slide).replace(/\r\n/g, '\n')) : null;
 }
 
 /**
@@ -22,6 +37,23 @@ export async function loadUserSongSlides(songId: string): Promise<UserSlideCopy>
 
   try {
     const supabase = await createClient();
+    const full = await supabase
+      .from('user_song_slides')
+      .select('slides, source_lyrics, published_slides, published_at')
+      .eq('song_id', songId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!full.error) {
+      if (!full.data) return emptySlideCopy();
+      return {
+        slides: asSlides(full.data.slides) ?? [],
+        sourceLyrics: typeof full.data.source_lyrics === 'string' ? full.data.source_lyrics : null,
+        publishedSlides: asSlides(full.data.published_slides),
+        publishedAt: typeof full.data.published_at === 'string' ? full.data.published_at : null,
+      };
+    }
+
     const withSource = await supabase
       .from('user_song_slides')
       .select('slides, source_lyrics')
@@ -29,27 +61,41 @@ export async function loadUserSongSlides(songId: string): Promise<UserSlideCopy>
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (!withSource.error) {
-      if (!withSource.data) return emptySlideCopy();
-      return {
-        slides: Array.isArray(withSource.data.slides) ? withSource.data.slides : [],
-        sourceLyrics: typeof withSource.data.source_lyrics === 'string' ? withSource.data.source_lyrics : null,
-      };
-    }
-
-    const onlySlides = await supabase
-      .from('user_song_slides')
-      .select('slides')
-      .eq('song_id', songId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (onlySlides.error || !onlySlides.data) return emptySlideCopy();
+    if (withSource.error || !withSource.data) return emptySlideCopy();
     return {
-      slides: Array.isArray(onlySlides.data.slides) ? onlySlides.data.slides : [],
-      sourceLyrics: null,
+      slides: asSlides(withSource.data.slides) ?? [],
+      sourceLyrics: typeof withSource.data.source_lyrics === 'string' ? withSource.data.source_lyrics : null,
+      publishedSlides: null,
+      publishedAt: null,
     };
   } catch {
     return emptySlideCopy();
+  }
+}
+
+export async function loadUserCustomSlides(id: string): Promise<CustomSlideEdition | null> {
+  const user = await getAuthUser();
+  if (!user || !id) return null;
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('user_custom_slides')
+      .select('id, title, source_lyrics, slides, published_slides, published_at')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      title: typeof data.title === 'string' && data.title.trim() ? data.title : 'Música em branco',
+      sourceLyrics: typeof data.source_lyrics === 'string' ? data.source_lyrics : '',
+      slides: asSlides(data.slides) ?? [],
+      publishedSlides: asSlides(data.published_slides),
+      publishedAt: typeof data.published_at === 'string' ? data.published_at : null,
+    };
+  } catch {
+    return null;
   }
 }

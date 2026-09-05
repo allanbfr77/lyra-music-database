@@ -68,6 +68,8 @@ export default async function LyricsPage({ params, searchParams }: Params) {
           canAccessSlides={canAccessSlides}
           userSlides={slideCopy.slides}
           slideSourceLyrics={slideCopy.sourceLyrics}
+          publishedSlides={slideCopy.publishedSlides}
+          publishedAt={slideCopy.publishedAt}
         />
       </main>
     </>

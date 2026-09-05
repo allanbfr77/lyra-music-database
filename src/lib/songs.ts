@@ -89,6 +89,19 @@ export const getSongBySlug = cache(async function getSongBySlug(slug: string): P
   return null;
 });
 
+export const getSongById = cache(async function getSongById(id: string): Promise<SongWithOverrides | null> {
+  if (!id) return null;
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from('songs')
+    .select(`${SONG_COLUMNS}, song_key_overrides(${OVERRIDE_COLUMNS})`)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return normalizeSongRow(data as unknown as Song & { song_key_overrides: KeyOverride[] });
+});
+
 /** `weights`: A = título, B = artista, C = letra. "ABC" procura em tudo. */
 export async function searchSongs(
   q: string,

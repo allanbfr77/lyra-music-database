@@ -15,7 +15,38 @@ export type PlaylistItem = {
   playlist_key?: string;
   available_keys?: string[];
   has_chords: boolean;
+  /** Música só desta playlist — não existe no catálogo. */
+  custom?: boolean;
+  /** Letra personalizada usada só para gerar os slides desta faixa. */
+  customLyrics?: string;
+  /** Slides já editados desta faixa personalizada. */
+  customSlides?: string[] | null;
 };
+
+export function isCustomPlaylistItem(item: PlaylistItem | null | undefined): boolean {
+  return Boolean(item?.custom || item?.slug?.startsWith('custom-'));
+}
+
+export function customPlaylistPath(id: string) {
+  return `/playlist/custom/${encodeURIComponent(id)}`;
+}
+
+export function createBlankPlaylistItem(): PlaylistItem {
+  const id = crypto.randomUUID();
+  return {
+    id,
+    slug: `custom-${id}`,
+    title: 'Música em branco',
+    artist: 'Só nesta playlist',
+    base_key: 'C',
+    playlist_key: 'C',
+    available_keys: [],
+    has_chords: false,
+    custom: true,
+    customLyrics: '',
+    customSlides: null,
+  };
+}
 
 export function itemPlaylistKey(item: PlaylistItem) {
   return normalizeKey(item.playlist_key || item.base_key);
@@ -44,6 +75,7 @@ export function itemFromHit(song: SearchHit): PlaylistItem {
 }
 
 export function playlistSongHref(item: PlaylistItem) {
+  if (isCustomPlaylistItem(item)) return playlistSlidesHref(item);
   const suffix = playlistQuery(true);
   if (!item.has_chords) return `/musica/${item.slug}${suffix}`;
   return `${cifraPath(item.slug, itemPlaylistKey(item))}${suffix}`;
@@ -51,6 +83,7 @@ export function playlistSongHref(item: PlaylistItem) {
 
 /** No culto, a música abre direto nos slides e volta com ?pl=1. */
 export function playlistSlidesHref(item: PlaylistItem) {
+  if (isCustomPlaylistItem(item)) return `${customPlaylistPath(item.id)}${playlistQuery(true)}`;
   return `${slidesPath(item.slug)}${playlistQuery(true)}`;
 }
 
@@ -67,12 +100,18 @@ export function readPlaylist(): PlaylistItem[] {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter((item) => item && typeof item.slug === 'string' && typeof item.title === 'string')
-      .map((item) => ({
-        ...item,
-        base_key: normalizeKey(item.base_key),
-        playlist_key: itemPlaylistKey(item),
-        available_keys: item.available_keys ?? [],
-      }));
+      .map((item) => {
+        const custom = Boolean(item.custom) || String(item.slug).startsWith('custom-');
+        return {
+          ...item,
+          base_key: normalizeKey(item.base_key),
+          playlist_key: itemPlaylistKey(item),
+          available_keys: item.available_keys ?? [],
+          custom,
+          customLyrics: custom && typeof item.customLyrics === 'string' ? item.customLyrics : custom ? '' : item.customLyrics,
+          customSlides: custom ? (Array.isArray(item.customSlides) ? item.customSlides : null) : item.customSlides,
+        };
+      });
   } catch {
     return [];
   }

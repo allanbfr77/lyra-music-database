@@ -1,22 +1,51 @@
 'use client';
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { importSlideLyrics, restoreOriginalSlideLyrics, saveSongSlides } from '@/app/slides/actions';
+import {
+  importSlideLyrics,
+  publishCustomSlidesToLyra,
+  publishSongSlidesToLyra,
+  restoreOriginalSlideLyrics,
+  saveSongSlides,
+} from '@/app/slides/actions';
+import { AlertTriangleIcon, CheckIcon } from '@/components/icons';
 import { hasAlternateSlideSource, lyricsToSlides, resolveSlideBlocks } from '@/lib/slides';
+
+function sameSlides(left: string[] | null | undefined, right: string[]) {
+  return Boolean(left) && JSON.stringify(left) === JSON.stringify(right);
+}
 
 export default function SlidesEditor({
   songId,
   savedSlides,
   lyricsSeed,
   sourceLyrics = null,
+  showSourceControls = true,
+  onPersist,
+  emptyHint,
+  publishKind = 'song',
+  editionTitle = '',
+  publishedSlides = null,
+  publishedAt = null,
 }: {
   songId: string;
   savedSlides: string[] | null;
   lyricsSeed: string;
   sourceLyrics?: string | null;
+  showSourceControls?: boolean;
+  onPersist?: (slides: string[]) => void | Promise<void>;
+  emptyHint?: string;
+  publishKind?: 'song' | 'custom';
+  editionTitle?: string;
+  publishedSlides?: string[] | null;
+  publishedAt?: string | null;
 }) {
   const [slides, setSlides] = useState(() => resolveSlideBlocks(savedSlides, lyricsSeed));
   const [alternateSource, setAlternateSource] = useState(sourceLyrics);
+  const [sentSlides, setSentSlides] = useState(publishedSlides);
+  const [sentAt, setSentAt] = useState(publishedAt);
+  const [publishState, setPublishState] = useState<'idle' | 'sending'>('idle');
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [importerOpen, setImporterOpen] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,7 +64,9 @@ export default function SlidesEditor({
     }
     setSlides(resolveSlideBlocks(savedSlides, lyricsSeed));
     setAlternateSource(sourceLyrics);
-  }, [songId, savedSlides, lyricsSeed, sourceLyrics]);
+    setSentSlides(publishedSlides);
+    setSentAt(publishedAt);
+  }, [songId, savedSlides, lyricsSeed, sourceLyrics, publishedSlides, publishedAt]);
 
   useEffect(() => {
     return () => {
@@ -47,6 +78,10 @@ export default function SlidesEditor({
     if (!songId || skipPersist.current) return;
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
+      if (onPersist) {
+        onPersist(next);
+        return;
+      }
       void saveSongSlides(songId, next);
     }, 700);
   }
@@ -57,6 +92,40 @@ export default function SlidesEditor({
       persist(next);
       return next;
     });
+  }
+
+  async function flushPersist(next: string[]) {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    if (onPersist) {
+      await onPersist(next);
+      return;
+    }
+    await saveSongSlides(songId, next);
+  }
+
+  async function sendToLyra() {
+    if (publishState === 'sending') return;
+    setPublishError(null);
+    setPublishState('sending');
+    await flushPersist(slides);
+
+    const result =
+      publishKind === 'custom'
+        ? await publishCustomSlidesToLyra({
+            id: songId,
+            title: editionTitle,
+            sourceLyrics: alternateSource ?? lyricsSeed,
+            slides,
+          })
+        : await publishSongSlidesToLyra(songId, slides);
+
+    setPublishState('idle');
+    if (!result.ok) {
+      setPublishError(result.error);
+      return;
+    }
+    setSentSlides(result.publishedSlides ?? slides);
+    setSentAt(result.publishedAt ?? new Date().toISOString());
   }
 
   function applyImported(next: string[], source: string) {
@@ -94,20 +163,27 @@ export default function SlidesEditor({
 
   return (
     <div className="slides-workspace">
+      {showSourceControls ? (
       <div className={`slides-source no-print${usingAlternate ? ' slides-source--alt' : ''}`}>
         {usingAlternate ? (
           <>
-            <p>
-              Estes slides usam uma <strong>versão alternativa</strong> da letra. A letra original da música não muda.
-            </p>
-            <p>
-              <button type="button" className="slides-source__link" onClick={() => setImporterOpen(true)}>
-                Clique aqui
-              </button>{' '}
-              para colar outra versão.
-            </p>
+            <div className="slides-source__main">
+              <AlertTriangleIcon size={18} className="slides-source__icon" />
+              <div className="slides-source__copy">
+                <p className="slides-source__context">
+                  Estes slides usam uma <strong>versão alternativa</strong> da letra. A letra original da música
+                  não muda.
+                </p>
+                <p className="slides-source__prompt">
+                  <button type="button" className="slides-source__link" onClick={() => setImporterOpen(true)}>
+                    Clique aqui
+                  </button>{' '}
+                  para colar outra versão.
+                </p>
+              </div>
+            </div>
             <div className="slides-source__actions">
-              <button type="button" className="btn btn--ghost btn--sm" onClick={() => void restoreOriginal()}>
+              <button type="button" className="slides-source__restore" onClick={() => void restoreOriginal()}>
                 Restaurar versão original
               </button>
             </div>
@@ -125,11 +201,41 @@ export default function SlidesEditor({
         )}
         {restoreError ? <p className="slides-source__error">{restoreError}</p> : null}
       </div>
+      ) : null}
+
+      <div className="slides-publish no-print">
+        <button
+          type="button"
+          className={`slides-publish__btn${sameSlides(sentSlides, slides) ? ' slides-publish__btn--sent' : ''}`}
+          disabled={publishState === 'sending' || slides.every((slide) => !slide.trim())}
+          title={sentAt && sameSlides(sentSlides, slides) ? `Enviado em ${sentAt}` : undefined}
+          onClick={() => void sendToLyra()}
+        >
+          {publishState === 'sending' ? (
+            'Enviando...'
+          ) : sameSlides(sentSlides, slides) ? (
+            <>
+              <CheckIcon size={16} /> Enviado para o programa
+            </>
+          ) : (
+            'Enviar para o programa'
+          )}
+        </button>
+        <span className="slides-publish__hint">
+          {sameSlides(sentSlides, slides)
+            ? 'O Lyra já pode importar esta versão. Continuar editando não atualiza o programa até enviar de novo.'
+            : 'Salvo automaticamente nesta conta. Só vai para o Lyra quando você enviar.'}
+        </span>
+        {publishError ? <p className="slides-source__error">{publishError}</p> : null}
+      </div>
 
       {slides.length === 0 ? (
         <div className="empty slides-empty">
           <strong>Nenhum slide para exibir</strong>
-          <span className="small">Cadastre a letra desta música. Cada estrofe separada por uma linha em branco vira um slide.</span>
+          <span className="small">
+            {emptyHint ??
+              'Cadastre a letra desta música. Cada estrofe separada por uma linha em branco vira um slide.'}
+          </span>
         </div>
       ) : (
         <div className="slides-board">
@@ -139,7 +245,7 @@ export default function SlidesEditor({
         </div>
       )}
 
-      {importerOpen ? (
+      {showSourceControls && importerOpen ? (
         <SlideLyricsImporter
           songId={songId}
           initial={alternateSource ?? ''}

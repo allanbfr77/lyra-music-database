@@ -64,6 +64,8 @@ export default async function SlidesPage({ params, searchParams }: Params) {
           canAccessSlides
           userSlides={slideCopy.slides}
           slideSourceLyrics={slideCopy.sourceLyrics}
+          publishedSlides={slideCopy.publishedSlides}
+          publishedAt={slideCopy.publishedAt}
         />
       </main>
     </>

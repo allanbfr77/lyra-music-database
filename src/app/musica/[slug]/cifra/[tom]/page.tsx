@@ -66,6 +66,8 @@ export default async function ChordPage({ params, searchParams }: Params) {
       canAccessSlides={canAccessSlides}
       userSlides={slideCopy.slides}
       slideSourceLyrics={slideCopy.sourceLyrics}
+      publishedSlides={slideCopy.publishedSlides}
+      publishedAt={slideCopy.publishedAt}
       notice={notice}
     />
   );

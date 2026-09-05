@@ -40,7 +40,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Slides: só quem está logado. O critério fino fica em canAccessSlides().
-  if (/^\/musica\/[^/]+\/slides\/?$/.test(pathname) && !user) {
+  if (
+    (/^\/musica\/[^/]+\/slides\/?$/.test(pathname) || /^\/playlist\/custom\/[^/]+\/?$/.test(pathname)) &&
+    !user
+  ) {
     const login = request.nextUrl.clone();
     login.pathname = '/login';
     login.search = `?next=${encodeURIComponent(pathname + search)}`;
@@ -57,5 +60,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/musica/:slug/slides'],
+  matcher: ['/admin/:path*', '/login', '/musica/:slug/slides', '/playlist/custom/:id'],
 };
