@@ -11,16 +11,17 @@ function keysInResults(songs: SearchHit[]): string[] {
   return [...allKeysFor('C'), ...allKeysFor('Am')].filter((key) => present.has(key));
 }
 
-function contextLine(total: number, visible: number, query: string, key: string | null): string {
+function contextParts(total: number, visible: number, query: string, key: string | null) {
   const n = key ? visible : total;
   const plural = n !== 1;
   if (key) {
-    return query
-      ? `${n} resultado${plural ? 's' : ''} em ${key}`
-      : `${n} música${plural ? 's' : ''} em ${key}`;
+    return {
+      count: n,
+      rest: query ? `resultado${plural ? 's' : ''} em ${key}` : `música${plural ? 's' : ''} em ${key}`,
+    };
   }
-  if (query) return `${n} resultado${plural ? 's' : ''}`;
-  return `${n} música${plural ? 's' : ''} no banco`;
+  if (query) return { count: n, rest: `resultado${plural ? 's' : ''}` };
+  return { count: n, rest: `música${plural ? 's' : ''} no banco` };
 }
 
 export default function HomeCatalog({
@@ -45,24 +46,33 @@ export default function HomeCatalog({
     setSelectedKey((current) => (current === key ? null : key));
   }
 
+  const rule = <div className="search-rule" role="separator" aria-hidden="true" />;
+  const summary = contextParts(songs.length, visible.length, query, activeKey);
+
   if (songs.length === 0) {
     if (!query) {
       return (
-        <div className="empty">
-          <strong>Nenhuma música cadastrada</strong>
-          <span className="small">
-            Cadastre a primeira música em <Link href="/admin">/admin</Link>.
-          </span>
-        </div>
+        <>
+          {rule}
+          <div className="empty">
+            <strong>Nenhuma música cadastrada</strong>
+            <span className="small">
+              Cadastre a primeira música em <Link href="/admin">/admin</Link>.
+            </span>
+          </div>
+        </>
       );
     }
     return (
-      <div className="empty">
-        <strong>Nada encontrado</strong>
-        <span className="small">
-          A busca procurou em {fieldLabels}. Tente outra palavra ou marque mais campos acima.
-        </span>
-      </div>
+      <>
+        {rule}
+        <div className="empty">
+          <strong>Nada encontrado</strong>
+          <span className="small">
+            A busca procurou em {fieldLabels}. Tente outra palavra ou marque mais campos acima.
+          </span>
+        </div>
+      </>
     );
   }
 
@@ -87,7 +97,11 @@ export default function HomeCatalog({
           })}
         </div>
       )}
-      <div className="section-title">{contextLine(songs.length, visible.length, query, activeKey)}</div>
+      {rule}
+      <p className="catalog-count">
+        <span className="catalog-count__n">{summary.count}</span>
+        <span className="catalog-count__label">{summary.rest}</span>
+      </p>
       <SongList songs={visible} showSnippet={showSnippet} />
     </>
   );

@@ -55,7 +55,7 @@ export default function SearchBox({
   }
 
   return (
-    <div>
+    <div className="search-row">
       <form className="search" role="search" onSubmit={(e) => e.preventDefault()}>
         <span className="search__icon">
           <SearchIcon size={17} />
@@ -76,8 +76,7 @@ export default function SearchBox({
         )}
       </form>
 
-      <fieldset className="filters">
-        <legend className="filters__legend">Buscar em</legend>
+      <fieldset className="filters" aria-label="Campos da busca">
         {SEARCH_FIELDS.map((field) => {
           const on = fields.includes(field.id);
           return (
