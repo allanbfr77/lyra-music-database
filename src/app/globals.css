@@ -631,7 +631,12 @@ button.chip[data-active='true'] {
   display: flex; flex-wrap: wrap; gap: 6px;
   margin-top: 14px; max-width: 100%;
 }
-.key-chips .chip { font-family: var(--mono); font-weight: 600; }
+.key-chips .chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+  min-width: 2.75rem;
+  font-family: var(--mono); font-weight: 600;
+}
 @media (max-width: 520px) {
   .key-chips {
     flex-wrap: nowrap;
@@ -870,10 +875,12 @@ button.chip[data-active='true'] {
   width: min(360px, calc(100vw - 48px));
 }
 .key-chip {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-width: 46px; text-align: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  box-sizing: border-box;
+  width: 4.75rem; min-width: 4.75rem; flex: none;
+  text-align: center; white-space: nowrap;
   font-family: var(--mono); font-size: 14.5px; font-weight: 600;
-  padding: 8px 12px; border-radius: var(--radius-sm);
+  padding: 8px 6px; border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
   transition: background-color .16s ease, border-color .16s ease, color .16s ease;
 }
@@ -1478,9 +1485,13 @@ html:has(.slides-page) .shell {
   margin: 0;
   padding: 0;
 }
-.playlist-list { position: relative; }
+.playlist-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-.playlist-item,
 .playlist-catalog__row {
   display: flex;
   align-items: center;
@@ -1488,12 +1499,19 @@ html:has(.slides-page) .shell {
   padding: 10px 0;
   min-height: 56px;
 }
-.playlist-item {
+
+.playlist-item.card {
+  display: flex;
   position: relative;
-  border-radius: 10px;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 16px;
+  min-height: 0;
+}
+.playlist-item.card:hover {
+  border-color: var(--border-strong);
 }
 .playlist-item__row {
   display: flex;
@@ -1523,12 +1541,16 @@ html:has(.slides-page) .shell {
 .playlist-item__editor {
   display: block;
   width: 100%;
-  padding-left: 38px;
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
 }
 .playlist-item__editor .textarea { min-height: 140px; }
 
 @media (max-width: 520px) {
+  .playlist-item.card { padding: 12px; }
   .playlist-item__row { flex-wrap: wrap; }
+  .playlist-item__link { flex: 1 1 140px; }
 }
 .playlist-item--moving {
   z-index: 3;
@@ -1539,7 +1561,7 @@ html:has(.slides-page) .shell {
 }
 @keyframes playlist-item-settle {
   from { background: var(--accent-soft); }
-  to { background: transparent; }
+  to { background: var(--surface); }
 }
 @media (prefers-reduced-motion: reduce) {
   .playlist-item--settling { animation: none; }

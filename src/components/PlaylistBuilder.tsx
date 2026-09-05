@@ -293,7 +293,7 @@ export default function PlaylistBuilder({
               <li
                 key={item.slug}
                 data-slug={item.slug}
-                className={`playlist-item${custom ? ' playlist-item--custom' : ''}`}
+                className={`card playlist-item${custom ? ' playlist-item--custom' : ''}`}
               >
                 <div className="playlist-item__row">
                   <div className="playlist-move">
