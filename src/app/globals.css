@@ -405,6 +405,92 @@ svg { flex: none; }
 .textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
 .textarea--mono { font-family: var(--mono); font-size: 14.5px; line-height: 1.75; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
 
+.cifra-editor {
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.cifra-editor:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.cifra-editor__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+}
+.cifra-editor__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.cifra-editor__key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+.cifra-editor__key-label {
+  font-size: 12.5px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex: none;
+}
+.cifra-editor__key-select {
+  width: auto;
+  min-width: 196px;
+  max-width: min(280px, 100%);
+  padding: 7px 10px;
+  font-size: 14.5px;
+  font-family: var(--mono);
+  font-weight: 650;
+  border-radius: 8px;
+}
+.cifra-editor__key-select:focus,
+.cifra-editor__capo:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.cifra-editor__capo {
+  width: 72px;
+  padding: 7px 10px;
+  font-size: 14.5px;
+  font-family: var(--mono);
+  font-weight: 650;
+  border-radius: 8px;
+  text-align: center;
+}
+.cifra-editor__body {
+  border: 0;
+  border-radius: 0;
+  min-height: 280px;
+  box-shadow: none;
+}
+.cifra-editor__body:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+.cifra-editor__status {
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunk);
+}
+.cifra-editor__status .key-detect,
+.cifra-editor__status .field__hint {
+  margin-top: 0;
+}
+
 .row { display: flex; gap: 12px; flex-wrap: wrap; }
 .row > * { flex: 1 1 150px; min-width: 0; }
 

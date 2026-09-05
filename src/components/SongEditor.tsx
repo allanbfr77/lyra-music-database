@@ -252,55 +252,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           />
         </label>
 
-        <div className="row">
-          <label className="field">
-            <span className="field__label">Tom original</span>
-            <select
-              className="select"
-              value={normalizeKey(baseKey)}
-              onChange={(e) => {
-                setKeyTouched(true);
-                setBaseKey(e.target.value);
-              }}
-            >
-              <optgroup label="Maior">
-                {MAJOR_KEYS.map((k) => (
-                  <option key={k} value={k}>
-                    {keyDisplayName(k)}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Menor">
-                {MINOR_KEYS.map((k) => (
-                  <option key={k} value={k}>
-                    {keyDisplayName(k)}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-            <KeyDetectionHint
-              detection={detectedKey}
-              currentKey={baseKey}
-              onApply={(key) => {
-                setKeyTouched(true);
-                setBaseKey(key);
-              }}
-            />
-          </label>
-
-          <label className="field">
-            <span className="field__label">Capotraste</span>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={12}
-              value={capo}
-              onChange={(e) => setCapo(Number(e.target.value))}
-            />
-          </label>
-        </div>
-
         <label className="field">
           <span className="field__label">Endereço no site</span>
           <input
@@ -365,42 +316,95 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </div>
       ) : (
         <div style={{ paddingTop: 16 }}>
-          <nav className="tabs" style={{ position: 'static', paddingTop: 0 }} aria-label="Instrumento da cifra">
-            <button
-              className="tab"
-              data-active={instrumentTab === 'teclado'}
-              onClick={() => setInstrumentTab('teclado')}
-              type="button"
-            >
-              Teclado
-            </button>
-            <button
-              className="tab"
-              data-active={instrumentTab === 'violao'}
-              onClick={() => setInstrumentTab('violao')}
-              type="button"
-            >
-              Violão
-            </button>
-          </nav>
+          <div className="cifra-editor">
+            <div className="cifra-editor__toolbar">
+              <nav className="seg" aria-label="Instrumento da cifra">
+                <button
+                  className="seg__item"
+                  data-active={instrumentTab === 'teclado'}
+                  onClick={() => setInstrumentTab('teclado')}
+                  type="button"
+                >
+                  Teclado
+                </button>
+                <button
+                  className="seg__item"
+                  data-active={instrumentTab === 'violao'}
+                  onClick={() => setInstrumentTab('violao')}
+                  type="button"
+                >
+                  Violão
+                </button>
+              </nav>
 
-          <label className="field">
-            <span className="field__label">
-              Cifra de {instrumentTab === 'violao' ? 'violão' : 'teclado'} no tom de {keyDisplayName(normalizeKey(baseKey))}
-            </span>
+              <div className="cifra-editor__meta">
+              <label className="cifra-editor__key">
+                <span className="cifra-editor__key-label">Tom</span>
+                <select
+                  className="select cifra-editor__key-select"
+                  value={normalizeKey(baseKey)}
+                  aria-label="Tom original da cifra"
+                  onChange={(e) => {
+                    setKeyTouched(true);
+                    setBaseKey(e.target.value);
+                  }}
+                >
+                  <optgroup label="Maior">
+                    {MAJOR_KEYS.map((k) => (
+                      <option key={k} value={k}>
+                        {keyDisplayName(k)}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Menor">
+                    {MINOR_KEYS.map((k) => (
+                      <option key={k} value={k}>
+                        {keyDisplayName(k)}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </label>
+              <label className="cifra-editor__key">
+                <span className="cifra-editor__key-label">Capotraste</span>
+                <input
+                  className="input cifra-editor__capo"
+                  type="number"
+                  min={0}
+                  max={12}
+                  value={capo}
+                  aria-label="Capotraste"
+                  onChange={(e) => setCapo(Number(e.target.value))}
+                />
+              </label>
+              </div>
+            </div>
+
             <textarea
-              className="textarea textarea--mono"
+              className="textarea textarea--mono cifra-editor__body"
               value={activeChords}
               onChange={(e) => setActiveChords(e.target.value)}
               rows={16}
               spellCheck={false}
+              aria-label={`Cifra de ${instrumentTab === 'violao' ? 'violão' : 'teclado'}`}
               placeholder={'[Intro] G  D  Em  C\n\nG            D/F#      Em\nTu és o Deus de toda a terra'}
             />
-            <span className="field__hint">
-              Acordes em linhas próprias, acima da letra. Os demais tons deste instrumento saem daqui
-              automaticamente.
-            </span>
-          </label>
+
+            <div className="cifra-editor__status">
+              <KeyDetectionHint
+                detection={detectedKey}
+                currentKey={baseKey}
+                onApply={(key) => {
+                  setKeyTouched(true);
+                  setBaseKey(key);
+                }}
+              />
+            </div>
+          </div>
+          <p className="field__hint" style={{ marginTop: -10, marginBottom: 16 }}>
+            Acordes em linhas próprias, acima da letra. Tom e capotraste ficam na barra do editor e não entram
+            no texto da cifra. Os demais tons deste instrumento saem daqui automaticamente.
+          </p>
 
           <div className="field">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -553,7 +557,7 @@ function KeyDetectionHint({
   if (!detection) {
     return (
       <span className="field__hint">
-        O tom é identificado automaticamente ao colar a cifra. Você pode corrigir se precisar.
+        O tom é preenchido automaticamente ao colar a cifra. Mudar o Tom não altera o texto.
       </span>
     );
   }
@@ -574,8 +578,8 @@ function KeyDetectionHint({
     <span className="key-detect" data-confidence={detection.confidence} data-match={matches}>
       {matches ? (
         <>
-          {label}. Este é o tom original usado na transposição.
-          {possible ? ' Confirme ou corrija no seletor se a cifra for ambígua.' : ''}
+          {label}. O texto da cifra permanece como foi colado.
+          {possible ? ' Corrija o Tom se a cifra for ambígua.' : ''}
           {alt}
         </>
       ) : (
