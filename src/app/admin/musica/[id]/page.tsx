@@ -18,11 +18,15 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
   let data: unknown = null;
   let error: { message: string } | null = null;
 
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     const result = await supabase.from('songs').select(`${columns}, ${extra}`).eq('id', id).maybeSingle();
     data = result.data;
     error = result.error;
     if (!error) break;
+    if (error.message.includes('slides') && columns.includes('slides')) {
+      columns = columns.replace(', slides', '');
+      continue;
+    }
     if (error.message.includes('youtube_url') && columns.includes('youtube_url')) {
       columns = columns.replace(', youtube_url', '');
       continue;

@@ -11,6 +11,8 @@ export type Song = {
   title: string;
   artist: string;
   lyrics: string;
+  /** Blocos dos slides. Independente de lyrics. */
+  slides: string[];
   chords: string;
   chords_guitar: string;
   base_key: string;

@@ -1,8 +1,17 @@
 import type { Metadata, Viewport } from 'next';
+import { Montserrat } from 'next/font/google';
 import './globals.css';
 import { siteUrl } from '@/lib/env';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { THEME_COLOR, THEME_INIT_SCRIPT } from '@/lib/theme';
+
+/** Base da CMG Sans (OFL). Se a CMG Sans estiver instalada no sistema, ela prevalece nos slides. */
+const slidesSans = Montserrat({
+  weight: '700',
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-slides',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -69,7 +78,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" data-theme="dark" suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="dark" className={slidesSans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

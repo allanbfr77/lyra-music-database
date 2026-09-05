@@ -1,6 +1,4 @@
-import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
-import { LockIcon } from '@/components/icons';
 import SearchBox from '@/components/SearchBox';
 import HomeCatalog from '@/components/HomeCatalog';
 import PlaylistFab from '@/components/PlaylistFab';
@@ -31,14 +29,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <SiteHeader
-        right={
-          <Link href="/login" className="btn btn--ghost btn--sm muted">
-            <LockIcon size={14} />
-            Login
-          </Link>
-        }
-      />
+      <SiteHeader />
 
       <main className="shell shell--fab">
         <div style={{ paddingTop: 18 }}>

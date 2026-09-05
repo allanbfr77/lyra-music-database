@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
 import { currentUserCanAccessSlides } from '@/lib/auth';
-import { getSongBySlug, publishedKeys } from '@/lib/songs';
-import { loadUserSongSlides } from '@/lib/user-slides';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
 import { isPlaylistQuery } from '@/lib/playlist';
+import { slidesPath } from '@/lib/slides';
+import { getSongBySlug, publishedKeys } from '@/lib/songs';
+import { loadUserSongSlides } from '@/lib/user-slides';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,32 +20,27 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) return { title: 'Música não encontrada' };
 
-  const description = song.lyrics.replace(/\s+/g, ' ').trim().slice(0, 160) || `Letra de ${song.title}.`;
   return {
-    title: `${song.title} — Letra`,
-    description,
-    alternates: { canonical: `/musica/${song.slug}` },
-    openGraph: {
-      title: `${song.title} — ${song.artist}`,
-      description,
-      url: `/musica/${song.slug}`,
-      type: 'article',
-    },
+    title: `${song.title} — Slides`,
+    robots: { index: false, follow: false },
+    alternates: { canonical: slidesPath(song.slug) },
   };
 }
 
-export default async function LyricsPage({ params, searchParams }: Params) {
+export default async function SlidesPage({ params, searchParams }: Params) {
   const { slug } = await params;
   const inPlaylist = isPlaylistQuery((await searchParams).pl);
-  const [song, canAccessSlides] = await Promise.all([
-    getSongBySlug(slug).catch(() => null),
-    currentUserCanAccessSlides(),
-  ]);
+  const allowed = await currentUserCanAccessSlides();
+  if (!allowed) {
+    redirect(`/login?next=${encodeURIComponent(`${slidesPath(slug)}${inPlaylist ? '?pl=1' : ''}`)}`);
+  }
+
+  const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
-  const userSlides = canAccessSlides ? await loadUserSongSlides(song.id) : null;
 
   const instruments = availableInstruments(song, song.overrides);
   const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
+  const userSlides = await loadUserSongSlides(song.id);
   const { overrides, ...publicSong } = song;
 
   return (
@@ -63,9 +59,9 @@ export default async function LyricsPage({ params, searchParams }: Params) {
           overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
           initialKey={normalizeKey(song.base_key)}
           instrumento={defaultInstrument}
-          initialTab="letra"
+          initialTab="slides"
           inPlaylist={inPlaylist}
-          canAccessSlides={canAccessSlides}
+          canAccessSlides
           userSlides={userSlides}
         />
       </main>

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
-import SignOutButton from '@/components/SignOutButton';
 import AdminBackButton from '@/components/AdminBackButton';
 import { createClient } from '@/lib/supabase/server';
 import { ExternalLinkIcon } from '@/components/icons';
@@ -23,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin) {
     return (
       <>
-        <SiteHeader right={<SignOutButton />} />
+        <SiteHeader />
         <main className="shell">
           <div className="empty" style={{ marginTop: 40 }}>
             <strong>Sem permissão</strong>
@@ -39,7 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <SiteHeader right={<SignOutButton />} left={<AdminBackButton />} />
+      <SiteHeader left={<AdminBackButton />} />
       <div className="admin-bar no-print">
         <div className="admin-bar__inner">
           <Link href="/" target="_blank" className="admin-bar__action">

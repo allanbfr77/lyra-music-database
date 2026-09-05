@@ -6,7 +6,7 @@ import type { Instrumento, KeyOverride, SearchHit, Song } from '@/lib/types';
 export { availableInstruments, chartForKey, cifraPath } from '@/lib/chords';
 
 export const SONG_COLUMNS =
-  'id, slug, title, artist, lyrics, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, created_at, updated_at';
+  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, created_at, updated_at';
 
 const OVERRIDE_COLUMNS = 'id, song_id, key, chords, instrumento, created_at, updated_at';
 const OVERRIDE_COLUMNS_LEGACY = 'id, song_id, key, chords, created_at, updated_at';
@@ -38,6 +38,7 @@ function normalizeSongRow(
     ...song,
     chords_guitar: song.chords_guitar ?? '',
     youtube_url: song.youtube_url ?? null,
+    slides: Array.isArray(song.slides) ? song.slides : [],
     overrides,
   };
 }
@@ -47,6 +48,9 @@ function dropMissingColumn(
   extra: string,
   message: string
 ): { columns: string; extra: string; changed: boolean } {
+  if (message.includes('slides') && columns.includes('slides')) {
+    return { columns: columns.replace(', slides', ''), extra, changed: true };
+  }
   if (message.includes('youtube_url') && columns.includes('youtube_url')) {
     return { columns: columns.replace(', youtube_url', ''), extra, changed: true };
   }
@@ -64,7 +68,7 @@ export const getSongBySlug = cache(async function getSongBySlug(slug: string): P
   let columns = SONG_COLUMNS;
   let extra = OVERRIDE_COLUMNS;
 
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     const { data, error } = await supabase
       .from('songs')
       .select(`${columns}, song_key_overrides(${extra})`)

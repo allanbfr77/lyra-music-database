@@ -1,7 +1,10 @@
 import type { MouseEvent } from 'react';
 import Link from 'next/link';
 import { cifraPath, slugToKey } from '@/lib/chords';
+import { slidesPath } from '@/lib/slides';
 import type { Instrumento } from '@/lib/types';
+
+export type SongTab = 'letra' | 'cifra' | 'slides';
 
 function sameTabClick(
   event: MouseEvent<HTMLAnchorElement>,
@@ -19,21 +22,23 @@ export default function SongTabs({
   chordKeySlug,
   hasChords,
   instrumento = 'teclado',
+  canAccessSlides = false,
   onSelect,
 }: {
   slug: string;
-  active: 'letra' | 'cifra';
+  active: SongTab;
   chordKeySlug: string;
   hasChords: boolean;
   instrumento?: Instrumento;
   hasGuitar?: boolean;
-  onSelect?: (tab: 'letra' | 'cifra') => void;
+  canAccessSlides?: boolean;
+  onSelect?: (tab: SongTab) => void;
 }) {
   const key = slugToKey(chordKeySlug) ?? chordKeySlug;
   const cifraHref = hasChords ? cifraPath(slug, key, instrumento) : null;
 
   return (
-    <nav className="seg no-print" aria-label="Letra ou cifra">
+    <nav className={`seg no-print${canAccessSlides ? ' seg--3' : ''}`} aria-label={canAccessSlides ? 'Letra, cifra ou slides' : 'Letra ou cifra'}>
       <Link
         href={`/musica/${slug}`}
         className="seg__item"
@@ -56,6 +61,16 @@ export default function SongTabs({
           Cifra
         </span>
       )}
+      {canAccessSlides ? (
+        <Link
+          href={slidesPath(slug)}
+          className="seg__item"
+          data-active={active === 'slides'}
+          onClick={(event) => sameTabClick(event, onSelect ? () => onSelect('slides') : undefined)}
+        >
+          Slides
+        </Link>
+      ) : null}
     </nav>
   );
 }

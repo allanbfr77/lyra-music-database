@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import ChordView from '@/components/ChordView';
+import { currentUserCanAccessSlides } from '@/lib/auth';
 import { cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from '../resolve';
 import { isPlaylistQuery } from '@/lib/playlist';
+import { loadUserSongSlides } from '@/lib/user-slides';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,8 +39,12 @@ export default async function GuitarChordPage({ params, searchParams }: Params) 
   const query = await searchParams;
   const askedTom = query.tom;
   const inPlaylist = isPlaylistQuery(query.pl);
-  const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'violao', askedTom);
+  const [{ song, key, keys, removedKey }, canAccessSlides] = await Promise.all([
+    resolveChordPage(slug, tom, 'violao', askedTom),
+    currentUserCanAccessSlides(),
+  ]);
 
+  const userSlides = canAccessSlides ? await loadUserSongSlides(song.id) : null;
   const { overrides, ...publicSong } = song;
   const notice = removedKey ? (
     <div className="notice notice--warn no-print" style={{ marginTop: 14 }}>
@@ -54,6 +60,8 @@ export default async function GuitarChordPage({ params, searchParams }: Params) 
       initialKey={key}
       instrumento="violao"
       inPlaylist={inPlaylist}
+      canAccessSlides={canAccessSlides}
+      userSlides={userSlides}
       notice={notice}
     />
   );

@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import SongHeader from '@/components/SongHeader';
 import SongControlPanel from '@/components/SongControlPanel';
-import SongTabs, { InstrumentTabs } from '@/components/SongTabs';
+import SongTabs, { InstrumentTabs, type SongTab } from '@/components/SongTabs';
 import KeyBar from '@/components/KeyBar';
 import Reader from '@/components/Reader';
+import SlidesEditor from '@/components/SlidesEditor';
 import {
   availableInstruments,
   chartForKey,
@@ -16,14 +17,15 @@ import {
   slugToKey,
   uniqueChords,
 } from '@/lib/chords';
+import { slidesPath } from '@/lib/slides';
 import type { Instrumento, Song } from '@/lib/types';
 import { playlistQuery } from '@/lib/playlist';
 import PlaylistNav from '@/components/PlaylistNav';
 
 type Override = { key: string; chords: string; instrumento?: Instrumento };
-type Tab = 'letra' | 'cifra';
 
-function pathFromLocation(pathname: string): { tab: Tab; key: string | null; instrumento: Instrumento } {
+function pathFromLocation(pathname: string): { tab: SongTab; key: string | null; instrumento: Instrumento } {
+  if (/\/slides\/?$/.test(pathname)) return { tab: 'slides', key: null, instrumento: 'teclado' };
   const match = pathname.match(/\/cifra\/([^/]+)(?:\/(violao))?/);
   if (!match) return { tab: 'letra', key: null, instrumento: 'teclado' };
   return {
@@ -41,6 +43,8 @@ export default function ChordView({
   instrumento: initialInstrumento = 'teclado',
   initialTab = 'cifra',
   inPlaylist = false,
+  canAccessSlides = false,
+  userSlides = null,
   notice,
 }: {
   song: Song;
@@ -48,11 +52,13 @@ export default function ChordView({
   overrides: Override[];
   initialKey: string;
   instrumento?: Instrumento;
-  initialTab?: Tab;
+  initialTab?: SongTab;
   inPlaylist?: boolean;
+  canAccessSlides?: boolean;
+  userSlides?: string[] | null;
   notice?: ReactNode;
 }) {
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [tab, setTab] = useState<SongTab>(canAccessSlides ? initialTab : initialTab === 'slides' ? 'letra' : initialTab);
   const [viewKey, setViewKey] = useState(initialKey);
   const [instrumento, setInstrumento] = useState<Instrumento>(initialInstrumento);
   const instruments = availableInstruments(song, overrides);
@@ -60,8 +66,13 @@ export default function ChordView({
   const hasChords = instruments.length > 0;
 
   const syncUrl = useCallback(
-    (nextTab: Tab, nextKey: string, nextInstrumento: Instrumento) => {
-      const path = nextTab === 'letra' ? `/musica/${song.slug}` : cifraPath(song.slug, nextKey, nextInstrumento);
+    (nextTab: SongTab, nextKey: string, nextInstrumento: Instrumento) => {
+      const path =
+        nextTab === 'letra'
+          ? `/musica/${song.slug}`
+          : nextTab === 'slides'
+            ? slidesPath(song.slug)
+            : cifraPath(song.slug, nextKey, nextInstrumento);
       window.history.pushState(null, '', `${path}${playlistQuery(inPlaylist)}`);
     },
     [song.slug, inPlaylist]
@@ -77,12 +88,13 @@ export default function ChordView({
   );
 
   const selectTab = useCallback(
-    (next: Tab) => {
+    (next: SongTab) => {
       if (next === tab) return;
+      if (next === 'slides' && !canAccessSlides) return;
       setTab(next);
       syncUrl(next, viewKey, instrumento);
     },
-    [tab, viewKey, instrumento, syncUrl]
+    [tab, viewKey, instrumento, syncUrl, canAccessSlides]
   );
 
   const selectInstrumento = useCallback(
@@ -97,17 +109,25 @@ export default function ChordView({
   useEffect(() => {
     function syncFromUrl() {
       const fromPath = pathFromLocation(window.location.pathname);
+      if (fromPath.tab === 'slides' && !canAccessSlides) {
+        setTab('letra');
+        return;
+      }
       setTab(fromPath.tab);
       if (fromPath.key) setViewKey(fromPath.key);
       if (fromPath.tab === 'cifra') setInstrumento(fromPath.instrumento);
     }
     window.addEventListener('popstate', syncFromUrl);
     return () => window.removeEventListener('popstate', syncFromUrl);
-  }, []);
+  }, [canAccessSlides]);
 
   useEffect(() => {
     if (tab === 'letra') {
       document.title = `${song.title} — Letra · Banco de Músicas do Lyra`;
+      return;
+    }
+    if (tab === 'slides') {
+      document.title = `${song.title} — Slides · Banco de Músicas do Lyra`;
       return;
     }
     const kind = instrumento === 'violao' ? 'Cifra de violão' : 'Cifra';
@@ -137,7 +157,33 @@ export default function ChordView({
   const shareTitle =
     tab === 'letra'
       ? `${song.title} — ${song.artist}`
-      : `${song.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
+      : tab === 'slides'
+        ? `${song.title} — Slides`
+        : `${song.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
+
+  const tabs = (
+    <SongTabs
+      slug={song.slug}
+      active={tab}
+      hasChords={hasChords}
+      chordKeySlug={chordKeySlug}
+      instrumento={instrumento}
+      canAccessSlides={canAccessSlides}
+      onSelect={selectTab}
+    />
+  );
+
+  if (tab === 'slides' && canAccessSlides) {
+    return (
+      <div className="slides-page">
+        <div className="slides-toolbar no-print">
+          {tabs}
+          <p className="slides-toolbar__title">{song.title}</p>
+        </div>
+        <SlidesEditor songId={song.id} savedSlides={userSlides} lyricsSeed={lyrics} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -145,16 +191,7 @@ export default function ChordView({
       <SongControlPanel
         shareTitle={shareTitle}
         showWrap={tab === 'cifra'}
-        tabs={
-          <SongTabs
-            slug={song.slug}
-            active={tab}
-            hasChords={hasChords}
-            chordKeySlug={chordKeySlug}
-            instrumento={instrumento}
-            onSelect={selectTab}
-          />
-        }
+        tabs={tabs}
         keyControl={
           tab === 'cifra' ? (
             <KeyBar
