@@ -1,18 +1,21 @@
 import Link from 'next/link';
 import HeaderTools from '@/components/HeaderTools';
 import { ChevronLeftIcon } from '@/components/icons';
-import { accountLabelFromEmail, getAuthUser } from '@/lib/auth';
+import { accountLabelFromEmail, getAuthSession } from '@/lib/auth';
 
 export default async function SiteHeader({
   left,
   backHref,
+  homeHref = '/',
 }: {
   left?: React.ReactNode;
   backHref?: string;
+  /** Destino da marca. No painel admin aponta para /admin. */
+  homeHref?: string;
   /** @deprecated O bloco da direita é fixo (status, conta, sair, tema). */
   right?: React.ReactNode;
 }) {
-  const user = await getAuthUser();
+  const { user } = await getAuthSession();
   const signedIn = Boolean(user);
 
   return (
@@ -26,7 +29,7 @@ export default async function SiteHeader({
           ) : (
             left ?? null
           )}
-          <Link href="/" className="brand">
+          <Link href={homeHref} className="brand">
             <span className="brand__mark">
               <img
                 className="brand__logo brand__logo--dark"

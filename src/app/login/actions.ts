@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { resolveLoginEmail, safeNextPath } from '@/lib/auth';
+import { destinationForRole, resolveLoginEmail } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export type SignInState = { error: string | null };
@@ -9,9 +9,11 @@ export type SignInState = { error: string | null };
 export async function signIn(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const login = String(formData.get('login') ?? '');
   const password = String(formData.get('password') ?? '');
-  const next = safeNextPath(String(formData.get('next') ?? ''));
+  const requestedNext = String(formData.get('next') ?? '');
 
   if (!password) return { error: 'Informe o nome e a senha.' };
+
+  let isAdmin = false;
 
   try {
     const supabase = await createClient();
@@ -28,9 +30,16 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
           error.message === 'Invalid login credentials' ? 'Nome ou senha incorretos.' : error.message,
       };
     }
+
+    try {
+      const { data } = await supabase.rpc('is_admin');
+      isAdmin = Boolean(data);
+    } catch {
+      isAdmin = false;
+    }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Não foi possível entrar.' };
   }
 
-  redirect(next);
+  redirect(destinationForRole(isAdmin, requestedNext));
 }

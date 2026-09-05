@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import CustomPlaylistSlides from '@/components/CustomPlaylistSlides';
-import { currentUserCanAccessSlides } from '@/lib/auth';
+import { ADMIN_HOME, canAccessSlides, getAuthSession } from '@/lib/auth';
 import { customPlaylistPath } from '@/lib/playlist';
 import { loadUserCustomSlides } from '@/lib/user-slides';
 
@@ -22,8 +22,9 @@ export default async function CustomPlaylistSongPage({
 }) {
   const { id } = await params;
   const { pl } = await searchParams;
-  const allowed = await currentUserCanAccessSlides();
-  if (!allowed) {
+  const session = await getAuthSession();
+  if (session.isAdmin) redirect(ADMIN_HOME);
+  if (!canAccessSlides(session.user, session.isAdmin)) {
     const next = `${customPlaylistPath(id)}${pl === '1' ? '?pl=1' : ''}`;
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }

@@ -1,7 +1,9 @@
+import { redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SearchBox from '@/components/SearchBox';
 import HomeCatalog from '@/components/HomeCatalog';
 import PlaylistFab from '@/components/PlaylistFab';
+import { ADMIN_HOME, getAuthSession } from '@/lib/auth';
 import { searchSongs } from '@/lib/songs';
 import { SEARCH_FIELDS, fieldIdsToWeights, parseFieldIds } from '@/lib/search-fields';
 import type { SearchHit } from '@/lib/types';
@@ -9,6 +11,9 @@ import type { SearchHit } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ q?: string; c?: string }> }) {
+  const { isAdmin } = await getAuthSession();
+  if (isAdmin) redirect(ADMIN_HOME);
+
   const { q = '', c } = await searchParams;
   const query = q.trim();
   const fieldIds = parseFieldIds(c);

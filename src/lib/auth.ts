@@ -1,5 +1,16 @@
+import { cache } from 'react';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+
+export {
+  ADMIN_HOME,
+  DEFAULT_AFTER_LOGIN,
+  USER_HOME,
+  destinationForRole,
+  isAdminPath,
+  isUserExperiencePath,
+  safeNextPath,
+} from '@/lib/auth-routes';
 
 /** Fallback se a conta ainda não existir no Auth (ex.: nome@lyra.local). */
 export const AUTH_LOGIN_DOMAIN = 'lyra.local';
@@ -51,6 +62,11 @@ export function accountLabelFromEmail(email: string | null | undefined): string 
   return name.toUpperCase();
 }
 
+export type AuthSession = {
+  user: User | null;
+  isAdmin: boolean;
+};
+
 /** Sessão atual. Falha de ambiente ou de rede conta como visitante. */
 export async function getAuthUser(): Promise<User | null> {
   try {
@@ -64,25 +80,29 @@ export async function getAuthUser(): Promise<User | null> {
   }
 }
 
+/** Sessão + se a conta é admin. Uma consulta por request. */
+export const getAuthSession = cache(async (): Promise<AuthSession> => {
+  const user = await getAuthUser();
+  if (!user) return { user: null, isAdmin: false };
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.rpc('is_admin');
+    return { user, isAdmin: Boolean(data) };
+  } catch {
+    return { user, isAdmin: false };
+  }
+});
+
 /**
- * Quem pode abrir a aba Slides.
- * Por enquanto: qualquer conta autenticada (o login atual do site).
- * Depois este ponto troca para o login específico dessa área.
+ * Quem pode abrir a aba Slides e a playlist do culto.
+ * Conta autenticada de usuário comum — admin não herda essa experiência.
  */
-export function canAccessSlides(user: User | null | undefined): boolean {
-  return Boolean(user);
+export function canAccessSlides(user: User | null | undefined, isAdmin = false): boolean {
+  return Boolean(user) && !isAdmin;
 }
 
 export async function currentUserCanAccessSlides(): Promise<boolean> {
-  return canAccessSlides(await getAuthUser());
+  const { user, isAdmin } = await getAuthSession();
+  return canAccessSlides(user, isAdmin);
 }
 
-/** Destino padrão depois do login: playlist do culto, não a área admin. */
-export const DEFAULT_AFTER_LOGIN = '/playlist';
-
-/** Só aceita caminho interno. Evita open redirect. */
-export function safeNextPath(raw: string | null | undefined, fallback = DEFAULT_AFTER_LOGIN): string {
-  const value = String(raw ?? '').trim();
-  if (value.startsWith('/') && !value.startsWith('//')) return value;
-  return fallback;
-}

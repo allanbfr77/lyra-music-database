@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { ADMIN_HOME, destinationForRole, isUserExperiencePath } from '@/lib/auth-routes';
 
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
 /**
- * Mantém a sessão do admin renovada e bloqueia /admin para quem não está logado.
- * A proteção real dos dados é feita pelo RLS no Supabase — isto é só a porta.
+ * Mantém a sessão renovada, bloqueia /admin sem login e separa
+ * a experiência do admin da do usuário comum.
  */
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -39,7 +40,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  // Slides: só quem está logado. O critério fino fica em canAccessSlides().
+  // Slides e playlist personalizada: só quem está logado.
   if (
     (/^\/musica\/[^/]+\/slides\/?$/.test(pathname) || /^\/playlist\/custom\/[^/]+\/?$/.test(pathname)) &&
     !user
@@ -50,15 +51,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  if (pathname === '/login' && user) {
-    const next = request.nextUrl.searchParams.get('next');
-    const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/playlist';
-    return NextResponse.redirect(new URL(dest, request.url));
+  if (user) {
+    const { data: isAdmin } = await supabase.rpc('is_admin');
+    const admin = Boolean(isAdmin);
+
+    if (pathname === '/login') {
+      const next = request.nextUrl.searchParams.get('next');
+      return NextResponse.redirect(new URL(destinationForRole(admin, next), request.url));
+    }
+
+    if (admin && isUserExperiencePath(pathname)) {
+      return NextResponse.redirect(new URL(ADMIN_HOME, request.url));
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/musica/:slug/slides', '/playlist/custom/:id'],
+  matcher: ['/admin/:path*', '/login', '/musica/:slug/slides', '/playlist', '/playlist/:path*'],
 };

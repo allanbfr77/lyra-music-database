@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
-import { currentUserCanAccessSlides } from '@/lib/auth';
+import { ADMIN_HOME, canAccessSlides, getAuthSession } from '@/lib/auth';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
 import { isPlaylistQuery } from '@/lib/playlist';
 import { slidesPath } from '@/lib/slides';
@@ -30,8 +30,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function SlidesPage({ params, searchParams }: Params) {
   const { slug } = await params;
   const inPlaylist = isPlaylistQuery((await searchParams).pl);
-  const allowed = await currentUserCanAccessSlides();
-  if (!allowed) {
+  const session = await getAuthSession();
+  if (session.isAdmin) redirect(ADMIN_HOME);
+  if (!canAccessSlides(session.user, session.isAdmin)) {
     redirect(`/login?next=${encodeURIComponent(`${slidesPath(slug)}${inPlaylist ? '?pl=1' : ''}`)}`);
   }
 

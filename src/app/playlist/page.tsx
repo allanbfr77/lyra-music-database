@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
 import PlaylistBuilder from '@/components/PlaylistBuilder';
-import { canAccessSlides, getAuthUser } from '@/lib/auth';
+import { canAccessSlides, getAuthSession } from '@/lib/auth';
 import { searchSongs } from '@/lib/songs';
-import { createClient } from '@/lib/supabase/server';
 import type { SearchHit } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -21,20 +20,14 @@ export default async function PlaylistPage() {
     songs = [];
   }
 
-  const user = await getAuthUser();
-  const cultoMode = canAccessSlides(user);
-  let isAdmin = false;
-  if (user) {
-    const supabase = await createClient();
-    const { data } = await supabase.rpc('is_admin');
-    isAdmin = Boolean(data);
-  }
+  const { user, isAdmin } = await getAuthSession();
+  const cultoMode = canAccessSlides(user, isAdmin);
 
   return (
     <>
       <SiteHeader backHref="/" />
       <main className="shell">
-        <PlaylistBuilder songs={songs} cultoMode={cultoMode} isAdmin={isAdmin} />
+        <PlaylistBuilder songs={songs} cultoMode={cultoMode} />
       </main>
     </>
   );
