@@ -27,7 +27,7 @@ export default async function PlaylistPage() {
     <>
       <SiteHeader backHref="/" />
       <main className="shell">
-        <PlaylistBuilder songs={songs} cultoMode={cultoMode} />
+        <PlaylistBuilder songs={songs} cultoMode={cultoMode} loggedIn={Boolean(user)} />
       </main>
     </>
   );

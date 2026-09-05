@@ -368,6 +368,31 @@ svg { flex: none; }
 .field__label { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
 .field__hint { font-size: 12.5px; color: var(--text-faint); margin-top: 6px; line-height: 1.45; }
 
+.key-detect {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+.key-detect[data-confidence='high'][data-match='true'] { color: var(--ok); }
+.key-detect[data-confidence='medium'] { color: var(--accent); }
+.key-detect[data-confidence='low'] { color: var(--text-faint); }
+.key-detect__apply {
+  display: inline;
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.key-detect__apply:hover { color: var(--text); }
+
 .input, .textarea, .select {
   width: 100%; padding: 11px 13px; border-radius: 10px;
   border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);

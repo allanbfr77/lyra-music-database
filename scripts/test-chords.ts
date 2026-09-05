@@ -7,8 +7,13 @@ import {
   chartForKey,
   chartToLyrics,
   cifraPath,
+  detectKey,
+  detectSongKey,
+  extractChordSequence,
+  keyDisplayName,
   keyToSlug,
   parseChart,
+  parseChord,
   slugToKey,
   transposeChart,
   uniqueChords,
@@ -98,6 +103,66 @@ check(
   'sem cifra de violão não lista violão',
   availableInstruments({ chords: 'G', chords_guitar: '' }, []),
   ['teclado']
+);
+
+console.log('\nNomes de tom');
+check('Am em português', keyDisplayName('Am'), 'Am (Lá menor)');
+check('F# em português', keyDisplayName('F#'), 'F# (Fá sustenido maior)');
+check('Bb em português', keyDisplayName('Bb'), 'Bb (Si bemol maior)');
+
+console.log('\nParser de acorde (fundamental nas inversões)');
+check('Am7 fundamental', parseChord('Am7')?.root, 'A');
+check('F9/C usa F, não C', parseChord('F9/C')?.root, 'F');
+check('G11/B usa G, não B', parseChord('G11/B')?.root, 'G');
+check('C/E usa C, não E', parseChord('C/E')?.root, 'C');
+check('Dm7 fundamental', parseChord('Dm7')?.root, 'D');
+
+console.log('\nDetecção de tom');
+const userExample = 'Am7  F9/C  C  G11/B  Dm7';
+const userGuess = detectKey(userExample);
+check('exemplo do usuário → Am', userGuess?.key, 'Am');
+check('exemplo do usuário não é C', userGuess?.key !== 'C', true);
+
+const formatted = [
+  '[Intro] Am7  F9/C  C  G11/B',
+  '',
+  'Am7           F9/C         C',
+  'Tu és o Deus de toda a terra',
+  '        G11/B        Dm7',
+  'Em teu nome eu vou vencer',
+].join('\n');
+check('cifra formatada → Am', detectKey(formatted)?.key, 'Am');
+check(
+  'análise não altera a cifra',
+  formatted,
+  [
+    '[Intro] Am7  F9/C  C  G11/B',
+    '',
+    'Am7           F9/C         C',
+    'Tu és o Deus de toda a terra',
+    '        G11/B        Dm7',
+    'Em teu nome eu vou vencer',
+  ].join('\n')
+);
+
+check('I–V–vi–IV em C', detectKey('C  G  Am  F')?.key, 'C');
+check('G D Em C → G', detectKey('G  D  Em  C')?.key, 'G');
+check('Em C G D → Em', detectKey('Em  C  G  D')?.key, 'Em');
+check('Am F C E7 → Am (dominante menor)', detectKey('Am  F  C  E7')?.key, 'Am');
+check('C G Am F C → C (resolve no I)', detectKey('C  G  Am  F  C')?.key, 'C');
+check('começa em Am mas resolve em C', detectKey('Am  F  C  G  C')?.key, 'C');
+check('G C D G → G (não só o primeiro acorde)', detectKey('G  C  D  G')?.key, 'G');
+check('lista com vírgulas', detectKey('Am7, F9/C, C, G11/B, Dm7')?.key, 'Am');
+check('cifra vazia', detectKey(''), null);
+check(
+  'teclado vazio usa violão',
+  detectSongKey('', 'Em  C  G  D')?.key,
+  'Em'
+);
+check(
+  'sequência ignora letra',
+  extractChordSequence(formatted).map((c) => c.root),
+  ['A', 'F', 'C', 'G', 'A', 'F', 'C', 'G', 'D']
 );
 
 console.log(failures === 0 ? '\n✅ Todos os testes passaram.\n' : `\n❌ ${failures} teste(s) falharam.\n`);

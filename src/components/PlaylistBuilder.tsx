@@ -53,10 +53,12 @@ export default function PlaylistBuilder({
   songs,
   cultoMode = false,
   isAdmin = false,
+  loggedIn = false,
 }: {
   songs: SearchHit[];
   cultoMode?: boolean;
   isAdmin?: boolean;
+  loggedIn?: boolean;
 }) {
   const [items, setItems] = useState<PlaylistItem[]>([]);
   const [query, setQuery] = useState('');
@@ -248,9 +250,11 @@ export default function PlaylistBuilder({
         <button type="button" className="btn btn--primary" onClick={focusAdd}>
           Adicionar música
         </button>
-        <button type="button" className="btn btn--ghost" onClick={addBlank}>
-          + Música em branco
-        </button>
+        {loggedIn ? (
+          <button type="button" className="btn btn--ghost" onClick={addBlank}>
+            + Música em branco
+          </button>
+        ) : null}
         {items.length > 0 ? (
           <button type="button" className="btn btn--ghost" onClick={clear}>
             {cultoMode ? 'Nova playlist' : 'Limpar'}

@@ -4,7 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
-import { allKeysFor, cifraPath, normalizeKey, transposeChart } from '@/lib/chords';
+import {
+  allKeysFor,
+  cifraPath,
+  detectSongKey,
+  keyDisplayName,
+  normalizeKey,
+  transposeChart,
+  type KeyDetection,
+} from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
 import { ExternalLinkIcon, PencilIcon } from '@/components/icons';
@@ -61,6 +69,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [slug, setSlug] = useState(initial.slug);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.slug));
   const [baseKey, setBaseKey] = useState(normalizeKey(initial.base_key, 'G'));
+  // Música já salva: o admin confirmou o tom. Música nova: a cifra preenche sozinha.
+  const [keyTouched, setKeyTouched] = useState(Boolean(initial.id));
   const [lyrics, setLyrics] = useState(initial.lyrics);
   const [chords, setChords] = useState(initial.chords);
   const [chordsGuitar, setChordsGuitar] = useState(initial.chords_guitar ?? '');
@@ -97,6 +107,18 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const okRef = useRef<HTMLButtonElement>(null);
 
   const effectiveSlug = slugTouched ? slugify(slug || title) : slugify(title);
+  const detectedKey = useMemo(
+    () => detectSongKey(chords, chordsGuitar),
+    [chords, chordsGuitar]
+  );
+
+  useEffect(() => {
+    if (!detectedKey || keyTouched) return;
+    if (detectedKey.confidence === 'low') return;
+    const next = normalizeKey(detectedKey.key);
+    if (next !== normalizeKey(baseKey)) setBaseKey(next);
+  }, [detectedKey, keyTouched, baseKey]);
+
   const twelveKeys = useMemo(() => allKeysFor(baseKey), [baseKey]);
   const effectiveKeys = useMemo(
     () => (keysTouched ? availableKeys : twelveKeys.filter((k) => k !== normalizeKey(baseKey))),
@@ -144,7 +166,11 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       lyrics,
       chords,
       chords_guitar: chordsGuitar,
-      base_key: normalizeKey(baseKey),
+      base_key: normalizeKey(
+        !keyTouched && detectedKey && detectedKey.confidence !== 'low'
+          ? detectedKey.key
+          : baseKey
+      ),
       available_keys: effectiveKeys,
       capo,
       tempo_bpm: bpm.trim() ? Number(bpm) : null,
@@ -229,23 +255,37 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         <div className="row">
           <label className="field">
             <span className="field__label">Tom original</span>
-            <select className="select" value={normalizeKey(baseKey)} onChange={(e) => setBaseKey(e.target.value)}>
+            <select
+              className="select"
+              value={normalizeKey(baseKey)}
+              onChange={(e) => {
+                setKeyTouched(true);
+                setBaseKey(e.target.value);
+              }}
+            >
               <optgroup label="Maior">
                 {MAJOR_KEYS.map((k) => (
                   <option key={k} value={k}>
-                    {k}
+                    {keyDisplayName(k)}
                   </option>
                 ))}
               </optgroup>
               <optgroup label="Menor">
                 {MINOR_KEYS.map((k) => (
                   <option key={k} value={k}>
-                    {k}
+                    {keyDisplayName(k)}
                   </option>
                 ))}
               </optgroup>
             </select>
-            <span className="field__hint">O tom em que você digitou a cifra.</span>
+            <KeyDetectionHint
+              detection={detectedKey}
+              currentKey={baseKey}
+              onApply={(key) => {
+                setKeyTouched(true);
+                setBaseKey(key);
+              }}
+            />
           </label>
 
           <label className="field">
@@ -346,7 +386,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
           <label className="field">
             <span className="field__label">
-              Cifra de {instrumentTab === 'violao' ? 'violão' : 'teclado'} no tom de {normalizeKey(baseKey)}
+              Cifra de {instrumentTab === 'violao' ? 'violão' : 'teclado'} no tom de {keyDisplayName(normalizeKey(baseKey))}
             </span>
             <textarea
               className="textarea textarea--mono"
@@ -498,5 +538,54 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </div>
       )}
     </main>
+  );
+}
+
+function KeyDetectionHint({
+  detection,
+  currentKey,
+  onApply,
+}: {
+  detection: KeyDetection | null;
+  currentKey: string;
+  onApply: (key: string) => void;
+}) {
+  if (!detection) {
+    return (
+      <span className="field__hint">
+        O tom é identificado automaticamente ao colar a cifra. Você pode corrigir se precisar.
+      </span>
+    );
+  }
+
+  const detected = normalizeKey(detection.key);
+  const current = normalizeKey(currentKey);
+  const matches = detected === current;
+  const possible = detection.confidence !== 'high';
+  const label = possible
+    ? `Possível tom: ${keyDisplayName(detected)}`
+    : `Tom detectado: ${keyDisplayName(detected)}`;
+  const alt =
+    detection.alternatives.length > 0
+      ? ` Também combina com ${detection.alternatives.map((k) => keyDisplayName(k)).join(', ')}.`
+      : '';
+
+  return (
+    <span className="key-detect" data-confidence={detection.confidence} data-match={matches}>
+      {matches ? (
+        <>
+          {label}. Este é o tom original usado na transposição.
+          {possible ? ' Confirme ou corrija no seletor se a cifra for ambígua.' : ''}
+          {alt}
+        </>
+      ) : (
+        <>
+          {label}.{alt}
+          <button type="button" className="key-detect__apply" onClick={() => onApply(detected)}>
+            Usar este tom
+          </button>
+        </>
+      )}
+    </span>
   );
 }
