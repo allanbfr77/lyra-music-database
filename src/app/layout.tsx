@@ -71,6 +71,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
   viewportFit: 'cover',
   // Valor inicial (tema escuro, o padrão); o botão sol/lua atualiza em runtime.
   themeColor: THEME_COLOR.dark,

@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import HomeCatalog from '@/components/HomeCatalog';
+import { PlusIcon, SearchIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/server';
-import { normalizeKey } from '@/lib/chords';
-import { ChevronRightIcon, PlusIcon, SearchIcon } from '@/components/icons';
+import type { CatalogSong } from '@/components/SongList';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,18 +20,33 @@ type Row = {
 
 export default async function AdminHome({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = '' } = await searchParams;
+  const query = q.trim();
   const supabase = await createClient();
 
-  let query = supabase
+  let request = supabase
     .from('songs')
     .select('id, slug, title, artist, base_key, available_keys, published, chords, updated_at')
-    .order('updated_at', { ascending: false })
+    .order('title', { ascending: true })
     .limit(200);
 
-  if (q.trim()) query = query.or(`title.ilike.%${q.trim()}%,artist.ilike.%${q.trim()}%`);
+  if (query) request = request.or(`title.ilike.%${query}%,artist.ilike.%${query}%`);
 
-  const { data, error } = await query;
-  const songs = (data ?? []) as Row[];
+  const { data, error } = await request;
+  const rows = (data ?? []) as Row[];
+  const songs: CatalogSong[] = rows.map((song) => ({
+    id: song.id,
+    slug: song.slug,
+    title: song.title,
+    artist: song.artist,
+    base_key: song.base_key,
+    available_keys: song.available_keys ?? [],
+    has_chords: Boolean(song.chords?.trim()),
+    snippet: null,
+    updated_at: song.updated_at,
+    rank: 0,
+    href: `/admin/musica/${song.id}`,
+    draft: !song.published,
+  }));
 
   return (
     <main className="shell">
@@ -54,42 +70,21 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <div className="alert alert--error" style={{ marginTop: 18 }}>
           {error.message}
         </div>
-      ) : songs.length === 0 ? (
-        <div className="empty">
-          <strong>Nenhuma música cadastrada</strong>
-          <span className="small">Comece cadastrando a primeira.</span>
-        </div>
       ) : (
-        <ul className="song-list" style={{ marginTop: 18 }}>
-          {songs.map((song) => (
-            <li key={song.id} className="song-item">
-              <Link href={`/admin/musica/${song.id}`} className="song-item__link">
-                <div className="song-item__body">
-                  <div className="song-item__title">
-                    {song.title}
-                    {!song.published && (
-                      <span className="chip" style={{ marginLeft: 8, fontSize: 11 }}>
-                        rascunho
-                      </span>
-                    )}
-                  </div>
-                  <div className="song-item__artist">
-                    {song.artist || 'Sem artista'} · /{song.slug}
-                  </div>
-                  <div className="song-item__snippet">
-                    {song.chords?.trim()
-                      ? `${(song.available_keys ?? []).length || 1} tom(ns) publicado(s)`
-                      : 'sem cifra'}
-                  </div>
-                </div>
-                <span className="song-item__key">{normalizeKey(song.base_key)}</span>
-                <span className="song-item__chevron">
-                  <ChevronRightIcon size={16} />
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <HomeCatalog
+          songs={songs}
+          query={query}
+          fieldLabels="título e artista"
+          showKeyFilter={false}
+          emptyNoQuery={{
+            title: 'Nenhuma música cadastrada',
+            hint: 'Comece cadastrando a primeira.',
+          }}
+          emptyNoResults={{
+            title: 'Nada encontrado',
+            hint: 'Tente outro título ou artista.',
+          }}
+        />
       )}
     </main>
   );

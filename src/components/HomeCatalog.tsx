@@ -1,12 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import Link from 'next/link';
-import SongList from '@/components/SongList';
+import SongList, { type CatalogSong } from '@/components/SongList';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
-import type { SearchHit } from '@/lib/types';
 
-function keysInResults(songs: SearchHit[]): string[] {
+function keysInResults(songs: CatalogSong[]): string[] {
   const present = new Set(songs.map((song) => normalizeKey(song.base_key)));
   return [...allKeysFor('C'), ...allKeysFor('Am')].filter((key) => present.has(key));
 }
@@ -29,22 +28,31 @@ export default function HomeCatalog({
   query,
   fieldLabels,
   showSnippet = false,
+  showKeyFilter = true,
+  emptyNoQuery = {
+    title: 'Nenhuma música cadastrada',
+    hint: 'Cadastre a primeira música em /admin.',
+  },
+  emptyNoResults = {
+    title: 'Nada encontrado',
+    hint: '',
+  },
 }: {
-  songs: SearchHit[];
+  songs: CatalogSong[];
   query: string;
   fieldLabels: string;
   showSnippet?: boolean;
+  showKeyFilter?: boolean;
+  emptyNoQuery?: { title: string; hint: string };
+  emptyNoResults?: { title: string; hint: string };
 }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const filterId = useId();
   const keys = useMemo(() => keysInResults(songs), [songs]);
   const activeKey = selectedKey && keys.includes(selectedKey) ? selectedKey : null;
   const visible = activeKey
     ? songs.filter((song) => normalizeKey(song.base_key) === activeKey)
     : songs;
-
-  function toggleKey(key: string) {
-    setSelectedKey((current) => (current === key ? null : key));
-  }
 
   const rule = <div className="search-rule" role="separator" aria-hidden="true" />;
   const summary = contextParts(songs.length, visible.length, query, activeKey);
@@ -55,9 +63,15 @@ export default function HomeCatalog({
         <>
           {rule}
           <div className="empty">
-            <strong>Nenhuma música cadastrada</strong>
+            <strong>{emptyNoQuery.title}</strong>
             <span className="small">
-              Cadastre a primeira música em <Link href="/admin">/admin</Link>.
+              {emptyNoQuery.hint.includes('/admin') ? (
+                <>
+                  Cadastre a primeira música em <Link href="/admin">/admin</Link>.
+                </>
+              ) : (
+                emptyNoQuery.hint
+              )}
             </span>
           </div>
         </>
@@ -67,9 +81,10 @@ export default function HomeCatalog({
       <>
         {rule}
         <div className="empty">
-          <strong>Nada encontrado</strong>
+          <strong>{emptyNoResults.title}</strong>
           <span className="small">
-            A busca procurou em {fieldLabels}. Tente outra palavra ou marque mais campos acima.
+            {emptyNoResults.hint ||
+              `A busca procurou em ${fieldLabels}. Tente outra palavra ou marque mais campos acima.`}
           </span>
         </div>
       </>
@@ -78,23 +93,22 @@ export default function HomeCatalog({
 
   return (
     <>
-      {keys.length > 0 && (
-        <div className="key-chips" role="group" aria-label="Filtrar por tom">
-          {keys.map((key) => {
-            const on = activeKey === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                className="chip"
-                data-active={on}
-                aria-pressed={on}
-                onClick={() => toggleKey(key)}
-              >
+      {showKeyFilter && keys.length > 0 && (
+        <div className="key-filter">
+          <select
+            id={filterId}
+            className="select key-filter__select"
+            value={activeKey ?? ''}
+            aria-label="Filtrar por tom"
+            onChange={(event) => setSelectedKey(event.target.value || null)}
+          >
+            <option value="">Todos os tons</option>
+            {keys.map((key) => (
+              <option key={key} value={key}>
                 {key}
-              </button>
-            );
-          })}
+              </option>
+            ))}
+          </select>
         </div>
       )}
       {rule}

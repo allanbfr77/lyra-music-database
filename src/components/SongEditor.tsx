@@ -232,7 +232,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
       <div className="card">
         <label className="field">
-          <span className="field__label">Música *</span>
+          <span className="field__label">Música</span>
           <input
             className="input"
             value={title}
@@ -263,9 +263,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             }}
             placeholder="galileu"
           />
-          <span className="field__hint">
-            /musica/<b>{effectiveSlug || 'galileu'}</b> — não mude depois de divulgar o link.
-          </span>
         </label>
 
         <label className="field">
@@ -278,9 +275,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             onChange={(e) => setYoutubeUrl(e.target.value)}
             placeholder="https://www.youtube.com/watch?v=…"
           />
-          <span className="field__hint">
-            Se preencher, a página da música mostra o ícone do YouTube com este vídeo.
-          </span>
         </label>
 
         <label className="field" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -303,15 +297,14 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       {tab === 'letra' ? (
         <div style={{ paddingTop: 16 }}>
           <label className="field">
-            <span className="field__label">Letra</span>
             <textarea
               className="textarea"
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               rows={18}
+              aria-label="Letra"
               placeholder={'Tu és o Deus de toda a terra\nE nada é impossível pra Ti…'}
             />
-            <span className="field__hint">Só a letra, sem acordes. É por aqui que a busca por trecho funciona.</span>
           </label>
         </div>
       ) : (
@@ -401,10 +394,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               />
             </div>
           </div>
-          <p className="field__hint" style={{ marginTop: -10, marginBottom: 16 }}>
-            Acordes em linhas próprias, acima da letra. Tom e capotraste ficam na barra do editor e não entram
-            no texto da cifra. Os demais tons deste instrumento saem daqui automaticamente.
-          </p>
 
           <div className="field">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -442,10 +431,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                 );
               })}
             </div>
-            <span className="field__hint">
-              Cada tom marcado aparece na faixa “Tom” do site e ganha uma URL própria e permanente — a lista é
-              a mesma para teclado e violão. O lápis indica ajuste manual no instrumento selecionado.
-            </span>
           </div>
 
           <div className="field">
@@ -466,10 +451,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                   </option>
                 ))}
             </select>
-            <span className="field__hint">
-              Abre a transposição automática já pronta deste instrumento. Se você editar, aquele tom passa a
-              usar sua versão.
-            </span>
           </div>
 
           {tuningKey && (
@@ -555,11 +536,7 @@ function KeyDetectionHint({
   onApply: (key: string) => void;
 }) {
   if (!detection) {
-    return (
-      <span className="field__hint">
-        O tom é preenchido automaticamente ao colar a cifra. Mudar o Tom não altera o texto.
-      </span>
-    );
+    return null;
   }
 
   const detected = normalizeKey(detection.key);

@@ -267,25 +267,26 @@ export default function PlaylistBuilder({
         ) : null}
       </div>
 
-      <div className="playlist-page__head">
-        <div className="section-title" style={{ margin: 0 }}>
-          {items.length === 0
-            ? 'Nenhuma música na playlist'
-            : `${items.length} ${items.length === 1 ? 'música' : 'músicas'}`}
+      <div className="card playlist-card">
+        <div className="playlist-card__head">
+          <div className="section-title" style={{ margin: 0 }}>
+            {items.length === 0
+              ? 'Nenhuma música na playlist'
+              : `${items.length} ${items.length === 1 ? 'música' : 'músicas'}`}
+          </div>
         </div>
-      </div>
 
-      {items.length === 0 ? (
-        <div className="empty" style={{ marginTop: 8 }}>
-          <strong>Playlist vazia</strong>
-          <span className="small">
-            {cultoMode
-              ? 'Toque em Adicionar música ou crie uma música em branco para medley.'
-              : 'Toque no + ao lado da música para incluir.'}
-          </span>
-        </div>
-      ) : (
-        <ol className="playlist-list" ref={listRef}>
+        {items.length === 0 ? (
+          <div className="empty playlist-card__empty">
+            <strong>Playlist vazia</strong>
+            <span className="small">
+              {cultoMode
+                ? 'Toque em Adicionar música ou crie uma música em branco para medley.'
+                : 'Toque no + ao lado da música para incluir.'}
+            </span>
+          </div>
+        ) : (
+          <ol className="playlist-list" ref={listRef}>
           {items.map((item, index) => {
             const custom = isCustomPlaylistItem(item);
             const editing = custom && editingId === item.id;
@@ -293,85 +294,89 @@ export default function PlaylistBuilder({
               <li
                 key={item.slug}
                 data-slug={item.slug}
-                className={`card playlist-item${custom ? ' playlist-item--custom' : ''}`}
+                className="playlist-item"
               >
                 <div className="playlist-item__row">
-                  <div className="playlist-move">
-                    <button
-                      type="button"
-                      className="playlist-move__btn"
-                      aria-label={`Subir ${item.title}`}
-                      disabled={index === 0}
-                      onClick={() => move(item.slug, -1)}
-                    >
-                      <ChevronUpIcon size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className="playlist-move__btn"
-                      aria-label={`Descer ${item.title}`}
-                      disabled={index === items.length - 1}
-                      onClick={() => move(item.slug, 1)}
-                    >
-                      <ChevronDownIcon size={16} />
-                    </button>
-                  </div>
-                  {custom ? (
-                    <div className="playlist-item__link">
-                      <span className="playlist-badge">{index + 1}</span>
-                      <span className="playlist-item__body">
-                        <input
-                          className="playlist-item__title-input"
-                          value={item.title}
-                          aria-label="Nome da música personalizada"
-                          onChange={(event) => patchItem(item.slug, { title: event.target.value })}
-                          onBlur={(event) => {
-                            if (!event.target.value.trim()) {
-                              patchItem(item.slug, { title: 'Música em branco' });
-                            }
-                          }}
-                        />
-                        <span className="song-item__artist">Só nesta playlist</span>
-                      </span>
-                    </div>
-                  ) : (
-                    <Link href={playlistItemHref(item, hrefMode)} className="playlist-item__link">
-                      <span className="playlist-badge">{index + 1}</span>
-                      <span className="playlist-item__body">
-                        <span className="song-item__title">{item.title}</span>
-                        <span className="song-item__artist">{item.artist || 'Sem artista'}</span>
-                      </span>
-                    </Link>
-                  )}
-                  {custom ? (
-                    <>
+                  <div className="playlist-item__lead">
+                    <div className="playlist-move">
                       <button
                         type="button"
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => setEditingId(editing ? null : item.id)}
+                        className="playlist-move__btn"
+                        aria-label={`Subir ${item.title}`}
+                        disabled={index === 0}
+                        onClick={() => move(item.slug, -1)}
                       >
-                        {editing ? 'Fechar letra' : 'Editar letra'}
+                        <ChevronUpIcon size={16} />
                       </button>
-                      <Link href={playlistItemHref(item, 'slides')} className="btn btn--primary btn--sm">
-                        Slides
+                      <button
+                        type="button"
+                        className="playlist-move__btn"
+                        aria-label={`Descer ${item.title}`}
+                        disabled={index === items.length - 1}
+                        onClick={() => move(item.slug, 1)}
+                      >
+                        <ChevronDownIcon size={16} />
+                      </button>
+                    </div>
+                    {custom ? (
+                      <div className="playlist-item__link">
+                        <span className="playlist-badge">{index + 1}</span>
+                        <span className="playlist-item__body">
+                          <input
+                            className="playlist-item__title-input"
+                            value={item.title}
+                            aria-label="Nome da música personalizada"
+                            onChange={(event) => patchItem(item.slug, { title: event.target.value })}
+                            onBlur={(event) => {
+                              if (!event.target.value.trim()) {
+                                patchItem(item.slug, { title: 'Música em branco' });
+                              }
+                            }}
+                          />
+                          <span className="song-item__artist">Só nesta playlist</span>
+                        </span>
+                      </div>
+                    ) : (
+                      <Link href={playlistItemHref(item, hrefMode)} className="playlist-item__link">
+                        <span className="playlist-badge">{index + 1}</span>
+                        <span className="playlist-item__body">
+                          <span className="song-item__title">{item.title}</span>
+                          <span className="song-item__artist">{item.artist || 'Sem artista'}</span>
+                        </span>
                       </Link>
-                    </>
-                  ) : null}
-                  {!custom && !cultoMode ? (
-                    <PlaylistKeyChip
-                      item={item}
-                      fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
-                      onChange={(key) => setKey(item.slug, key)}
-                    />
-                  ) : null}
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label={`Remover ${item.title}`}
-                    onClick={() => remove(item.slug)}
-                  >
-                    <CloseIcon size={16} />
-                  </button>
+                    )}
+                  </div>
+                  <div className="playlist-item__actions">
+                    {custom ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => setEditingId(editing ? null : item.id)}
+                        >
+                          {editing ? 'Fechar letra' : 'Editar letra'}
+                        </button>
+                        <Link href={playlistItemHref(item, 'slides')} className="btn btn--primary btn--sm">
+                          Slides
+                        </Link>
+                      </>
+                    ) : null}
+                    {!custom && !cultoMode ? (
+                      <PlaylistKeyChip
+                        item={item}
+                        fallbackKeys={songs.find((song) => song.slug === item.slug)?.available_keys}
+                        onChange={(key) => setKey(item.slug, key)}
+                      />
+                    ) : null}
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      aria-label={`Remover ${item.title}`}
+                      onClick={() => remove(item.slug)}
+                    >
+                      <CloseIcon size={16} />
+                    </button>
+                  </div>
                 </div>
                 {editing ? (
                   <label className="playlist-item__editor">
@@ -390,8 +395,9 @@ export default function PlaylistBuilder({
               </li>
             );
           })}
-        </ol>
-      )}
+          </ol>
+        )}
+      </div>
 
       <div className="section-title" ref={catalogRef} id="adicionar-musica">
         Adicionar músicas
@@ -491,7 +497,7 @@ function PlaylistKeyChip({
   if (!canChange) {
     return (
       <span className="key-chip" title="Tom original">
-        {active}
+        <span className="key-chip__label">{active}</span>
       </span>
     );
   }
@@ -508,7 +514,7 @@ function PlaylistKeyChip({
         title="Toque para alterar o tom nesta playlist"
         onClick={() => setOpen((v) => !v)}
       >
-        {active}
+        <span className="key-chip__label">{active}</span>
         <ChevronDownIcon size={14} />
       </button>
       {open ? (

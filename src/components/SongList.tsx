@@ -3,6 +3,11 @@ import type { SearchHit } from '@/lib/types';
 import { keyToSlug, normalizeKey } from '@/lib/chords';
 import { ChevronRightIcon } from '@/components/icons';
 
+export type CatalogSong = SearchHit & {
+  href?: string;
+  draft?: boolean;
+};
+
 /** O Postgres marca os trechos com [[ ]]; escapamos tudo e só então viram <mark>. */
 function highlight(snippet: string): string {
   return snippet
@@ -28,7 +33,7 @@ function groupLetter(title: string) {
   return letter >= 'A' && letter <= 'Z' ? letter : '#';
 }
 
-function groupSongs(songs: SearchHit[]) {
+function groupSongs(songs: CatalogSong[]) {
   const sorted = [...songs].sort((a, b) =>
     foldTitle(a.title).localeCompare(foldTitle(b.title), 'pt-BR')
   );
@@ -47,14 +52,22 @@ function groupSongs(songs: SearchHit[]) {
   return groups;
 }
 
-function SongRow({ song, showSnippet }: { song: SearchHit; showSnippet: boolean }) {
+function songHref(song: CatalogSong) {
+  if (song.href) return song.href;
   const key = normalizeKey(song.base_key);
-  const href = song.has_chords ? `/musica/${song.slug}/cifra/${keyToSlug(key)}` : `/musica/${song.slug}`;
+  return song.has_chords ? `/musica/${song.slug}/cifra/${keyToSlug(key)}` : `/musica/${song.slug}`;
+}
+
+function SongRow({ song, showSnippet }: { song: CatalogSong; showSnippet: boolean }) {
+  const key = normalizeKey(song.base_key);
   return (
     <li className="song-item">
-      <Link href={href} className="song-item__link">
+      <Link href={songHref(song)} className="song-item__link">
         <div className="song-item__body">
-          <div className="song-item__title">{song.title}</div>
+          <div className="song-item__title">
+            {song.title}
+            {song.draft ? <span className="chip song-item__draft">rascunho</span> : null}
+          </div>
           <div className="song-item__artist">{song.artist || 'Sem artista'}</div>
           {showSnippet && song.snippet ? (
             <div className="song-item__snippet" dangerouslySetInnerHTML={{ __html: highlight(song.snippet) }} />
@@ -69,7 +82,7 @@ function SongRow({ song, showSnippet }: { song: SearchHit; showSnippet: boolean 
   );
 }
 
-export default function SongList({ songs, showSnippet = false }: { songs: SearchHit[]; showSnippet?: boolean }) {
+export default function SongList({ songs, showSnippet = false }: { songs: CatalogSong[]; showSnippet?: boolean }) {
   const groups = groupSongs(songs);
 
   return (

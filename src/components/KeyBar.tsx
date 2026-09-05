@@ -87,7 +87,7 @@ export default function KeyBar({
         aria-label={`Tom ${activeKey}. Abrir escolha de tom`}
         onClick={() => setOpen((v) => !v)}
       >
-        {activeKey}
+        <span className="key-chip__label">{activeKey}</span>
         <ChevronDownIcon size={14} />
       </button>
 
