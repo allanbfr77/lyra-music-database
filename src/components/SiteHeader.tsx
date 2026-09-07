@@ -53,6 +53,7 @@ export default async function SiteHeader({
             <span className="brand__sub">music.db</span>
           </Link>
         </div>
+        <div className="site-header__progress" id="lyra-header-progress" />
         <HeaderTools
           signedIn={signedIn}
           accountLabel={accountLabel}

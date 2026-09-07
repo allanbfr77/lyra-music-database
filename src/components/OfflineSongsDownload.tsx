@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckIcon, DownloadIcon } from '@/components/icons';
+import { DownloadIcon } from '@/components/icons';
 import {
   downloadAllSongsToCache,
   isSongCacheDownloadRunning,
@@ -14,6 +14,8 @@ type Phase = 'idle' | 'running' | 'done' | 'error';
 type StartHandler = () => void;
 
 let startHandler: StartHandler | null = null;
+
+const PROGRESS_SLOT_ID = 'lyra-header-progress';
 
 /** Dispara o mesmo download do botão do header (ex.: item do menu mobile). */
 export function requestOfflineSongsDownload() {
@@ -32,11 +34,11 @@ export default function OfflineSongsDownload() {
     currentSlug: null,
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [progressSlot, setProgressSlot] = useState<HTMLElement | null>(null);
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    setProgressSlot(document.getElementById(PROGRESS_SLOT_ID));
     return () => {
       if (doneTimer.current) clearTimeout(doneTimer.current);
     };
@@ -70,24 +72,21 @@ export default function OfflineSongsDownload() {
   }, [startDownload]);
 
   const busy = phase === 'running';
-  const label =
-    phase === 'running'
-      ? 'Baixando…'
-      : phase === 'done'
-        ? 'Concluído'
-        : phase === 'error'
-          ? 'Erro'
-          : 'Baixar';
+  const label = busy ? 'Baixando…' : 'Baixar';
 
   const title =
     phase === 'running'
       ? `Baixando músicas… ${progress.done} de ${progress.total}`
       : phase === 'done'
         ? 'Download concluído — letras e cifras disponíveis localmente'
-        : 'Baixar músicas para acesso rápido';
+        : phase === 'error'
+          ? errorMessage ?? 'Falha no download.'
+          : 'Baixar músicas para acesso rápido';
+
+  const showProgress = phase === 'running' || phase === 'done' || phase === 'error';
 
   const progressBar =
-    mounted && (phase === 'running' || phase === 'done' || phase === 'error')
+    progressSlot && showProgress
       ? createPortal(
           <div
             className="offline-download-bar no-print"
@@ -95,37 +94,50 @@ export default function OfflineSongsDownload() {
             aria-live="polite"
             data-phase={phase}
           >
-            <div className="offline-download-bar__inner">
-              {phase === 'running' ? (
-                <>
-                  <div className="offline-download-bar__label">
-                    Baixando dados: {progress.done} de {progress.total} músicas — {progress.percent}%
-                  </div>
+            {phase === 'running' ? (
+              <>
+                <div
+                  className="offline-download-bar__track"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progress.percent}
+                  role="progressbar"
+                  aria-label={`Download ${progress.percent}%`}
+                >
                   <div
-                    className="offline-download-bar__track"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={progress.percent}
-                    role="progressbar"
-                  >
-                    <div
-                      className="offline-download-bar__fill"
-                      style={{ width: `${progress.percent}%` }}
-                    />
-                  </div>
-                </>
-              ) : phase === 'done' ? (
-                <div className="offline-download-bar__label offline-download-bar__label--ok">
-                  Download concluído — letras e cifras prontas para abertura rápida
+                    className="offline-download-bar__fill"
+                    style={{ width: `${progress.percent}%` }}
+                  />
                 </div>
-              ) : (
-                <div className="offline-download-bar__label offline-download-bar__label--err">
+                <div className="offline-download-bar__meta">
+                  <span className="offline-download-bar__full">
+                    Baixando {progress.done}/{progress.total}
+                    <span className="offline-download-bar__sep"> — </span>
+                    {progress.percent}%
+                  </span>
+                  <span className="offline-download-bar__compact">
+                    {progress.done}/{progress.total} · {progress.percent}%
+                  </span>
+                  <span className="offline-download-bar__minimal">{progress.percent}%</span>
+                </div>
+              </>
+            ) : phase === 'done' ? (
+              <div className="offline-download-bar__meta offline-download-bar__meta--ok">
+                <span className="offline-download-bar__full">Download concluído</span>
+                <span className="offline-download-bar__compact">Concluído</span>
+                <span className="offline-download-bar__minimal">OK</span>
+              </div>
+            ) : (
+              <div className="offline-download-bar__meta offline-download-bar__meta--err">
+                <span className="offline-download-bar__full">
                   {errorMessage ?? 'Falha no download.'}
-                </div>
-              )}
-            </div>
+                </span>
+                <span className="offline-download-bar__compact">Erro</span>
+                <span className="offline-download-bar__minimal">Erro</span>
+              </div>
+            )}
           </div>,
-          document.body
+          progressSlot
         )
       : null;
 
@@ -141,7 +153,7 @@ export default function OfflineSongsDownload() {
         aria-busy={busy}
         data-phase={phase}
       >
-        {phase === 'done' ? <CheckIcon size={14} /> : <DownloadIcon size={14} />}
+        <DownloadIcon size={14} />
         <span className="header-ctrl__text">{label}</span>
       </button>
       {progressBar}

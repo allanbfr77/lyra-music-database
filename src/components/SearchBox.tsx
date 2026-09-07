@@ -5,6 +5,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { CloseIcon, SearchIcon } from '@/components/icons';
 import { DEFAULT_FIELD_IDS, SEARCH_FIELDS, parseFieldIds } from '@/lib/search-fields';
 
+const PLACEHOLDER_DESKTOP = 'Buscar por título, artista ou trecho…';
+const PLACEHOLDER_MOBILE = 'Buscar título, artista ou trecho…';
+
 export default function SearchBox({
   initialQuery = '',
   initialFields = DEFAULT_FIELD_IDS,
@@ -14,6 +17,7 @@ export default function SearchBox({
 }) {
   const [value, setValue] = useState(initialQuery);
   const [fields, setFields] = useState(() => parseFieldIds(initialFields));
+  const [placeholder, setPlaceholder] = useState(PLACEHOLDER_DESKTOP);
   const [, startTransition] = useTransition();
   const router = useRouter();
   const pathname = usePathname();
@@ -26,6 +30,14 @@ export default function SearchBox({
   useEffect(() => {
     setFields(parseFieldIds(initialFields));
   }, [initialFields]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const sync = () => setPlaceholder(mq.matches ? PLACEHOLDER_MOBILE : PLACEHOLDER_DESKTOP);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   const push = useCallback(
     (q: string, ids: string) => {
@@ -72,7 +84,7 @@ export default function SearchBox({
           type="search"
           inputMode="search"
           autoComplete="off"
-          placeholder="Buscar por título, artista ou trecho…"
+          placeholder={placeholder}
           aria-label="Buscar músicas"
           value={value}
           onChange={(e) => setValue(e.target.value)}
