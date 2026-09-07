@@ -37,6 +37,17 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   icons: {
     icon: [
+      {
+        url: '/icons/lyra-db-favicon-dark.svg',
+        type: 'image/svg+xml',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: '/icons/lyra-db-favicon-light.svg',
+        type: 'image/svg+xml',
+        media: '(prefers-color-scheme: light)',
+      },
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
       { url: '/icons/icon-64.png', sizes: '64x64', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -71,7 +82,7 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Banco de Músicas do Lyra',
     locale: 'pt_BR',
-    images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: 'Lyra' }],
+    images: [{ url: '/icons/lyra-db-lockup-512.png', width: 512, height: 512, alt: 'Lyra.db' }],
   },
 };
 

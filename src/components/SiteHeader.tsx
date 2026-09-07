@@ -33,14 +33,14 @@ export default async function SiteHeader({
             <span className="brand__mark">
               <img
                 className="brand__logo brand__logo--dark"
-                src="/icons/icon-64.png"
+                src="/icons/lyra-db-favicon-dark.svg"
                 alt=""
                 width={26}
                 height={26}
               />
               <img
                 className="brand__logo brand__logo--light"
-                src="/icons/icon-192-light.png"
+                src="/icons/lyra-db-favicon-light.svg"
                 alt=""
                 width={26}
                 height={26}

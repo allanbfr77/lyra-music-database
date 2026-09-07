@@ -128,17 +128,28 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 .brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 6px;
   min-width: 0;
   font-weight: 680;
   letter-spacing: -0.02em;
   font-size: 17px;
 }
 .brand__mark {
-  width: 26px; height: 26px; border-radius: 8px; flex: none;
-  overflow: hidden; display: grid; place-items: center;
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  flex: none;
+  overflow: hidden;
 }
-.brand__logo { width: 26px; height: 26px; display: none; }
+.brand__logo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  object-fit: cover;
+}
 :root:not([data-theme='light']) .brand__logo--dark { display: block; }
 :root[data-theme='light'] .brand__logo--light { display: block; }
 .brand__name {
@@ -271,7 +282,7 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 @media (max-width: 720px) {
   .site-header__inner { gap: 8px; padding: 10px 12px; }
   .site-header__lead { gap: 6px; }
-  .brand { gap: 7px; font-size: 16px; }
+  .brand { gap: 5px; font-size: 16px; }
   .header-tools { gap: 4px; }
   .header-slot--status { width: 34px; }
   .header-status { padding: 0; gap: 0; }
@@ -659,7 +670,7 @@ svg { flex: none; }
   background: transparent;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 16px; /* 16px evita zoom automático no iOS */
+  font-size: 13px;
   line-height: 1.4;
   padding: 13px 10px 13px 10px;
 }
@@ -667,6 +678,11 @@ svg { flex: none; }
 .query-search input:focus-visible {
   outline: none;
   box-shadow: none;
+}
+@media (max-width: 640px) {
+  .query-search input {
+    font-size: 11.5px; /* cabe a legenda completa no placeholder */
+  }
 }
 @media (min-width: 641px) {
   .query-search input { font-size: 13px; }
@@ -784,7 +800,7 @@ svg { flex: none; }
   gap: 14px;
   padding: 0 16px 8px;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--text-faint);
   border-bottom: 1px solid var(--border);
@@ -810,7 +826,7 @@ svg { flex: none; }
 .letter-head__label {
   flex: none;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--accent);
@@ -823,38 +839,40 @@ svg { flex: none; }
   grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 64px 20px;
   gap: 14px;
   align-items: center;
-  padding: 13px 16px;
+  padding: 14px 16px;
   transition: background 0.12s ease;
 }
 .song-item__link:hover { background: var(--bg-soft); }
 .song-item__link:active { background: var(--bg-sunk); }
 .song-item__title-wrap { min-width: 0; }
 .song-item__title {
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 550;
+  font-size: 16px;
   letter-spacing: -.01em;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .song-item__draft { margin-left: 8px; font-size: 11px; vertical-align: 1px; }
 .song-item__artist {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text-muted);
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.song-item__artist--nested { display: none; margin-top: 2px; }
+.song-item__artist--nested { display: none; margin-top: 3px; }
 .song-item__artist--col { min-width: 0; }
-.song-item__snippet { font-size: 12.5px; color: var(--text-faint); margin-top: 4px; line-height: 1.45; white-space: normal; }
+.song-item__snippet { font-size: 13.5px; color: var(--text-faint); margin-top: 4px; line-height: 1.45; white-space: normal; }
 .song-item__snippet mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border-radius: 3px; padding: 0 2px; }
 .song-item__key {
   display: block;
   box-sizing: border-box;
   width: 100%;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
@@ -862,7 +880,7 @@ svg { flex: none; }
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-radius: 4px;
-  padding: 3px 0;
+  padding: 4px 0;
   line-height: 1.35;
 }
 .song-item__key--empty {
@@ -879,24 +897,41 @@ svg { flex: none; }
 
 @media (max-width: 640px) {
   .song-table-head {
-    grid-template-columns: minmax(0, 1fr) 52px 16px;
+    grid-template-columns: minmax(0, 1fr) 56px 16px;
     padding: 0 12px 8px;
+    font-size: 11px;
   }
   .song-table-head__artist { display: none; }
   .song-item__link {
-    grid-template-columns: minmax(0, 1fr) 52px 16px;
+    grid-template-columns: minmax(0, 1fr) 56px 16px;
     gap: 10px;
-    padding: 12px;
+    padding: 13px 12px;
   }
+  .song-item__title { font-size: 15.5px; }
+  .song-item__artist { font-size: 13px; }
+  .song-item__key { font-size: 12.5px; }
   .song-item__artist--col { display: none; }
   .song-item__artist--nested { display: block; }
   .letter-head { padding: 16px 12px 6px; }
+  .letter-head__label { font-size: 12px; }
   .db-foot {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  .query-fields { gap: 10px 12px; }
+  .query-fields {
+    gap: 8px 10px;
+    padding: 10px 12px;
+  }
+  .query-fields__label { font-size: 9.5px; }
+  .query-fields .filter {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .query-fields .filter input {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .empty {

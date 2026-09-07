@@ -1,0 +1,11 @@
+<svg width="512" height="512" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<rect x="0" y="0" width="200" height="200" rx="40" fill="#0B0B0D"/>
+<g stroke="#FFFFFF" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<rect x="55" y="52" width="90" height="65" rx="4"/>
+<line x1="83.3" y1="52" x2="83.3" y2="117"/>
+<line x1="116.6" y1="52" x2="116.6" y2="117"/>
+</g>
+<rect x="69" y="52" width="13.5" height="39" rx="2" fill="#FFFFFF"/>
+<rect x="97.5" y="52" width="13.5" height="39" rx="2" fill="#FFFFFF"/>
+<text x="100" y="153" font-family="Helvetica, Arial, sans-serif" font-size="27" font-weight="600" fill="#FFFFFF" text-anchor="middle">Lyra.db</text>
+</svg>
