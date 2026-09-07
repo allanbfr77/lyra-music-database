@@ -60,22 +60,30 @@ function songHref(song: CatalogSong) {
 
 function SongRow({ song, showSnippet }: { song: CatalogSong; showSnippet: boolean }) {
   const key = normalizeKey(song.base_key);
+  const artist = song.artist || 'Sem artista';
   return (
     <li className="song-item">
       <Link href={songHref(song)} className="song-item__link">
-        <div className="song-item__body">
+        <div className="song-item__title-wrap">
           <div className="song-item__title">
             {song.title}
             {song.draft ? <span className="chip song-item__draft">rascunho</span> : null}
           </div>
-          <div className="song-item__artist">{song.artist || 'Sem artista'}</div>
+          <div className="song-item__artist song-item__artist--nested">{artist}</div>
           {showSnippet && song.snippet ? (
             <div className="song-item__snippet" dangerouslySetInnerHTML={{ __html: highlight(song.snippet) }} />
           ) : null}
         </div>
-        {song.has_chords ? <span className="song-item__key">{key}</span> : null}
+        <div className="song-item__artist song-item__artist--col">{artist}</div>
+        {song.has_chords ? (
+          <span className="song-item__key">{key}</span>
+        ) : (
+          <span className="song-item__key song-item__key--empty" aria-hidden="true">
+            —
+          </span>
+        )}
         <span className="song-item__chevron">
-          <ChevronRightIcon size={16} />
+          <ChevronRightIcon size={14} />
         </span>
       </Link>
     </li>
@@ -87,6 +95,12 @@ export default function SongList({ songs, showSnippet = false }: { songs: Catalo
 
   return (
     <div className="song-groups">
+      <div className="song-table-head" aria-hidden="true">
+        <div>TÍTULO</div>
+        <div className="song-table-head__artist">ARTISTA</div>
+        <div className="song-table-head__key">TOM</div>
+        <div />
+      </div>
       {groups.map((group) => (
         <section key={group.letter} aria-label={`Músicas com a letra ${group.letter}`}>
           <div className="letter-head">

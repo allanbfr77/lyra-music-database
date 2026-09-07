@@ -13,8 +13,6 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
 
   if (!password) return { error: 'Informe o nome e a senha.' };
 
-  let isAdmin = false;
-
   try {
     const supabase = await createClient();
     const resolved = await resolveLoginEmail(supabase, login);
@@ -31,15 +29,21 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
       };
     }
 
+    let isAdmin = false;
     try {
       const { data } = await supabase.rpc('is_admin');
       isAdmin = Boolean(data);
     } catch {
       isAdmin = false;
     }
+
+    if (!isAdmin) {
+      await supabase.auth.signOut();
+      return { error: 'Acesso restrito a administradores.' };
+    }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Não foi possível entrar.' };
   }
 
-  redirect(destinationForRole(isAdmin, requestedNext));
+  redirect(destinationForRole(true, requestedNext));
 }

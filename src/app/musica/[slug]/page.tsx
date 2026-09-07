@@ -4,15 +4,12 @@ import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
-import { currentUserCanAccessSlides } from '@/lib/auth';
 import { getSongBySlug, publishedKeys } from '@/lib/songs';
-import { emptySlideCopy, loadUserSongSlides } from '@/lib/user-slides';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
-import { isPlaylistQuery } from '@/lib/playlist';
 
 export const dynamic = 'force-dynamic';
 
-type Params = { params: Promise<{ slug: string }>; searchParams: Promise<{ pl?: string }> };
+type Params = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
@@ -33,15 +30,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function LyricsPage({ params, searchParams }: Params) {
+export default async function LyricsPage({ params }: Params) {
   const { slug } = await params;
-  const inPlaylist = isPlaylistQuery((await searchParams).pl);
-  const [song, canAccessSlides] = await Promise.all([
-    getSongBySlug(slug).catch(() => null),
-    currentUserCanAccessSlides(),
-  ]);
+  const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
-  const slideCopy = canAccessSlides ? await loadUserSongSlides(song.id) : emptySlideCopy();
 
   const instruments = availableInstruments(song, song.overrides);
   const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
@@ -64,12 +56,6 @@ export default async function LyricsPage({ params, searchParams }: Params) {
           initialKey={normalizeKey(song.base_key)}
           instrumento={defaultInstrument}
           initialTab="letra"
-          inPlaylist={inPlaylist}
-          canAccessSlides={canAccessSlides}
-          userSlides={slideCopy.slides}
-          slideSourceLyrics={slideCopy.sourceLyrics}
-          publishedSlides={slideCopy.publishedSlides}
-          publishedAt={slideCopy.publishedAt}
         />
       </main>
     </>

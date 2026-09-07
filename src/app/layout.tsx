@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Montserrat } from 'next/font/google';
+import { IBM_Plex_Mono, Montserrat } from 'next/font/google';
 import './globals.css';
 import { siteUrl } from '@/lib/env';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
@@ -10,6 +10,13 @@ const slidesSans = Montserrat({
   weight: '700',
   subsets: ['latin', 'latin-ext'],
   variable: '--font-slides',
+  display: 'swap',
+});
+
+const plexMono = IBM_Plex_Mono({
+  weight: ['400', '500', '600'],
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -79,7 +86,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" data-theme="dark" className={slidesSans.variable} suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="dark" className={`${slidesSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

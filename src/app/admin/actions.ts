@@ -63,7 +63,6 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       title,
       artist: payload.artist.trim(),
       lyrics: payload.lyrics ?? '',
-      // slides não entram aqui: a letra do admin nunca sobrescreve os slides
       chords: payload.chords ?? '',
       chords_guitar: payload.chords_guitar ?? '',
       base_key: baseKey,

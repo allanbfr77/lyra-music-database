@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import SongList, { type CatalogSong } from '@/components/SongList';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
@@ -10,17 +10,27 @@ function keysInResults(songs: CatalogSong[]): string[] {
   return [...allKeysFor('C'), ...allKeysFor('Am')].filter((key) => present.has(key));
 }
 
-function contextParts(total: number, visible: number, query: string, key: string | null) {
+function recordLabel(total: number, visible: number, query: string, key: string | null) {
   const n = key ? visible : total;
-  const plural = n !== 1;
   if (key) {
-    return {
-      count: n,
-      rest: query ? `resultado${plural ? 's' : ''} em ${key}` : `música${plural ? 's' : ''} em ${key}`,
-    };
+    return (
+      <>
+        <b>{n}</b> {query ? 'resultados' : 'registros'} em {key}
+      </>
+    );
   }
-  if (query) return { count: n, rest: `resultado${plural ? 's' : ''}` };
-  return { count: n, rest: `música${plural ? 's' : ''} no banco` };
+  if (query) {
+    return (
+      <>
+        <b>{n}</b> resultados
+      </>
+    );
+  }
+  return (
+    <>
+      <b>{n}</b> registros
+    </>
+  );
 }
 
 export default function HomeCatalog({
@@ -29,6 +39,7 @@ export default function HomeCatalog({
   fieldLabels,
   showSnippet = false,
   showKeyFilter = true,
+  search,
   emptyNoQuery = {
     title: 'Nenhuma música cadastrada',
     hint: 'Cadastre a primeira música em /admin.',
@@ -43,6 +54,8 @@ export default function HomeCatalog({
   fieldLabels: string;
   showSnippet?: boolean;
   showKeyFilter?: boolean;
+  /** Slot do painel de busca (SearchBox). Quando presente, monta o query builder. */
+  search?: ReactNode;
   emptyNoQuery?: { title: string; hint: string };
   emptyNoResults?: { title: string; hint: string };
 }) {
@@ -54,14 +67,59 @@ export default function HomeCatalog({
     ? songs.filter((song) => normalizeKey(song.base_key) === activeKey)
     : songs;
 
-  const rule = <div className="search-rule" role="separator" aria-hidden="true" />;
-  const summary = contextParts(songs.length, visible.length, query, activeKey);
+  const showMeta = showKeyFilter && keys.length > 0;
+  const countNode =
+    songs.length > 0 ? (
+      <p className="record-count" aria-live="polite">
+        {recordLabel(songs.length, visible.length, query, activeKey)}
+      </p>
+    ) : null;
+
+  let metaRow: ReactNode = null;
+  if (showMeta || countNode) {
+    if (search || showMeta) {
+      metaRow = (
+        <div className="query-meta">
+          {showMeta ? (
+            <select
+              id={filterId}
+              className="select query-meta__select"
+              value={activeKey ?? ''}
+              aria-label="Filtrar por tom"
+              onChange={(event) => setSelectedKey(event.target.value || null)}
+            >
+              <option value="">Todos os tons</option>
+              {keys.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span />
+          )}
+          {countNode}
+        </div>
+      );
+    } else {
+      metaRow = <div className="query-meta query-meta--solo">{countNode}</div>;
+    }
+  }
+
+  const panel = search ? (
+    <div className="query-panel">
+      {search}
+      {metaRow}
+    </div>
+  ) : (
+    metaRow
+  );
 
   if (songs.length === 0) {
     if (!query) {
       return (
         <>
-          {rule}
+          {panel}
           <div className="empty">
             <strong>{emptyNoQuery.title}</strong>
             <span className="small">
@@ -79,7 +137,7 @@ export default function HomeCatalog({
     }
     return (
       <>
-        {rule}
+        {panel}
         <div className="empty">
           <strong>{emptyNoResults.title}</strong>
           <span className="small">
@@ -93,30 +151,12 @@ export default function HomeCatalog({
 
   return (
     <>
-      {showKeyFilter && keys.length > 0 && (
-        <div className="key-filter">
-          <select
-            id={filterId}
-            className="select key-filter__select"
-            value={activeKey ?? ''}
-            aria-label="Filtrar por tom"
-            onChange={(event) => setSelectedKey(event.target.value || null)}
-          >
-            <option value="">Todos os tons</option>
-            {keys.map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      {rule}
-      <p className="catalog-count">
-        <span className="catalog-count__n">{summary.count}</span>
-        <span className="catalog-count__label">{summary.rest}</span>
-      </p>
+      {panel}
       <SongList songs={visible} showSnippet={showSnippet} />
+      <footer className="db-foot">
+        <span>lyra.music.db — v1</span>
+        <span>ordenado por título</span>
+      </footer>
     </>
   );
 }

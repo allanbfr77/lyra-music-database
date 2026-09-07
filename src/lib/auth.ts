@@ -5,10 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 export {
   ADMIN_HOME,
   DEFAULT_AFTER_LOGIN,
-  USER_HOME,
   destinationForRole,
   isAdminPath,
-  isUserExperiencePath,
   safeNextPath,
 } from '@/lib/auth-routes';
 
@@ -92,17 +90,3 @@ export const getAuthSession = cache(async (): Promise<AuthSession> => {
     return { user, isAdmin: false };
   }
 });
-
-/**
- * Quem pode abrir a aba Slides e a playlist do culto.
- * Conta autenticada de usuário comum — admin não herda essa experiência.
- */
-export function canAccessSlides(user: User | null | undefined, isAdmin = false): boolean {
-  return Boolean(user) && !isAdmin;
-}
-
-export async function currentUserCanAccessSlides(): Promise<boolean> {
-  const { user, isAdmin } = await getAuthSession();
-  return canAccessSlides(user, isAdmin);
-}
-

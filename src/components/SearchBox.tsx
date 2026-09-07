@@ -19,6 +19,14 @@ export default function SearchBox({
   const pathname = usePathname();
   const first = useRef(true);
 
+  useEffect(() => {
+    setValue(initialQuery);
+  }, [initialQuery]);
+
+  useEffect(() => {
+    setFields(parseFieldIds(initialFields));
+  }, [initialFields]);
+
   const push = useCallback(
     (q: string, ids: string) => {
       const params = new URLSearchParams();
@@ -55,28 +63,29 @@ export default function SearchBox({
   }
 
   return (
-    <div className="search-row">
-      <form className="search" role="search" onSubmit={(e) => e.preventDefault()}>
-        <span className="search__icon">
-          <SearchIcon size={17} />
+    <>
+      <form className="query-search" role="search" onSubmit={(e) => e.preventDefault()}>
+        <span className="query-search__icon">
+          <SearchIcon size={14} />
         </span>
         <input
           type="search"
           inputMode="search"
           autoComplete="off"
-          placeholder="Buscar no banco de músicas"
+          placeholder="Buscar por título, artista ou trecho…"
           aria-label="Buscar músicas"
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
         {value && (
-          <button type="button" className="search__clear" aria-label="Limpar busca" onClick={() => setValue('')}>
+          <button type="button" className="query-search__clear" aria-label="Limpar busca" onClick={() => setValue('')}>
             <CloseIcon size={16} />
           </button>
         )}
       </form>
 
-      <fieldset className="filters" aria-label="Campos da busca">
+      <fieldset className="query-fields" aria-label="Campos da busca">
+        <span className="query-fields__label">CAMPOS</span>
         {SEARCH_FIELDS.map((field) => {
           const on = fields.includes(field.id);
           return (
@@ -87,6 +96,6 @@ export default function SearchBox({
           );
         })}
       </fieldset>
-    </div>
+    </>
   );
 }

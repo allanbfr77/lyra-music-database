@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SearchBox from '@/components/SearchBox';
 import HomeCatalog from '@/components/HomeCatalog';
-import PlaylistFab from '@/components/PlaylistFab';
 import { ADMIN_HOME, getAuthSession } from '@/lib/auth';
 import { searchSongs } from '@/lib/songs';
 import { SEARCH_FIELDS, fieldIdsToWeights, parseFieldIds } from '@/lib/search-fields';
@@ -32,30 +31,33 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     .map((f) => f.label.toLowerCase())
     .join(', ');
 
+  const search = <SearchBox initialQuery={query} initialFields={fieldIds} />;
+
   return (
     <>
       <SiteHeader />
 
-      <main className="shell shell--fab">
-        <div style={{ paddingTop: 18 }}>
-          <SearchBox initialQuery={query} initialFields={fieldIds} />
+      <main className="shell">
+        <div className="db-browse">
+          {failure ? (
+            <>
+              <div className="query-panel">{search}</div>
+              <div className="empty">
+                <strong>Banco não configurado</strong>
+                <span className="small">{failure}</span>
+              </div>
+            </>
+          ) : (
+            <HomeCatalog
+              search={search}
+              songs={songs}
+              query={query}
+              fieldLabels={activeLabels}
+              showSnippet={Boolean(query) && fieldIds.includes('l')}
+            />
+          )}
         </div>
-
-        {failure ? (
-          <div className="empty" style={{ marginTop: 22 }}>
-            <strong>Banco não configurado</strong>
-            <span className="small">{failure}</span>
-          </div>
-        ) : (
-          <HomeCatalog
-            songs={songs}
-            query={query}
-            fieldLabels={activeLabels}
-            showSnippet={Boolean(query) && fieldIds.includes('l')}
-          />
-        )}
       </main>
-      <PlaylistFab />
     </>
   );
 }

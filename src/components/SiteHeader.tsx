@@ -47,6 +47,7 @@ export default async function SiteHeader({
               />
             </span>
             <span className="brand__name">Lyra</span>
+            <span className="brand__sub">music.db</span>
           </Link>
         </div>
         <HeaderTools signedIn={signedIn} accountLabel={accountLabelFromEmail(user?.email)} />

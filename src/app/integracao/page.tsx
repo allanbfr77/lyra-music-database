@@ -77,31 +77,8 @@ export default function IntegrationPage() {
           requisição só, pronta para gravar na biblioteca local. O padrão é a cifra de teclado; use{' '}
           <code>?instrumento=violao</code> para a de violão. A resposta traz <code>instrumentos</code> com as
           versões cadastradas.
-          A resposta inclui <code>slide_versions</code> com a Original e as edições já enviadas ao
-          programa. Rascunhos salvos e não enviados não aparecem. Use{' '}
-          <code>?include=slide_versions</code> para receber também letra e slides de cada versão.
           <pre style={box}>{`${base}/api/v1/songs/galileu?include=all_keys
-${base}/api/v1/songs/galileu?instrumento=violao
-${base}/api/v1/songs/galileu?include=slide_versions`}</pre>
-        </Endpoint>
-
-        <Endpoint method="GET" path="/api/v1/songs/{slug}/slide-versions">
-          Lista as versões que o Lyra pode oferecer na importação desta música:{' '}
-          <code>Original</code> e <code>Versão editada por NOME</code>. Sem{' '}
-          <code>?include=slides</code> vem só o resumo; com o parâmetro vêm letra e slides.
-          <pre style={box}>{`${base}/api/v1/songs/galileu/slide-versions
-${base}/api/v1/songs/galileu/slide-versions?include=slides`}</pre>
-        </Endpoint>
-
-        <Endpoint method="GET" path="/api/v1/slide-versions">
-          Músicas em branco e medleys já enviados ao programa. Cada item traz título, autor, letra e
-          slides. Edições que ainda não foram enviadas não entram nesta lista.
-          <pre style={box}>{`${base}/api/v1/slide-versions`}</pre>
-        </Endpoint>
-
-        <Endpoint method="GET" path="/api/v1/slide-versions/{id}">
-          Uma versão específica já enviada. O <code>id</code> vem nas listas acima, por exemplo{' '}
-          <code>original:…</code>, <code>user:…</code> ou <code>custom:…</code>.
+${base}/api/v1/songs/galileu?instrumento=violao`}</pre>
         </Endpoint>
 
         <Endpoint method="GET" path="/api/v1/songs/{slug}/chords/{tom}">

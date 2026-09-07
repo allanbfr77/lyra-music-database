@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { ADMIN_HOME, destinationForRole, isUserExperiencePath } from '@/lib/auth-routes';
+import { destinationForRole } from '@/lib/auth-routes';
 
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
 /**
- * Mantém a sessão renovada, bloqueia /admin sem login e separa
- * a experiência do admin da do usuário comum.
+ * Mantém a sessão renovada e bloqueia /admin sem login.
  */
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -40,34 +39,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  // Slides e playlist personalizada: só quem está logado.
-  if (
-    (/^\/musica\/[^/]+\/slides\/?$/.test(pathname) || /^\/playlist\/custom\/[^/]+\/?$/.test(pathname)) &&
-    !user
-  ) {
-    const login = request.nextUrl.clone();
-    login.pathname = '/login';
-    login.search = `?next=${encodeURIComponent(pathname + search)}`;
-    return NextResponse.redirect(login);
-  }
-
-  if (user) {
+  if (user && pathname === '/login') {
     const { data: isAdmin } = await supabase.rpc('is_admin');
-    const admin = Boolean(isAdmin);
-
-    if (pathname === '/login') {
-      const next = request.nextUrl.searchParams.get('next');
-      return NextResponse.redirect(new URL(destinationForRole(admin, next), request.url));
-    }
-
-    if (admin && isUserExperiencePath(pathname)) {
-      return NextResponse.redirect(new URL(ADMIN_HOME, request.url));
-    }
+    const next = request.nextUrl.searchParams.get('next');
+    return NextResponse.redirect(new URL(destinationForRole(Boolean(isAdmin), next), request.url));
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/musica/:slug/slides', '/playlist', '/playlist/:path*'],
+  matcher: ['/admin/:path*', '/login'],
 };
