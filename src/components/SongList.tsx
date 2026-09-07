@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { SearchHit } from '@/lib/types';
-import { keyToSlug, normalizeKey } from '@/lib/chords';
+import { normalizeKey } from '@/lib/chords';
 import { ChevronRightIcon } from '@/components/icons';
 
 export type CatalogSong = SearchHit & {
@@ -54,8 +54,7 @@ function groupSongs(songs: CatalogSong[]) {
 
 function songHref(song: CatalogSong) {
   if (song.href) return song.href;
-  const key = normalizeKey(song.base_key);
-  return song.has_chords ? `/musica/${song.slug}/cifra/${keyToSlug(key)}` : `/musica/${song.slug}`;
+  return `/musica/${song.slug}`;
 }
 
 function SongRow({ song, showSnippet }: { song: CatalogSong; showSnippet: boolean }) {

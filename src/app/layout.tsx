@@ -27,11 +27,11 @@ export const metadata: Metadata = {
     template: '%s · Banco de Músicas do Lyra',
   },
   description: 'Letras e cifras em todos os tons, com link direto para cada tom.',
-  applicationName: 'Lyra',
+  applicationName: 'Lyra db',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'Lyra',
+    title: 'Lyra db',
     statusBarStyle: 'default',
   },
   formatDetection: { telephone: false },
