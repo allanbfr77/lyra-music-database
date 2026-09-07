@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,8 @@ function readTheme(): Theme {
   return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
 }
 
+const SWIPE_CLOSE_MIN_PX = 72;
+
 export default function MobileNav({
   signedIn,
   accountLabel,
@@ -38,20 +40,38 @@ export default function MobileNav({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const router = useRouter();
   const titleId = useId();
   const drawerId = useId();
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{
+    tracking: boolean;
+    axis: 'h' | 'v' | null;
+    startX: number;
+    startY: number;
+    x: number;
+  }>({ tracking: false, axis: null, startX: 0, startY: 0, x: 0 });
 
   useEffect(() => {
     setMounted(true);
     setTheme(readTheme());
   }, []);
 
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => {
+    setDragX(0);
+    setDragging(false);
+    setOpen(false);
+  }, []);
   const toggle = useCallback(() => setOpen((value) => !value), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setDragX(0);
+      setDragging(false);
+      return;
+    }
 
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') close();
@@ -64,6 +84,81 @@ export default function MobileNav({
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKey);
+    };
+  }, [open, close]);
+
+  // Arrastar da esquerda para a direita fecha o menu (só com o drawer aberto).
+  useEffect(() => {
+    if (!open) return;
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+
+    function onTouchStart(event: TouchEvent) {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      dragRef.current = {
+        tracking: true,
+        axis: null,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        x: 0,
+      };
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      const state = dragRef.current;
+      if (!state.tracking || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - state.startX;
+      const dy = touch.clientY - state.startY;
+
+      if (!state.axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        state.axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        if (state.axis === 'h') setDragging(true);
+      }
+
+      if (state.axis !== 'h') return;
+      const next = Math.max(0, dx);
+      state.x = next;
+      setDragX(next);
+      event.preventDefault();
+    }
+
+    function onTouchEnd() {
+      const state = dragRef.current;
+      if (!state.tracking) return;
+      const dx = state.x;
+      const wasHorizontal = state.axis === 'h';
+      state.tracking = false;
+      state.axis = null;
+      state.x = 0;
+      setDragging(false);
+
+      if (!wasHorizontal) {
+        setDragX(0);
+        return;
+      }
+
+      const width = drawerRef.current?.offsetWidth ?? 300;
+      const threshold = Math.min(120, Math.max(SWIPE_CLOSE_MIN_PX, width * 0.28));
+      if (dx >= threshold) {
+        close();
+      } else {
+        setDragX(0);
+      }
+    }
+
+    drawer.addEventListener('touchstart', onTouchStart, { passive: true });
+    drawer.addEventListener('touchmove', onTouchMove, { passive: false });
+    drawer.addEventListener('touchend', onTouchEnd);
+    drawer.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      drawer.removeEventListener('touchstart', onTouchStart);
+      drawer.removeEventListener('touchmove', onTouchMove);
+      drawer.removeEventListener('touchend', onTouchEnd);
+      drawer.removeEventListener('touchcancel', onTouchEnd);
     };
   }, [open, close]);
 
@@ -93,6 +188,9 @@ export default function MobileNav({
     return value;
   };
 
+  const drawerWidth = typeof window !== 'undefined' ? drawerRef.current?.offsetWidth || 300 : 300;
+  const scrimOpacity = open ? Math.max(0, 1 - dragX / Math.max(drawerWidth, 1)) : 0;
+
   const drawer = mounted
     ? createPortal(
         <div className="no-print">
@@ -100,14 +198,17 @@ export default function MobileNav({
             className={`mobile-nav-scrim${open ? ' is-visible' : ''}`}
             onClick={close}
             aria-hidden={!open}
+            style={open ? { opacity: scrimOpacity } : undefined}
           />
           <aside
+            ref={drawerRef}
             id={drawerId}
-            className={`mobile-drawer${open ? ' is-open' : ''}`}
+            className={`mobile-drawer${open ? ' is-open' : ''}${dragging ? ' is-dragging' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
             aria-hidden={!open}
+            style={open && dragX > 0 ? { transform: `translateX(${dragX}px)` } : undefined}
             {...(!open ? { inert: true } : {})}
           >
             <div className="mobile-drawer__head">

@@ -37,7 +37,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <>
       <SiteHeader />
 
-      <main className="shell">
+      <main className="shell shell--browse">
         <div className="db-browse">
           {failure ? (
             <>
