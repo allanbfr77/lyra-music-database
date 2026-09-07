@@ -173,6 +173,9 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 .mobile-nav {
   display: none;
   flex: none;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .mobile-nav__burger {
@@ -401,7 +404,11 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
     text-align: center;
   }
 
-  .site-header__inner { gap: 8px; padding: 10px 12px; }
+  .site-header__inner {
+    gap: 8px;
+    padding: 10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+    overflow: visible;
+  }
   .site-header__lead { gap: 6px; }
   .brand { gap: 5px; font-size: 16px; }
   .back-btn { margin-right: 0; }
@@ -936,7 +943,7 @@ svg { flex: none; }
   background: transparent;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 16px; /* 16px evita zoom automático no iOS ao focar */
   line-height: 1.4;
   padding: 13px 10px 13px 10px;
 }
@@ -944,11 +951,6 @@ svg { flex: none; }
 .query-search input:focus-visible {
   outline: none;
   box-shadow: none;
-}
-@media (max-width: 640px) {
-  .query-search input {
-    font-size: 11.5px; /* cabe a legenda completa no placeholder */
-  }
 }
 @media (min-width: 641px) {
   .query-search input { font-size: 13px; }

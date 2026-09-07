@@ -18,6 +18,8 @@ import {
 import { createClient } from '@/lib/supabase/browser';
 import { ADMIN_HOME } from '@/lib/auth-routes';
 import { DEFAULT_THEME, THEME_COLOR, THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
+import { requestOfflineSongsDownload } from '@/components/OfflineSongsDownload';
+import { isSongCacheDownloadRunning } from '@/lib/song-cache';
 
 function readTheme(): Theme {
   if (typeof document === 'undefined') return DEFAULT_THEME;
@@ -27,9 +29,11 @@ function readTheme(): Theme {
 export default function MobileNav({
   signedIn,
   accountLabel,
+  showOfflineDownload = true,
 }: {
   signedIn: boolean;
   accountLabel: string;
+  showOfflineDownload?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -174,20 +178,30 @@ export default function MobileNav({
                 </span>
               </button>
 
-              <div
-                className="mobile-drawer__item mobile-drawer__item--disabled"
-                style={{ ['--stagger' as string]: nextStagger() }}
-                aria-disabled="true"
-              >
-                <span className="mobile-drawer__ic" aria-hidden="true">
-                  <DownloadIcon size={15} />
-                </span>
-                <span className="mobile-drawer__txt">
-                  <span className="mobile-drawer__main">Baixar banco</span>
-                  <span className="mobile-drawer__sub">Exportar músicas offline</span>
-                </span>
-                <span className="mobile-drawer__tag">EM BREVE</span>
-              </div>
+              {showOfflineDownload ? (
+                <button
+                  type="button"
+                  className="mobile-drawer__item"
+                  style={{ ['--stagger' as string]: nextStagger() }}
+                  onClick={() => {
+                    if (isSongCacheDownloadRunning()) {
+                      close();
+                      return;
+                    }
+                    requestOfflineSongsDownload();
+                    close();
+                  }}
+                  tabIndex={open ? 0 : -1}
+                >
+                  <span className="mobile-drawer__ic" aria-hidden="true">
+                    <DownloadIcon size={15} />
+                  </span>
+                  <span className="mobile-drawer__txt">
+                    <span className="mobile-drawer__main">Baixar letras e cifras</span>
+                    <span className="mobile-drawer__sub">Para abertura rápida no aparelho</span>
+                  </span>
+                </button>
+              ) : null}
 
               {signedIn ? (
                 <button

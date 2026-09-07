@@ -58,7 +58,11 @@ export default async function SiteHeader({
           accountLabel={accountLabel}
           showOfflineDownload={!isAdmin}
         />
-        <MobileNav signedIn={signedIn} accountLabel={accountLabel} />
+        <MobileNav
+          signedIn={signedIn}
+          accountLabel={accountLabel}
+          showOfflineDownload={!isAdmin}
+        />
       </div>
     </header>
   );
