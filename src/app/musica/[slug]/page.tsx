@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
+import SongCacheFallback from '@/components/SongCacheFallback';
 import { getSongBySlug, publishedKeys } from '@/lib/songs';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
 
@@ -30,14 +31,28 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function LyricsPage({ params }: Params) {
-  const { slug } = await params;
+async function LyricsSongContent({ slug }: { slug: string }) {
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
 
   const instruments = availableInstruments(song, song.overrides);
   const defaultInstrument = instruments.includes('teclado') ? 'teclado' : 'violao';
   const { overrides, ...publicSong } = song;
+
+  return (
+    <ChordView
+      song={publicSong}
+      keys={publishedKeys(song)}
+      overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
+      initialKey={normalizeKey(song.base_key)}
+      instrumento={defaultInstrument}
+      initialTab="letra"
+    />
+  );
+}
+
+export default async function LyricsPage({ params }: Params) {
+  const { slug } = await params;
 
   return (
     <>
@@ -49,14 +64,9 @@ export default async function LyricsPage({ params }: Params) {
         }
       />
       <main className="shell">
-        <ChordView
-          song={publicSong}
-          keys={publishedKeys(song)}
-          overrides={overrides.map((o) => ({ key: o.key, chords: o.chords, instrumento: o.instrumento }))}
-          initialKey={normalizeKey(song.base_key)}
-          instrumento={defaultInstrument}
-          initialTab="letra"
-        />
+        <Suspense fallback={<SongCacheFallback slug={slug} initialTab="letra" />}>
+          <LyricsSongContent slug={slug} />
+        </Suspense>
       </main>
     </>
   );

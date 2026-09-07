@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ChordView from '@/components/ChordView';
+import SongCacheFallback from '@/components/SongCacheFallback';
 import { availableInstruments, cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from './resolve';
@@ -32,9 +34,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function ChordPage({ params, searchParams }: Params) {
-  const { slug, tom } = await params;
-  const askedTom = (await searchParams).tom;
+async function ChordSongContent({
+  slug,
+  tom,
+  askedTom,
+}: {
+  slug: string;
+  tom: string;
+  askedTom?: string;
+}) {
   const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'teclado', askedTom);
 
   if (!availableInstruments(song, song.overrides).includes('teclado')) notFound();
@@ -55,5 +63,26 @@ export default async function ChordPage({ params, searchParams }: Params) {
       instrumento="teclado"
       notice={notice}
     />
+  );
+}
+
+export default async function ChordPage({ params, searchParams }: Params) {
+  const { slug, tom } = await params;
+  const askedTom = (await searchParams).tom;
+  const key = slugToKey(tom);
+
+  return (
+    <Suspense
+      fallback={
+        <SongCacheFallback
+          slug={slug}
+          initialTab="cifra"
+          initialKey={key ?? undefined}
+          instrumento="teclado"
+        />
+      }
+    >
+      <ChordSongContent slug={slug} tom={tom} askedTom={askedTom} />
+    </Suspense>
   );
 }

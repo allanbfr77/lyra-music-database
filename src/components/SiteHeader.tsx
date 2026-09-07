@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import HeaderTools from '@/components/HeaderTools';
+import MobileNav from '@/components/MobileNav';
 import { ChevronLeftIcon } from '@/components/icons';
 import { accountLabelFromEmail, getAuthSession } from '@/lib/auth';
 
@@ -17,6 +18,8 @@ export default async function SiteHeader({
 }) {
   const { user } = await getAuthSession();
   const signedIn = Boolean(user);
+  const isAdmin = homeHref.startsWith('/admin');
+  const accountLabel = accountLabelFromEmail(user?.email);
 
   return (
     <header className="site-header">
@@ -50,7 +53,12 @@ export default async function SiteHeader({
             <span className="brand__sub">music.db</span>
           </Link>
         </div>
-        <HeaderTools signedIn={signedIn} accountLabel={accountLabelFromEmail(user?.email)} />
+        <HeaderTools
+          signedIn={signedIn}
+          accountLabel={accountLabel}
+          showOfflineDownload={!isAdmin}
+        />
+        <MobileNav signedIn={signedIn} accountLabel={accountLabel} />
       </div>
     </header>
   );

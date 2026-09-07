@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import ChordView from '@/components/ChordView';
+import SongCacheFallback from '@/components/SongCacheFallback';
 import { cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from '../resolve';
@@ -31,9 +33,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function GuitarChordPage({ params, searchParams }: Params) {
-  const { slug, tom } = await params;
-  const askedTom = (await searchParams).tom;
+async function GuitarChordSongContent({
+  slug,
+  tom,
+  askedTom,
+}: {
+  slug: string;
+  tom: string;
+  askedTom?: string;
+}) {
   const { song, key, keys, removedKey } = await resolveChordPage(slug, tom, 'violao', askedTom);
 
   const { overrides, ...publicSong } = song;
@@ -52,5 +60,26 @@ export default async function GuitarChordPage({ params, searchParams }: Params) 
       instrumento="violao"
       notice={notice}
     />
+  );
+}
+
+export default async function GuitarChordPage({ params, searchParams }: Params) {
+  const { slug, tom } = await params;
+  const askedTom = (await searchParams).tom;
+  const key = slugToKey(tom);
+
+  return (
+    <Suspense
+      fallback={
+        <SongCacheFallback
+          slug={slug}
+          initialTab="cifra"
+          initialKey={key ?? undefined}
+          instrumento="violao"
+        />
+      }
+    >
+      <GuitarChordSongContent slug={slug} tom={tom} askedTom={askedTom} />
+    </Suspense>
   );
 }

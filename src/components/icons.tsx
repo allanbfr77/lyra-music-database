@@ -278,3 +278,49 @@ export function LockIcon(props: IconProps) {
     </Line>
   );
 }
+
+/** Seta para baixo até uma bandeja — download para acesso local. */
+export function DownloadIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2} {...props}>
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </Line>
+  );
+}
+
+export function MenuIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2} {...props}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Line>
+  );
+}
+
+export function InfoIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </Line>
+  );
+}
+
+export function LogOutIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2} {...props}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </Line>
+  );
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Line strokeWidth={2} {...props}>
+      <path d="M12 3 4.5 6.5v5.2c0 4.4 3.1 8.3 7.5 9.3 4.4-1 7.5-4.9 7.5-9.3V6.5Z" />
+    </Line>
+  );
+}

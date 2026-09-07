@@ -1,14 +1,17 @@
 import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
 import SignOutButton from '@/components/SignOutButton';
+import OfflineSongsDownload from '@/components/OfflineSongsDownload';
 import { LockIcon } from '@/components/icons';
 
 export default function HeaderTools({
   accountLabel,
   signedIn,
+  showOfflineDownload = true,
 }: {
   accountLabel: string;
   signedIn: boolean;
+  showOfflineDownload?: boolean;
 }) {
   return (
     <div
@@ -51,6 +54,12 @@ export default function HeaderTools({
           </span>
         )}
       </div>
+
+      {showOfflineDownload ? (
+        <div className="header-slot header-slot--download">
+          <OfflineSongsDownload />
+        </div>
+      ) : null}
 
       <div className="header-slot header-slot--theme">
         <ThemeToggle />

@@ -2,23 +2,15 @@ import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SongBackButton from '@/components/SongBackButton';
-import { getSongBySlug } from '@/lib/songs';
-import { slugToKey } from '@/lib/chords';
 
 export default async function ChordLayout({
   children,
-  params,
 }: {
   children: ReactNode;
   params: Promise<{ slug: string; tom: string }>;
 }) {
-  const { slug, tom } = await params;
-  const key = slugToKey(tom);
-  const song = await getSongBySlug(slug).catch(() => null);
-
-  // Página inválida: o page.tsx cuida do 404/redirect sem montar o leitor.
-  if (!key || !song) return children;
-
+  // Não bloqueia no fetch da música: o page.tsx trata 404/redirect e o
+  // Suspense + cache local podem pintar a cifra antes da resposta do servidor.
   return (
     <>
       <SiteHeader

@@ -16,6 +16,7 @@ import {
   slugToKey,
   uniqueChords,
 } from '@/lib/chords';
+import { getCachedSong, payloadFromServerSong, putCachedSongIfNewer } from '@/lib/song-cache';
 import type { Instrumento, Song } from '@/lib/types';
 
 type Override = { key: string; chords: string; instrumento?: Instrumento };
@@ -50,17 +51,53 @@ export default function ChordView({
   const [tab, setTab] = useState<SongTab>(initialTab);
   const [viewKey, setViewKey] = useState(initialKey);
   const [instrumento, setInstrumento] = useState<Instrumento>(initialInstrumento);
-  const instruments = availableInstruments(song, overrides);
+  const [activeSong, setActiveSong] = useState(song);
+  const [activeKeys, setActiveKeys] = useState(keys);
+  const [activeOverrides, setActiveOverrides] = useState(overrides);
+
+  // Prefere cache local na primeira pintura do cliente quando o conteúdo local
+  // ainda está alinhado; depois sincroniza com os props do servidor.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const cached = await getCachedSong(song.slug);
+      if (cancelled) return;
+
+      if (cached && Date.parse(cached.updated_at) >= Date.parse(song.updated_at)) {
+        setActiveSong(cached.song);
+        setActiveKeys(cached.keys);
+        setActiveOverrides(cached.overrides);
+      } else {
+        setActiveSong(song);
+        setActiveKeys(keys);
+        setActiveOverrides(overrides);
+      }
+
+      // Atualiza o cache só se ainda não existir ou se o servidor estiver mais novo.
+      try {
+        await putCachedSongIfNewer(payloadFromServerSong(song, overrides, keys));
+      } catch {
+        /* cache opcional */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [song, keys, overrides]);
+
+  const instruments = availableInstruments(activeSong, activeOverrides);
   const hasGuitar = instruments.includes('violao');
   const hasChords = instruments.length > 0;
 
   const syncUrl = useCallback(
     (nextTab: SongTab, nextKey: string, nextInstrumento: Instrumento) => {
       const path =
-        nextTab === 'letra' ? `/musica/${song.slug}` : cifraPath(song.slug, nextKey, nextInstrumento);
+        nextTab === 'letra' ? `/musica/${activeSong.slug}` : cifraPath(activeSong.slug, nextKey, nextInstrumento);
       window.history.pushState(null, '', path);
     },
-    [song.slug]
+    [activeSong.slug]
   );
 
   const selectKey = useCallback(
@@ -103,26 +140,26 @@ export default function ChordView({
 
   useEffect(() => {
     if (tab === 'letra') {
-      document.title = `${song.title} — Letra · Banco de Músicas do Lyra`;
+      document.title = `${activeSong.title} — Letra · Banco de Músicas do Lyra`;
       return;
     }
     const kind = instrumento === 'violao' ? 'Cifra de violão' : 'Cifra';
-    document.title = `${song.title} — ${kind} em ${viewKey} · Banco de Músicas do Lyra`;
-  }, [song.title, viewKey, instrumento, tab]);
+    document.title = `${activeSong.title} — ${kind} em ${viewKey} · Banco de Músicas do Lyra`;
+  }, [activeSong.title, viewKey, instrumento, tab]);
 
   const { chart, source } = useMemo(
-    () => chartForKey(song, overrides, viewKey, instrumento),
-    [song, overrides, viewKey, instrumento]
+    () => chartForKey(activeSong, activeOverrides, viewKey, instrumento),
+    [activeSong, activeOverrides, viewKey, instrumento]
   );
   const chordsUsed = useMemo(() => uniqueChords(chart), [chart]);
   const manualKeys = useMemo(
     () =>
-      overrides
+      activeOverrides
         .filter((o) => (o.instrumento ?? 'teclado') === instrumento && o.chords.trim())
         .map((o) => normalizeKey(o.key)),
-    [overrides, instrumento]
+    [activeOverrides, instrumento]
   );
-  const lyrics = song.lyrics.trim() || (song.chords.trim() ? chartToLyrics(song.chords) : '');
+  const lyrics = activeSong.lyrics.trim() || (activeSong.chords.trim() ? chartToLyrics(activeSong.chords) : '');
 
   const emptyMessage =
     instrumento === 'violao'
@@ -132,12 +169,12 @@ export default function ChordView({
   const chordKeySlug = keyToSlug(viewKey);
   const shareTitle =
     tab === 'letra'
-      ? `${song.title} — ${song.artist}`
-      : `${song.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
+      ? `${activeSong.title} — ${activeSong.artist}`
+      : `${activeSong.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
 
   const tabs = (
     <SongTabs
-      slug={song.slug}
+      slug={activeSong.slug}
       active={tab}
       hasChords={hasChords}
       chordKeySlug={chordKeySlug}
@@ -148,7 +185,7 @@ export default function ChordView({
 
   return (
     <>
-      <SongHeader song={song} currentKey={viewKey} />
+      <SongHeader song={activeSong} currentKey={viewKey} />
       <SongControlPanel
         shareTitle={shareTitle}
         showWrap={tab === 'cifra'}
@@ -156,10 +193,10 @@ export default function ChordView({
         keyControl={
           tab === 'cifra' ? (
             <KeyBar
-              slug={song.slug}
-              keys={keys}
+              slug={activeSong.slug}
+              keys={activeKeys}
               activeKey={viewKey}
-              baseKey={normalizeKey(song.base_key)}
+              baseKey={normalizeKey(activeSong.base_key)}
               manualKeys={manualKeys}
               instrumento={instrumento}
               onSelect={selectKey}
@@ -169,7 +206,7 @@ export default function ChordView({
       >
         {tab === 'cifra' ? (
           <InstrumentTabs
-            slug={song.slug}
+            slug={activeSong.slug}
             chordKeySlug={chordKeySlug}
             instrumento={instrumento}
             hasGuitar={hasGuitar || instrumento === 'violao'}
@@ -210,7 +247,7 @@ export default function ChordView({
           <p className="hint no-print">
             {source === 'manual'
               ? `Cifra revisada manualmente para o tom de ${viewKey}.`
-              : `Cifra transposta automaticamente a partir do tom original (${normalizeKey(song.base_key)}).`}
+              : `Cifra transposta automaticamente a partir do tom original (${normalizeKey(activeSong.base_key)}).`}
           </p>
         ) : null}
       </SongControlPanel>
