@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lyra — Editar Música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0b0c;
+    --surface: #131316;
+    --surface-2: #17171b;
+    --border: #232328;
+    --border-soft: #1c1c20;
+    --text: #e9e8e4;
+    --text-dim: #9a998f;
+    --text-faint: #5f5e58;
+    --gold: #c99a4a;
+    --gold-dim: #8a6d3a;
+    --green: #5fae72;
+    --red: #c96a5a;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .back-btn{
+    width:30px; height:30px; border-radius:6px;
+    background: var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--text-dim); cursor:pointer; margin-right:4px;
+  }
+  .brand-mark{
+    width:26px; height:26px; border-radius:6px;
+    background: var(--surface-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--gold); font-size:13px;
+  }
+  .brand-name{ font-weight:600; font-size:15px; letter-spacing:-0.01em; }
+  .brand-sub{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-left:8px; padding-left:8px; border-left:1px solid var(--border);}
+  .header-right{ display:flex; align-items:center; gap:10px; }
+  .pill-status{
+    font-family: var(--mono); font-size:11px; color: var(--text-dim);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 5px 10px; border-radius: 5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .pill-status .dot{ width:5px; height:5px; border-radius:50%; background: var(--green); }
+  .ghost-btn{
+    font-size:12.5px; font-weight:500; color: var(--text-dim);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 6px 12px; border-radius:5px;
+    font-family: var(--mono);
+    cursor:pointer;
+  }
+  .theme-toggle{
+    width:32px; height:32px; border-radius:5px;
+    background: var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; color:var(--text-dim); cursor:pointer;
+  }
+
+  .context-bar{
+    display:flex; align-items:center; gap:8px;
+    padding: 8px 28px;
+    background: rgba(201,154,74,0.06);
+    border-bottom: 1px solid rgba(201,154,74,0.18);
+  }
+  .context-bar .dot{ width:5px; height:5px; border-radius:50%; background: var(--gold); }
+  .context-bar span{
+    font-family: var(--mono); font-size: 11px; letter-spacing:0.05em;
+    color: var(--gold);
+  }
+
+  main{ max-width: 720px; margin: 0 auto; padding: 26px 24px 90px; }
+
+  h1{
+    font-size: 21px; font-weight: 600; letter-spacing:-0.01em;
+    margin-bottom: 18px;
+  }
+
+  .panel{
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 22px;
+  }
+
+  .field{ margin-bottom: 18px; }
+  .field:last-of-type{ margin-bottom: 0; }
+  .field-label{
+    display:block;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing:0.08em;
+    color: var(--text-faint);
+    margin-bottom: 7px;
+  }
+  .field input{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    outline: none;
+  }
+  .field input:focus{ border-color: rgba(201,154,74,0.4); }
+  .field.mono input{ font-family: var(--mono); font-size: 13px; }
+
+  .checkbox-row{
+    display:flex; align-items:center; gap:9px;
+    margin-top: 20px;
+    cursor:pointer; user-select:none;
+  }
+  .chk-box{
+    width:16px; height:16px; border-radius:4px;
+    border: 1px solid #3a3a3a;
+    background: var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .checkbox-row.checked .chk-box{
+    background: var(--gold-dim);
+    border-color: var(--gold);
+  }
+  .chk-box svg{ width:10px; height:10px; color:#0b0b0b; }
+  .checkbox-row .label{ font-size: 13px; color: var(--text-dim); }
+
+  /* Toggle Letra/Cifra */
+  .toggle-panel{ margin-top: 22px; }
+  .toggle{
+    display:inline-flex; background: var(--surface); border:1px solid var(--border);
+    border-radius: 7px; padding:3px; gap:2px;
+  }
+  .toggle-opt{
+    font-size:13px; font-weight:500; color: var(--text-dim);
+    padding: 7px 18px; border-radius:5px; cursor:pointer;
+  }
+  .toggle-opt.active{ background: var(--gold-dim); color:#0b0b0b; }
+
+  .textarea-box{
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 16px;
+    max-height: 260px;
+    overflow-y: auto;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .textarea-box p{ margin-bottom: 14px; }
+
+  .actions-row{
+    display:flex; gap: 10px;
+    margin-top: 18px;
+  }
+  .btn{
+    font-family: var(--mono); font-size: 12.5px; font-weight:600;
+    border-radius: 6px;
+    padding: 9px 16px;
+    cursor: pointer;
+    display:flex; align-items:center; gap:6px;
+    transition: background 0.15s ease;
+  }
+  .btn-save{
+    color: var(--gold);
+    background: rgba(201,154,74,0.1);
+    border: 1px solid rgba(201,154,74,0.32);
+  }
+  .btn-save:hover{ background: rgba(201,154,74,0.16); }
+  .btn-ghost{
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover{ border-color: #333; }
+  .btn-danger{
+    color: var(--red);
+    background: rgba(201,106,90,0.08);
+    border: 1px solid rgba(201,106,90,0.3);
+    margin-left: auto;
+  }
+  .btn-danger:hover{ background: rgba(201,106,90,0.14); }
+
+  @media (max-width: 640px){
+    header{ padding: 12px 16px; }
+    .context-bar{ padding: 8px 16px; }
+    main{ padding: 18px 12px 70px; }
+    .panel{ padding: 16px; }
+    .actions-row{ flex-wrap: wrap; }
+    .btn-danger{ margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="back-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="brand-mark">♪</div>
+    <span class="brand-name">Lyra</span>
+    <span class="brand-sub">music.db</span>
+  </div>
+  <div class="header-right">
+    <div class="pill-status"><span class="dot"></span>ONLINE</div>
+    <div class="ghost-btn">ADMIN</div>
+    <div class="ghost-btn">SAIR</div>
+    <div class="theme-toggle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </div>
+  </div>
+</header>
+
+<div class="context-bar">
+  <span class="dot"></span>
+  <span>PAINEL ADMINISTRATIVO</span>
+</div>
+
+<main>
+  <h1>Editar música</h1>
+
+  <div class="panel">
+    <div class="field">
+      <label class="field-label">MÚSICA</label>
+      <input type="text" value="Abra Os Olhos do Meu Coração" />
+    </div>
+    <div class="field">
+      <label class="field-label">ARTISTA</label>
+      <input type="text" value="David Quinlan" />
+    </div>
+    <div class="field mono">
+      <label class="field-label">ENDEREÇO NO SITE</label>
+      <input type="text" value="abra-os-olhos-do-meu-coracao" />
+    </div>
+    <div class="field mono">
+      <label class="field-label">YOUTUBE</label>
+      <input type="text" value="https://www.youtube.com/watch?v=SwdKeD9POs8" />
+    </div>
+
+    <div class="checkbox-row checked">
+      <div class="chk-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span class="label">Publicada (visível para todos e para o Lyra)</span>
+    </div>
+  </div>
+
+  <div class="toggle-panel">
+    <div class="toggle">
+      <div class="toggle-opt active">Letra</div>
+      <div class="toggle-opt">Cifra</div>
+    </div>
+
+    <div class="textarea-box">
+      <p>Abra os olhos do meu coração<br>Abra os olhos do meu coração<br>Quero Te ver, quero Te ver<br>//(2X)</p>
+      <p>Exaltado e bem alto<br>Brilhando a luz da Tua glória<br>Derrame Seu amor e poder<br>Pois Tu és Santo<br>//(2X)</p>
+      <p>Abra os olhos do meu coração<br>Abra os olhos do meu coração<br>Quero Te ver, quero Te ver<br>//(2X)</p>
+      <p>Exaltado e bem alto<br>Brilhando a luz da Tua glória</p>
+    </div>
+
+    <div class="actions-row">
+      <div class="btn btn-save">Salvar</div>
+      <div class="btn btn-ghost">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+        Ver no site
+      </div>
+      <div class="btn btn-danger">Excluir</div>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

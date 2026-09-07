@@ -53,8 +53,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '22px 0 6px' }}>
         <h1 style={{ fontSize: 22 }}>Músicas</h1>
         <span className="header-spacer" />
-        <Link href="/admin/nova" className="btn btn--primary btn--sm">
-          <PlusIcon size={15} />
+        <Link href="/admin/nova" className="btn btn--tint btn--sm">
+          <PlusIcon size={13} />
           Nova música
         </Link>
       </div>

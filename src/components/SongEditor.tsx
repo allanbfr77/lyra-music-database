@@ -15,7 +15,7 @@ import {
 } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
-import { ExternalLinkIcon, PencilIcon } from '@/components/icons';
+import { ExternalLinkIcon, PencilIcon, CheckIcon } from '@/components/icons';
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -223,16 +223,16 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   }
 
   return (
-    <main className="shell">
+    <main className="shell song-editor">
       <div style={{ padding: '20px 0 4px' }}>
-        <h1 style={{ fontSize: 22 }}>{initial.id ? 'Editar música' : 'Nova música'}</h1>
+        <h1 className="song-editor__title">{initial.id ? 'Editar música' : 'Nova música'}</h1>
       </div>
 
       {error && <div className="alert alert--error">{error}</div>}
 
-      <div className="card">
+      <div className="card song-editor__panel">
         <label className="field">
-          <span className="field__label">Música</span>
+          <span className="field__label">MÚSICA</span>
           <input
             className="input"
             value={title}
@@ -243,7 +243,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </label>
 
         <label className="field">
-          <span className="field__label">Artista</span>
+          <span className="field__label">ARTISTA</span>
           <input
             className="input"
             value={artist}
@@ -253,9 +253,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </label>
 
         <label className="field">
-          <span className="field__label">Endereço no site</span>
+          <span className="field__label">ENDEREÇO NO SITE</span>
           <input
-            className="input"
+            className="input input--mono"
             value={slugTouched ? slug : effectiveSlug}
             onChange={(e) => {
               setSlugTouched(true);
@@ -266,9 +266,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </label>
 
         <label className="field">
-          <span className="field__label">YouTube</span>
+          <span className="field__label">YOUTUBE</span>
           <input
-            className="input"
+            className="input input--mono"
             inputMode="url"
             autoComplete="url"
             value={youtubeUrl}
@@ -277,25 +277,33 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           />
         </label>
 
-        <label className="field" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
-          <span className="field__label" style={{ margin: 0 }}>
-            Publicada (visível para todos e para o Lyra)
+        <label className="chk-row" data-on={published}>
+          <input
+            type="checkbox"
+            className="visually-hidden"
+            checked={published}
+            onChange={(e) => setPublished(e.target.checked)}
+          />
+          <span className="chk-row__box" aria-hidden="true">
+            {published ? <CheckIcon size={10} /> : null}
           </span>
+          <span className="chk-row__label">Publicada (visível para todos e para o Lyra)</span>
         </label>
       </div>
 
-      <nav className="tabs" style={{ marginTop: 22, position: 'static' }}>
-        <button className="tab" data-active={tab === 'letra'} onClick={() => setTab('letra')} type="button">
-          Letra
-        </button>
-        <button className="tab" data-active={tab === 'cifra'} onClick={() => setTab('cifra')} type="button">
-          Cifra
-        </button>
-      </nav>
+      <div className="song-editor__toggle">
+        <nav className="seg" aria-label="Letra ou cifra">
+          <button className="seg__item" data-active={tab === 'letra'} onClick={() => setTab('letra')} type="button">
+            Letra
+          </button>
+          <button className="seg__item" data-active={tab === 'cifra'} onClick={() => setTab('cifra')} type="button">
+            Cifra
+          </button>
+        </nav>
+      </div>
 
       {tab === 'letra' ? (
-        <div style={{ paddingTop: 16 }}>
+        <div style={{ paddingTop: 12 }}>
           <label className="field">
             <textarea
               className="textarea"
@@ -308,7 +316,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           </label>
         </div>
       ) : (
-        <div style={{ paddingTop: 16 }}>
+        <div style={{ paddingTop: 12 }}>
           <div className="cifra-editor">
             <div className="cifra-editor__toolbar">
               <nav className="seg" aria-label="Instrumento da cifra">
@@ -398,7 +406,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           <div className="field">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
               <span className="field__label" style={{ margin: 0 }}>
-                Tons disponíveis
+                TONS DISPONÍVEIS
               </span>
               <span className="header-spacer" />
               <button
@@ -434,7 +442,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           </div>
 
           <div className="field">
-            <span className="field__label">Ajuste manual de um tom (opcional)</span>
+            <span className="field__label">AJUSTE MANUAL DE UM TOM (OPCIONAL)</span>
             <select
               className="select"
               value={tuningKey ?? ''}
@@ -488,13 +496,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       )}
 
       <div className="sticky-actions">
-        <button className="btn btn--primary" onClick={onSave} disabled={busy || !title.trim()} type="button">
+        <button className="btn btn--tint" onClick={onSave} disabled={busy || !title.trim()} type="button">
           {busy ? 'Salvando...' : 'Salvar'}
         </button>
         {initial.id && (
           <>
             <Link
-              className="btn"
+              className="btn btn--ghost-mono"
               href={
                 (instrumentTab === 'violao' ? chordsGuitar : chords).trim()
                   ? cifraPath(effectiveSlug, normalizeKey(baseKey), instrumentTab)
@@ -502,10 +510,10 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               }
               target="_blank"
             >
+              <ExternalLinkIcon size={12} />
               Ver no site
-              <ExternalLinkIcon size={13} />
             </Link>
-            <button className="btn btn--danger" onClick={onDelete} disabled={busy} type="button">
+            <button className="btn btn--danger-tint sticky-actions__end" onClick={onDelete} disabled={busy} type="button">
               Excluir
             </button>
           </>
@@ -516,7 +524,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="saved-title" aria-describedby="saved-desc">
             <strong id="saved-title">Música salva</strong>
             <p id="saved-desc">A música foi salva com sucesso.</p>
-            <button ref={okRef} className="btn btn--primary" type="button" onClick={dismissSaved}>
+            <button ref={okRef} className="btn btn--tint" type="button" onClick={dismissSaved}>
               OK
             </button>
           </div>

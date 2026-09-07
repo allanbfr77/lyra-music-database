@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lyra — Registro da Música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Georgia&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0b0c;
+    --surface: #131316;
+    --surface-2: #17171b;
+    --border: #232328;
+    --border-soft: #1c1c20;
+    --text: #e9e8e4;
+    --text-dim: #9a998f;
+    --text-faint: #5f5e58;
+    --gold: #c99a4a;
+    --gold-dim: #8a6d3a;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+    --serif: Georgia, 'Times New Roman', serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .back-btn{
+    width:30px; height:30px; border-radius:6px;
+    background: var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--text-dim); cursor:pointer; margin-right:4px;
+  }
+  .brand-mark{
+    width:26px; height:26px; border-radius:6px;
+    background: var(--surface-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--gold); font-size:13px;
+  }
+  .brand-name{ font-weight:600; font-size:15px; letter-spacing:-0.01em; }
+  .brand-sub{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-left:8px; padding-left:8px; border-left:1px solid var(--border);}
+  .header-right{ display:flex; align-items:center; gap:10px; }
+  .pill-visitor{
+    font-family: var(--mono); font-size:11px; color: var(--text-dim);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 5px 10px; border-radius: 5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .pill-visitor .dot{ width:5px; height:5px; border-radius:50%; background: var(--text-faint); }
+  .btn-login{
+    font-size:13px; font-weight:500; color: var(--text);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 6px 12px; border-radius:5px;
+    display:flex; align-items:center; gap:6px; cursor:pointer;
+  }
+  .theme-toggle{
+    width:32px; height:32px; border-radius:5px;
+    background: var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; color:var(--text-dim); cursor:pointer;
+  }
+
+  main{ max-width: 780px; margin: 0 auto; padding: 26px 24px 100px; }
+
+  .breadcrumb{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+  }
+  .breadcrumb .sep{ margin: 0 4px; color: #3a3a3a; }
+  .breadcrumb .current{ color: var(--text-dim); }
+
+  .title-row{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap: 16px;
+  }
+  h1{
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .yt-btn{
+    flex-shrink:0;
+    width:38px; height:38px; border-radius:8px;
+    background: #E33; /* placeholder brand red, kept from source */
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; cursor:pointer;
+  }
+
+  /* Meta fields */
+  .meta-fields{
+    display:flex; gap: 22px; flex-wrap:wrap;
+    margin-top: 14px; padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .meta-field{ display:flex; flex-direction:column; gap:2px; }
+  .meta-field .k{
+    font-family: var(--mono); font-size: 9.5px; letter-spacing:0.06em;
+    color: var(--text-faint);
+  }
+  .meta-field .v{
+    font-size: 13.5px; color: var(--text-dim);
+  }
+  .meta-field .v.tone{
+    font-family: var(--mono); color: var(--gold); font-weight:600;
+  }
+
+  /* Control panel */
+  .panel{
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    overflow:hidden;
+  }
+  .panel-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 16px;
+  }
+  .panel-row + .panel-row{ border-top: 1px solid var(--border); background: var(--surface-2); }
+
+  .field-group{ display:flex; align-items:center; gap:10px; }
+  .field-label{
+    font-family: var(--mono); font-size: 9.5px; letter-spacing:0.06em;
+    color: var(--text-faint);
+  }
+  .toggle{
+    display:flex; background: var(--bg); border:1px solid var(--border);
+    border-radius: 6px; padding:2px; gap:2px;
+  }
+  .toggle-opt{
+    font-size:13px; font-weight:500; color: var(--text-dim);
+    padding: 6px 14px; border-radius:5px; cursor:pointer;
+  }
+  .toggle-opt.active{
+    background: var(--gold-dim); color:#0b0b0b;
+  }
+  .icon-btn{
+    width:32px; height:32px; border-radius:6px;
+    background: var(--bg); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--gold); cursor:pointer;
+  }
+  .icon-btn.ghost{ color: var(--text-dim); }
+
+  .tone-select{
+    font-family: var(--mono); font-size:13px; font-weight:600;
+    color: var(--gold);
+    background: rgba(201,154,74,0.08);
+    border: 1px solid rgba(201,154,74,0.3);
+    border-radius: 5px;
+    padding: 5px 10px;
+    display:flex; align-items:center; gap:6px; cursor:pointer;
+  }
+
+  .zoom-group{ display:flex; align-items:center; gap:8px; }
+  .zoom-btn{
+    width:26px; height:26px; border-radius:5px;
+    background: var(--bg); border:1px solid var(--border);
+    font-family: var(--mono); font-size:11px; color: var(--text-dim);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .zoom-val{ font-family: var(--mono); font-size:11.5px; color: var(--text-faint); min-width:32px; text-align:center; }
+
+  /* Chord sheet */
+  .sheet{
+    margin-top: 24px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .sheet .tone-hdr{ color: var(--text-dim); margin-bottom: 4px; }
+  .sheet .tone-hdr b{ color: var(--gold); }
+  .chord{ color: var(--gold); font-weight:600; }
+
+  .section-chip{
+    display:inline-flex; align-items:center;
+    font-family: var(--mono); font-size: 11px; font-weight:600;
+    letter-spacing: 0.02em;
+    color: #b8925a;
+    background: rgba(201,154,74,0.07);
+    border: 1px solid rgba(201,154,74,0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin: 22px 0 10px;
+  }
+  .section-chip:first-of-type{ margin-top: 16px; }
+
+  @media (max-width: 640px){
+    header{ padding: 12px 16px; }
+    main{ padding: 18px 14px 80px; }
+    h1{ font-size: 22px; }
+    .meta-fields{ gap: 16px; }
+    .panel-row{ flex-wrap: wrap; gap:10px; }
+    .sheet{ font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="back-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="brand-mark">♪</div>
+    <span class="brand-name">Lyra</span>
+    <span class="brand-sub">music.db</span>
+  </div>
+  <div class="header-right">
+    <div class="pill-visitor"><span class="dot"></span>VISITANTE</div>
+    <div class="btn-login">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      Login
+    </div>
+    <div class="theme-toggle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="breadcrumb">músicas <span class="sep">/</span> <span class="current">abra-os-olhos-do-meu-coracao</span></div>
+
+  <div class="title-row">
+    <h1>Abra Os Olhos do Meu Coração</h1>
+    <div class="yt-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+  </div>
+
+  <div class="meta-fields">
+    <div class="meta-field">
+      <span class="k">ARTISTA</span>
+      <span class="v">David Quinlan</span>
+    </div>
+    <div class="meta-field">
+      <span class="k">TOM ORIGINAL</span>
+      <span class="v tone">E</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <div class="field-group">
+        <span class="field-label">EXIBIÇÃO</span>
+        <div class="toggle">
+          <div class="toggle-opt">Letra</div>
+          <div class="toggle-opt active">Cifra</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg></div>
+        <div class="icon-btn ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9"/></svg></div>
+      </div>
+    </div>
+    <div class="panel-row">
+      <div class="field-group">
+        <span class="field-label">TOM</span>
+        <div class="tone-select">
+          E <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="icon-btn ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+        <div class="zoom-group">
+          <span class="field-label">ZOOM</span>
+          <div class="zoom-btn">A−</div>
+          <span class="zoom-val">100%</span>
+          <div class="zoom-btn">A+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet">
+<div class="tone-hdr">Tom: <b>E</b></div>
+<span class="section-chip">INTRO</span>
+<span class="chord">E</span>   <span class="chord">B/D#</span>  <span class="chord">A2</span>
+<span class="chord">E</span>   <span class="chord">G</span>    <span class="chord">A</span>
+<span class="chord">E</span>   <span class="chord">B/D#</span>  <span class="chord">A2</span>
+<span class="chord">E</span>   <span class="chord">G</span>    <span class="chord">A</span>
+
+
+<span class="section-chip">PRIMEIRA PARTE</span>
+<span class="chord">E2</span>
+Abra os olhos do meu coração
+<span class="chord">E7M(9)</span>
+Abra os olhos do meu coração
+              <span class="chord">A2</span>              <span class="chord">E   G   A</span>
+Quero Te ver, quero Te ver
+
+<span class="chord">E2</span>
+Abra os olhos do meu coração
+<span class="chord">E7M(9)</span>
+Abra os olhos do meu coração
+              <span class="chord">A2</span>              <span class="chord">E</span>
+Quero Te ver, quero Te ver
+
+<span class="section-chip">REFRÃO</span></div>
+
+</main>
+
+</body>
+</html>

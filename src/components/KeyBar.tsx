@@ -77,10 +77,10 @@ export default function KeyBar({
 
   return (
     <div className="keybar no-print" ref={root}>
-      <div className="keybar__label">Tom</div>
+      <span className="control-label">TOM</span>
       <button
         type="button"
-        className="key-chip key-chip--trigger"
+        className="key-chip key-chip--trigger key-chip--field"
         data-active="true"
         aria-expanded={open}
         aria-controls={pickerId}
@@ -88,7 +88,7 @@ export default function KeyBar({
         onClick={() => setOpen((v) => !v)}
       >
         <span className="key-chip__label">{activeKey}</span>
-        <ChevronDownIcon size={14} />
+        <ChevronDownIcon size={12} />
       </button>
 
       {open && (

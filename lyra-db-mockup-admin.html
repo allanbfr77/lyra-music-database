@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lyra — Painel Administrativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0b0c;
+    --surface: #131316;
+    --surface-2: #17171b;
+    --border: #232328;
+    --border-soft: #1c1c20;
+    --text: #e9e8e4;
+    --text-dim: #9a998f;
+    --text-faint: #5f5e58;
+    --gold: #c99a4a;
+    --gold-dim: #8a6d3a;
+    --green: #5fae72;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:26px; height:26px; border-radius:6px;
+    background: var(--surface-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--gold); font-size:13px;
+  }
+  .brand-name{ font-weight:600; font-size:15px; letter-spacing:-0.01em; }
+  .brand-sub{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-left:8px; padding-left:8px; border-left:1px solid var(--border);}
+  .header-right{ display:flex; align-items:center; gap:10px; }
+  .pill-status{
+    font-family: var(--mono); font-size:11px; color: var(--text-dim);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 5px 10px; border-radius: 5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .pill-status .dot{ width:5px; height:5px; border-radius:50%; background: var(--green); }
+  .ghost-btn{
+    font-size:12.5px; font-weight:500; color: var(--text-dim);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 6px 12px; border-radius:5px;
+    font-family: var(--mono);
+    cursor:pointer;
+  }
+  .theme-toggle{
+    width:32px; height:32px; border-radius:5px;
+    background: var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; color:var(--text-dim); cursor:pointer;
+  }
+
+  /* Context bar (was the solid "Painel administrativo" banner) */
+  .context-bar{
+    display:flex; align-items:center; gap:8px;
+    padding: 8px 28px;
+    background: rgba(201,154,74,0.06);
+    border-bottom: 1px solid rgba(201,154,74,0.18);
+  }
+  .context-bar .dot{
+    width:5px; height:5px; border-radius:50%;
+    background: var(--gold);
+  }
+  .context-bar span{
+    font-family: var(--mono); font-size: 11px; letter-spacing:0.05em;
+    color: var(--gold);
+  }
+
+  main{ max-width: 920px; margin: 0 auto; padding: 28px 24px 80px; }
+
+  .page-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 20px;
+  }
+  h1{
+    font-size: 22px; font-weight: 600; letter-spacing:-0.01em;
+  }
+  .btn-primary{
+    display:flex; align-items:center; gap:7px;
+    font-family: var(--mono); font-size: 12.5px; font-weight:600;
+    color: var(--gold);
+    background: rgba(201,154,74,0.1);
+    border: 1px solid rgba(201,154,74,0.32);
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .btn-primary:hover{ background: rgba(201,154,74,0.16); }
+  .btn-primary svg{ width:13px; height:13px; }
+
+  .search-box{
+    position:relative;
+    border:1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    margin-bottom: 10px;
+  }
+  .search-box svg{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    color: var(--text-faint);
+  }
+  .search-box input{
+    width:100%;
+    background: transparent;
+    border:none; outline:none;
+    color: var(--text);
+    font-size: 13.5px;
+    padding: 12px 14px 12px 40px;
+  }
+  .search-box input::placeholder{ color: var(--text-faint); }
+
+  .record-count{
+    text-align:right;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-bottom: 18px;
+  }
+  .record-count b{ color: var(--gold); font-weight:600; }
+
+  .table-head{
+    display:grid;
+    grid-template-columns: minmax(0,2.2fr) minmax(0,1.4fr) 64px 20px;
+    gap: 14px;
+    padding: 0 4px 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+  }
+  .th-tone{ text-align:center; }
+
+  .group-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--gold);
+    padding: 18px 4px 6px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns: minmax(0,2.2fr) minmax(0,1.4fr) 64px 20px;
+    gap: 14px;
+    align-items:center;
+    padding: 13px 4px;
+    border-bottom: 1px solid var(--border-soft);
+    cursor:pointer;
+    transition: background 0.12s ease;
+  }
+  .row:hover{ background: var(--surface); }
+  .row-title{ font-size: 14px; font-weight:500; color: var(--text); }
+  .row-artist{ font-size: 12.5px; color: var(--text-dim); }
+  .tone-field{
+    font-family: var(--mono);
+    font-size: 12px; font-weight:600;
+    color: var(--gold);
+    background: rgba(201,154,74,0.08);
+    border: 1px solid rgba(201,154,74,0.25);
+    border-radius: 4px;
+    text-align:center;
+    padding: 3px 0;
+  }
+  .row-chevron{ color: var(--text-faint); display:flex; justify-content:center; }
+
+  @media (max-width: 640px){
+    header{ padding: 12px 16px; }
+    .context-bar{ padding: 8px 16px; }
+    main{ padding: 18px 12px 60px; }
+    .table-head{ grid-template-columns: minmax(0,1fr) 52px 16px; }
+    .th-artist{ display:none; }
+    .row{ grid-template-columns: minmax(0,1fr) 52px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">♪</div>
+    <span class="brand-name">Lyra</span>
+    <span class="brand-sub">music.db</span>
+  </div>
+  <div class="header-right">
+    <div class="pill-status"><span class="dot"></span>ONLINE</div>
+    <div class="ghost-btn">ADMIN</div>
+    <div class="ghost-btn">SAIR</div>
+    <div class="theme-toggle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </div>
+  </div>
+</header>
+
+<div class="context-bar">
+  <span class="dot"></span>
+  <span>PAINEL ADMINISTRATIVO</span>
+</div>
+
+<main>
+  <div class="page-head">
+    <h1>Músicas</h1>
+    <div class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Nova música
+    </div>
+  </div>
+
+  <div class="search-box">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Filtrar por título ou artista" />
+  </div>
+  <div class="record-count"><b>16</b> registros</div>
+
+  <div class="table-head">
+    <div>TÍTULO</div>
+    <div class="th-artist">ARTISTA</div>
+    <div class="th-tone">TOM</div>
+    <div></div>
+  </div>
+
+  <div class="group-label">A</div>
+  <div class="row">
+    <div class="row-title">Abra Os Olhos do Meu Coração</div>
+    <div class="row-artist">David Quinlan</div>
+    <div class="tone-field">E</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+
+  <div class="group-label">C</div>
+  <div class="row">
+    <div class="row-title">Clamo Jesus (part. Marsena)</div>
+    <div class="row-artist">Paulo César Baruk</div>
+    <div class="tone-field">E</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+
+  <div class="group-label">D</div>
+  <div class="row">
+    <div class="row-title">Digno É o Senhor</div>
+    <div class="row-artist">Aline Barros</div>
+    <div class="tone-field">B</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+
+  <div class="group-label">E</div>
+  <div class="row">
+    <div class="row-title">Em Tempos de Guerra</div>
+    <div class="row-artist">Ludmila Ferber</div>
+    <div class="tone-field">A</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+
+  <div class="group-label">G</div>
+  <div class="row">
+    <div class="row-title">Grande É o Senhor</div>
+    <div class="row-artist">Adhemar de Campos</div>
+    <div class="tone-field">A</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+
+  <div class="group-label">O</div>
+  <div class="row">
+    <div class="row-title">O Fogo Arderá / Ah Jesus / Quem é Esse / Tu és</div>
+    <div class="row-artist">Medley</div>
+    <div class="tone-field">B</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+  <div class="row">
+    <div class="row-title">O Nosso General É Cristo</div>
+    <div class="row-artist">Adhemar de Campos</div>
+    <div class="tone-field">Cm</div>
+    <div class="row-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+
+</main>
+
+</body>
+</html>

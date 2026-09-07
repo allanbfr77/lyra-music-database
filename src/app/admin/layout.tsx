@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <SiteHeader left={<AdminBackButton />} homeHref={ADMIN_HOME} />
       <div className="admin-bar no-print">
         <div className="admin-bar__inner">
+          <span className="admin-bar__dot" aria-hidden="true" />
           <span>Painel administrativo</span>
         </div>
       </div>

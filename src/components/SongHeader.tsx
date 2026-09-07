@@ -11,19 +11,17 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
 
   return (
     <div className="song-head">
+      <nav className="song-crumb" aria-label="Navegação">
+        <Link href="/">músicas</Link>
+        <span className="song-crumb__sep" aria-hidden="true">
+          /
+        </span>
+        <span className="song-crumb__current">{song.slug}</span>
+      </nav>
+
       <div className="song-head__row">
         <div className="song-head__text">
           <h1 className="song-head__title">{song.title}</h1>
-          <p className="song-head__byline">
-            <span>{song.artist || 'Artista não informado'}</span>
-            <span className="song-head__dot" aria-hidden="true">
-              •
-            </span>
-            <span>
-              Tom original{' '}
-              <strong className="song-head__key">{originalKey}</strong>
-            </span>
-          </p>
         </div>
         {youtubeUrl ? (
           <a
@@ -38,6 +36,18 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
           </a>
         ) : null}
       </div>
+
+      <div className="song-meta">
+        <div className="song-meta__field">
+          <span className="song-meta__k">ARTISTA</span>
+          <span className="song-meta__v">{song.artist || 'Artista não informado'}</span>
+        </div>
+        <div className="song-meta__field">
+          <span className="song-meta__k">TOM ORIGINAL</span>
+          <span className="song-meta__v song-meta__v--key">{originalKey}</span>
+        </div>
+      </div>
+
       {extraChips ? (
         <div className="song-head__meta">
           {song.capo > 0 ? <span className="chip">Capotraste {song.capo}ª casa</span> : null}

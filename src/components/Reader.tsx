@@ -32,7 +32,14 @@ export default function Reader({ mode, text }: Props) {
 
 function SheetLine({ line }: { line: ChartLine }) {
   if (line.type === 'blank') return <div className="sheet__line">{' '}</div>;
-  if (line.type === 'section') return <div className="sheet__line sheet__section">{line.text}</div>;
+  if (line.type === 'section') {
+    const label = line.text.replace(/^\[|\]$/g, '').trim() || line.text;
+    return (
+      <div className="sheet__line sheet__section">
+        <span className="sheet__section-chip">{label}</span>
+      </div>
+    );
+  }
   if (line.type === 'lyric') return <div className="sheet__line">{line.text}</div>;
 
   const parts: React.ReactNode[] = [];

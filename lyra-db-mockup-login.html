@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lyra — Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Georgia&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0b0c;
+    --surface: #131316;
+    --surface-2: #17171b;
+    --surface-3: #1b1b1f;
+    --border: #232328;
+    --border-soft: #1c1c20;
+    --text: #e9e8e4;
+    --text-dim: #9a998f;
+    --text-faint: #5f5e58;
+    --gold: #c99a4a;
+    --gold-dim: #8a6d3a;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+    --serif: Georgia, 'Times New Roman', serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html, body{ height:100%; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    display:flex; flex-direction:column;
+    min-height: 100vh;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:26px; height:26px; border-radius:6px;
+    background: var(--surface-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--gold); font-size:13px;
+  }
+  .brand-name{ font-weight:600; font-size:15px; letter-spacing:-0.01em; }
+  .brand-sub{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-left:8px; padding-left:8px; border-left:1px solid var(--border);}
+  .header-right{ display:flex; align-items:center; gap:10px; }
+  .pill-visitor{
+    font-family: var(--mono); font-size:11px; color: var(--text-dim);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 5px 10px; border-radius: 5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .pill-visitor .dot{ width:5px; height:5px; border-radius:50%; background: var(--text-faint); }
+  .btn-login{
+    font-size:13px; font-weight:500; color: var(--text);
+    background: var(--surface); border:1px solid var(--border);
+    padding: 6px 12px; border-radius:5px;
+    display:flex; align-items:center; gap:6px; cursor:pointer;
+  }
+  .theme-toggle{
+    width:32px; height:32px; border-radius:5px;
+    background: var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; color:var(--text-dim); cursor:pointer;
+  }
+
+  /* Auth area */
+  .auth-wrap{
+    flex: 1;
+    display:flex; align-items:center; justify-content:center;
+    padding: 40px 20px;
+  }
+  .auth-box{ width: 100%; max-width: 380px; }
+
+  .auth-label{
+    font-family: var(--mono); font-size: 10.5px; letter-spacing:0.08em;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+
+  h1{
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .subtitle{
+    font-size: 13px;
+    color: var(--text-faint);
+    margin-bottom: 22px;
+  }
+
+  .panel{
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 22px;
+  }
+
+  .field{ margin-bottom: 16px; }
+  .field:last-of-type{ margin-bottom: 0; }
+  .field-label{
+    display:block;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing:0.08em;
+    color: var(--text-faint);
+    margin-bottom: 7px;
+  }
+  .field input{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    outline: none;
+  }
+  .field input:focus{
+    border-color: rgba(201,154,74,0.4);
+  }
+  .field input::placeholder{ color: var(--text-faint); }
+
+  .submit-btn{
+    width: 100%;
+    margin-top: 20px;
+    padding: 11px 0;
+    border-radius: 6px;
+    border: 1px solid rgba(201,154,74,0.35);
+    background: rgba(201,154,74,0.12);
+    color: var(--gold);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .submit-btn:hover{
+    background: rgba(201,154,74,0.18);
+  }
+
+  .auth-footnote{
+    margin-top: 16px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  @media (max-width: 480px){
+    header{ padding: 12px 16px; }
+    .auth-wrap{ padding: 24px 16px; align-items: flex-start; }
+    .panel{ padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">♪</div>
+    <span class="brand-name">Lyra</span>
+    <span class="brand-sub">music.db</span>
+  </div>
+  <div class="header-right">
+    <div class="pill-visitor"><span class="dot"></span>VISITANTE</div>
+    <div class="btn-login">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      Login
+    </div>
+    <div class="theme-toggle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </div>
+  </div>
+</header>
+
+<div class="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-label">AUTENTICAÇÃO</div>
+    <h1>Entrar</h1>
+    <div class="subtitle">Informe o nome e a senha da sua conta.</div>
+
+    <div class="panel">
+      <div class="field">
+        <label class="field-label">NOME</label>
+        <input type="text" value="mdc.invb@gmail.com" />
+      </div>
+      <div class="field">
+        <label class="field-label">SENHA</label>
+        <input type="password" value="senha12345" />
+      </div>
+      <button class="submit-btn">Entrar</button>
+    </div>
+
+    <div class="auth-footnote">lyra.music.db — acesso restrito</div>
+  </div>
+</div>
+
+</body>
+</html>

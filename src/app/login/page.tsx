@@ -13,12 +13,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <SiteHeader />
-      <main className="login-wrap">
-        <h1 style={{ fontSize: 22, marginBottom: 6 }}>Entrar</h1>
-        <p className="muted small" style={{ marginTop: 0, marginBottom: 22 }}>
-          Informe o nome e a senha da sua conta.
-        </p>
-        <LoginForm next={target} />
+      <main className="auth-wrap">
+        <div className="auth-box">
+          <p className="auth-label">AUTENTICAÇÃO</p>
+          <h1 className="auth-title">Entrar</h1>
+          <p className="auth-subtitle">Informe o nome e a senha da sua conta.</p>
+          <LoginForm next={target} />
+          <p className="auth-footnote">lyra.music.db — acesso restrito</p>
+        </div>
       </main>
     </>
   );
