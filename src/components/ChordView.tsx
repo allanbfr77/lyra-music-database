@@ -9,7 +9,6 @@ import Reader from '@/components/Reader';
 import {
   availableInstruments,
   chartForKey,
-  chartToLyrics,
   cifraPath,
   keyToSlug,
   normalizeKey,
@@ -159,7 +158,7 @@ export default function ChordView({
         .map((o) => normalizeKey(o.key)),
     [activeOverrides, instrumento]
   );
-  const lyrics = activeSong.lyrics.trim() || (activeSong.chords.trim() ? chartToLyrics(activeSong.chords) : '');
+  const lyrics = activeSong.lyrics.trim();
 
   const emptyMessage =
     instrumento === 'violao'
