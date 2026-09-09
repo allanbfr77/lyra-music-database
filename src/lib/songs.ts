@@ -102,6 +102,11 @@ export const getSongById = cache(async function getSongById(id: string): Promise
   return normalizeSongRow(data as unknown as Song & { song_key_overrides: KeyOverride[] });
 });
 
+/** Evita que %, _ ou , no termo quebrem o filtro ilike do PostgREST. */
+function escapeIlike(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_').replace(/,/g, ' ');
+}
+
 /** `weights`: A = título, B = artista, C = letra. "ABC" procura em tudo. */
 export async function searchSongs(
   q: string,
@@ -110,14 +115,50 @@ export async function searchSongs(
   weights = 'ABC'
 ): Promise<SearchHit[]> {
   const supabase = createPublicClient();
-  const { data, error } = await supabase.rpc('search_songs', {
-    q: q ?? '',
-    lim: limit,
-    off: offset,
-    fields: weights,
-  });
+  const query = (q ?? '').trim();
+  const fields = weights.toUpperCase().replace(/[^ABC]/g, '') || 'ABC';
+  const wantsLyrics = fields.includes('C');
+
+  // Com letra (ou catálogo vazio): RPC full-text. Título/artista usam substring abaixo.
+  if (!query || wantsLyrics) {
+    const { data, error } = await supabase.rpc('search_songs', {
+      q: query,
+      lim: limit,
+      off: offset,
+      fields,
+    });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as SearchHit[];
+  }
+
+  const needle = escapeIlike(query);
+  const parts: string[] = [];
+  if (fields.includes('A')) parts.push(`title.ilike.%${needle}%`);
+  if (fields.includes('B')) parts.push(`artist.ilike.%${needle}%`);
+  if (!parts.length) return [];
+
+  const { data, error } = await supabase
+    .from('songs')
+    .select('id, slug, title, artist, base_key, available_keys, chords, lyrics, updated_at')
+    .eq('published', true)
+    .or(parts.join(','))
+    .order('title', { ascending: true })
+    .range(offset, offset + Math.max(limit, 0) - 1);
+
   if (error) throw new Error(error.message);
-  return (data ?? []) as SearchHit[];
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    artist: row.artist,
+    base_key: row.base_key,
+    available_keys: row.available_keys ?? [],
+    has_chords: Boolean(String(row.chords ?? '').trim()),
+    snippet: row.lyrics ? String(row.lyrics).replace(/\s+/g, ' ').slice(0, 160) : null,
+    updated_at: row.updated_at,
+    rank: 0,
+  }));
 }
 
 export async function listRecentSongs(limit = 30): Promise<SearchHit[]> {

@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { parseChart, type ChartLine } from '@/lib/chords';
 import { useReaderSettings } from '@/components/SongControlPanel';
-import { useVoiceSync } from '@/components/VoiceSyncProvider';
-import { splitLyricLines } from '@/lib/lyric-sync';
 
 type Props = {
   mode: 'chords' | 'lyrics';
@@ -13,15 +11,7 @@ type Props = {
 
 export default function Reader({ mode, text }: Props) {
   const { sizePx, wrap } = useReaderSettings();
-  const { enabled: voiceSyncEnabled, activeLineIndex } = useVoiceSync();
   const lines = useMemo<ChartLine[]>(() => (mode === 'chords' ? parseChart(text) : []), [mode, text]);
-  const lyricLines = useMemo(() => (mode === 'lyrics' ? splitLyricLines(text) : []), [mode, text]);
-  const activeLineRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (activeLineIndex == null) return;
-    activeLineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [activeLineIndex]);
 
   if (mode === 'chords') {
     return (
@@ -33,28 +23,9 @@ export default function Reader({ mode, text }: Props) {
     );
   }
 
-  if (!voiceSyncEnabled && activeLineIndex == null) {
-    return (
-      <div className="lyrics" style={{ ['--sheet-size' as string]: `${sizePx}px` }}>
-        {text}
-      </div>
-    );
-  }
-
   return (
-    <div className="lyrics lyrics--sync" style={{ ['--sheet-size' as string]: `${sizePx}px` }}>
-      {lyricLines.map((line, i) => {
-        const active = i === activeLineIndex;
-        return (
-          <div
-            key={i}
-            ref={active ? activeLineRef : undefined}
-            className={`lyrics__line${active ? ' lyrics__line--active' : ''}`}
-          >
-            {line || ' '}
-          </div>
-        );
-      })}
+    <div className="lyrics" style={{ ['--sheet-size' as string]: `${sizePx}px` }}>
+      {text}
     </div>
   );
 }

@@ -55,14 +55,8 @@ export function youtubeVideoId(raw: string | null | undefined): string | null {
   return null;
 }
 
-/** URL do player incorporado, com autoplay e API JS, ou null. */
-export function youtubeEmbedUrl(raw: string | null | undefined, origin?: string | null): string | null {
+/** URL do player incorporado, com autoplay, ou null. */
+export function youtubeEmbedUrl(raw: string | null | undefined): string | null {
   const id = youtubeVideoId(raw);
-  if (!id) return null;
-  const params = new URLSearchParams({
-    autoplay: '1',
-    enablejsapi: '1',
-  });
-  if (origin) params.set('origin', origin);
-  return `https://www.youtube.com/embed/${id}?${params.toString()}`;
+  return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : null;
 }

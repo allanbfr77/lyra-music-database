@@ -22,8 +22,14 @@ export default function SearchBox({
   const router = useRouter();
   const pathname = usePathname();
   const first = useRef(true);
+  // Último termo que nós mesmos mandamos para a URL — evita eco atrasado apagar a digitação.
+  const lastPushed = useRef(initialQuery);
 
   useEffect(() => {
+    // Navegação externa (voltar/avançar): alinha o campo.
+    // Eco da nossa própria busca: ignora — o input já está no texto atual (ou à frente).
+    if (initialQuery === lastPushed.current) return;
+    lastPushed.current = initialQuery;
     setValue(initialQuery);
   }, [initialQuery]);
 
@@ -41,6 +47,7 @@ export default function SearchBox({
 
   const push = useCallback(
     (q: string, ids: string) => {
+      lastPushed.current = q;
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (ids !== DEFAULT_FIELD_IDS) params.set('c', ids);

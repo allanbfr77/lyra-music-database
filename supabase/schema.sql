@@ -142,7 +142,8 @@ create index if not exists overrides_song_idx   on public.song_key_overrides (so
 
 -- ---------------------------------------------------------------------------
 -- Busca usada pelo site e pelo Lyra
--- Procura em título, artista e trecho da letra, com prefixo ("gali" acha "Galileu").
+-- Título/artista: correspondência parcial (substring, sem acento).
+-- Letra: full-text com prefixo ("gali" acha "Galileu").
 --
 -- O parâmetro `fields` restringe onde procurar, usando os pesos do índice:
 --   A = título   B = artista   C = letra
@@ -174,26 +175,24 @@ security definer
 set search_path = public
 as $$
 declare
-  weights text;
-  terms   text;
-  tsq     tsquery;
+  weights   text;
+  terms     text;
+  tsq       tsquery;
   in_lyrics boolean;
+  in_title  boolean;
+  in_artist boolean;
+  needle    text;
 begin
   weights := regexp_replace(upper(coalesce(fields, 'ABC')), '[^ABC]', '', 'g');
   if weights = '' then
     weights := 'ABC';
   end if;
+  in_title  := position('A' in weights) > 0;
+  in_artist := position('B' in weights) > 0;
   in_lyrics := position('C' in weights) > 0;
+  needle    := unaccent(lower(btrim(coalesce(q, ''))));
 
-  select string_agg(s.w || ':*' || weights, ' & ')
-    into terms
-  from (
-    select regexp_replace(lower(t), '[^[:alnum:]]', '', 'g') as w
-    from unnest(regexp_split_to_array(coalesce(q, ''), '\s+')) as t
-  ) s
-  where s.w <> '';
-
-  if terms is null then
+  if needle = '' then
     return query
       select s.id, s.slug, s.title, s.artist, s.base_key, s.available_keys,
              (length(btrim(s.chords)) > 0) as has_chords,
@@ -207,12 +206,24 @@ begin
     return;
   end if;
 
-  tsq := to_tsquery('public.pt_unaccent', terms);
+  if in_lyrics then
+    select string_agg(s.w || ':*' || weights, ' & ')
+      into terms
+    from (
+      select regexp_replace(lower(t), '[^[:alnum:]]', '', 'g') as w
+      from unnest(regexp_split_to_array(coalesce(q, ''), '\s+')) as t
+    ) s
+    where s.w <> '';
+
+    if terms is not null then
+      tsq := to_tsquery('public.pt_unaccent', terms);
+    end if;
+  end if;
 
   return query
     select s.id, s.slug, s.title, s.artist, s.base_key, s.available_keys,
            (length(btrim(s.chords)) > 0) as has_chords,
-           case when in_lyrics then
+           case when in_lyrics and tsq is not null then
              ts_headline(
                'public.pt_unaccent',
                regexp_replace(s.lyrics, '\s+', ' ', 'g'),
@@ -223,10 +234,18 @@ begin
              left(regexp_replace(s.lyrics, '\s+', ' ', 'g'), 160)
            end as snippet,
            s.updated_at,
-           ts_rank(s.search_vector, tsq) as rank
+           (
+             (case when in_title and unaccent(lower(s.title)) like '%' || needle || '%' then 0.6 else 0 end)
+             + (case when in_artist and unaccent(lower(s.artist)) like '%' || needle || '%' then 0.3 else 0 end)
+             + (case when tsq is not null then ts_rank(s.search_vector, tsq) else 0 end)
+           )::real as rank
     from public.songs s
-    where s.published and s.search_vector @@ tsq
-    order by ts_rank(s.search_vector, tsq) desc, s.title asc
+    where s.published and (
+      (in_title and unaccent(lower(s.title)) like '%' || needle || '%')
+      or (in_artist and unaccent(lower(s.artist)) like '%' || needle || '%')
+      or (tsq is not null and s.search_vector @@ tsq)
+    )
+    order by rank desc, s.title asc
     limit greatest(lim, 0) offset greatest(off, 0);
 end
 $$;
