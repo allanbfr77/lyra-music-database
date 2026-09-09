@@ -6,6 +6,7 @@ import SongControlPanel from '@/components/SongControlPanel';
 import SongTabs, { InstrumentTabs, type SongTab } from '@/components/SongTabs';
 import KeyBar from '@/components/KeyBar';
 import Reader from '@/components/Reader';
+import VoiceSyncProvider from '@/components/VoiceSyncProvider';
 import {
   availableInstruments,
   chartForKey,
@@ -184,7 +185,7 @@ export default function ChordView({
   );
 
   return (
-    <>
+    <VoiceSyncProvider lyricsText={lyrics}>
       <SongHeader song={activeSong} currentKey={viewKey} />
       <SongControlPanel
         shareTitle={shareTitle}
@@ -251,6 +252,6 @@ export default function ChordView({
           </p>
         ) : null}
       </SongControlPanel>
-    </>
+    </VoiceSyncProvider>
   );
 }

@@ -18,6 +18,7 @@ import {
   ShareIcon,
   WrapTextIcon,
 } from '@/components/icons';
+import { useVoiceSync } from '@/components/VoiceSyncProvider';
 
 const SIZE_KEY = 'lyra:font-size';
 const SIZE_PERCENT_KEY = 'lyra:font-size-percent';
@@ -94,6 +95,13 @@ export default function SongControlPanel({
   const raf = useRef<number | null>(null);
   const carry = useRef(0);
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null);
+  const { enabled: voiceSyncEnabled, setEnabled: setVoiceSyncEnabled, supported: voiceSyncSupported, voiceSessionActive, registerAutoScrollStart } =
+    useVoiceSync();
+
+  useEffect(() => {
+    registerAutoScrollStart(() => setSpeed((s) => (s > 0 ? s : 1)));
+    return () => registerAutoScrollStart(null);
+  }, [registerAutoScrollStart]);
 
   useEffect(() => {
     setPercent(readStoredPercent());
@@ -141,6 +149,12 @@ export default function SongControlPanel({
       })
       .catch(() => {});
 
+    // Com sync por voz ativo, o destaque da letra conduz a posição;
+    // a rolagem em velocidade fixa fica suspensa até o recurso ser desligado.
+    if (voiceSessionActive) {
+      return;
+    }
+
     let last = performance.now();
     const step = (now: number) => {
       const dt = now - last;
@@ -164,7 +178,7 @@ export default function SongControlPanel({
       if (raf.current) cancelAnimationFrame(raf.current);
       raf.current = null;
     };
-  }, [speed]);
+  }, [speed, voiceSessionActive]);
 
   const share = async () => {
     const url = window.location.href;
@@ -198,10 +212,33 @@ export default function SongControlPanel({
             {tabs}
           </div>
           <div className="control-panel__actions">
+            <label
+              className={`voice-sync-toggle${voiceSyncEnabled ? ' voice-sync-toggle--on' : ''}${
+                voiceSyncSupported ? '' : ' voice-sync-toggle--disabled'
+              }`}
+              title={
+                voiceSyncSupported
+                  ? 'Sincronizar letra com a voz do vídeo'
+                  : 'Reconhecimento de voz não disponível neste navegador'
+              }
+            >
+              <span className="control-label">VOZ</span>
+              <input
+                type="checkbox"
+                className="voice-sync-toggle__input"
+                checked={voiceSyncEnabled}
+                disabled={!voiceSyncSupported}
+                onChange={(event) => setVoiceSyncEnabled(event.target.checked)}
+                aria-label="Sincronização automática da letra por voz"
+              />
+              <span className="voice-sync-toggle__track" aria-hidden="true">
+                <span className="voice-sync-toggle__thumb" />
+              </span>
+            </label>
             <button
               type="button"
               className="play-btn"
-              onClick={() => setSpeed((s) => (s > 0 ? 0 : 2))}
+              onClick={() => setSpeed((s) => (s > 0 ? 0 : 1))}
               aria-label={playing ? 'Parar rolagem automática' : 'Rolar automaticamente'}
               aria-pressed={playing}
               title="Rolagem automática"

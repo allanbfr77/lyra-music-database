@@ -6,6 +6,7 @@ import type { Song } from '@/lib/types';
 import { normalizeKey } from '@/lib/chords';
 import { parseYoutubeUrl, youtubeEmbedUrl } from '@/lib/youtube';
 import { CloseIcon, ExternalLinkIcon, YouTubeIcon } from '@/components/icons';
+import { useVoiceSync } from '@/components/VoiceSyncProvider';
 
 export default function SongHeader({ song }: { song: Song; currentKey?: string }) {
   const youtubeUrl = parseYoutubeUrl(song.youtube_url);
@@ -13,10 +14,12 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
   const originalKey = normalizeKey(song.base_key);
   const extraChips = Boolean(song.capo > 0 || song.tempo_bpm || song.time_signature || song.source_url);
   const [showPlayer, setShowPlayer] = useState(false);
+  const { onYoutubePlayerOpen, onYoutubePlayerClose } = useVoiceSync();
 
   useEffect(() => {
     setShowPlayer(false);
-  }, [song.id]);
+    onYoutubePlayerClose();
+  }, [song.id, onYoutubePlayerClose]);
 
   return (
     <div className="song-head">
@@ -40,7 +43,15 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
             aria-pressed={showPlayer}
             aria-label={showPlayer ? 'Fechar vídeo do YouTube' : 'Reproduzir vídeo do YouTube'}
             title={showPlayer ? 'Fechar vídeo do YouTube' : 'Reproduzir vídeo do YouTube'}
-            onClick={() => setShowPlayer((open) => !open)}
+            onClick={() => {
+              if (showPlayer) {
+                setShowPlayer(false);
+                onYoutubePlayerClose();
+              } else {
+                setShowPlayer(true);
+                onYoutubePlayerOpen();
+              }
+            }}
           >
             <YouTubeIcon size={18} />
           </button>
@@ -80,7 +91,10 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
               className="icon-btn"
               aria-label="Fechar vídeo do YouTube"
               title="Fechar vídeo"
-              onClick={() => setShowPlayer(false)}
+              onClick={() => {
+                setShowPlayer(false);
+                onYoutubePlayerClose();
+              }}
             >
               <CloseIcon size={16} />
             </button>
