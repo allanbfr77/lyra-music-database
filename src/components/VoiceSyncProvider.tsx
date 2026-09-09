@@ -10,11 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {
-  findMatchingLineIndex,
-  getSpeechRecognitionCtor,
-  splitLyricLines,
-} from '@/lib/lyric-sync';
+import { findCueAtTime, findMatchingLineIndex, splitLyricLines, type YoutubeCaptionCue } from '@/lib/lyric-sync';
 
 type VoiceSyncContextValue = {
   enabled: boolean;
@@ -22,19 +18,23 @@ type VoiceSyncContextValue = {
   supported: boolean;
   activeLineIndex: number | null;
   voiceSessionActive: boolean;
-  onYoutubePlayerOpen: () => void;
+  onYoutubePlayerOpen: (videoId: string) => void;
   onYoutubePlayerClose: () => void;
+  onYoutubePlaying: () => void;
+  onYoutubeTime: (timeSec: number) => void;
   registerAutoScrollStart: (fn: (() => void) | null) => void;
 };
 
 const VoiceSyncContext = createContext<VoiceSyncContextValue>({
   enabled: false,
   setEnabled: () => {},
-  supported: false,
+  supported: true,
   activeLineIndex: null,
   voiceSessionActive: false,
   onYoutubePlayerOpen: () => {},
   onYoutubePlayerClose: () => {},
+  onYoutubePlaying: () => {},
+  onYoutubeTime: () => {},
   registerAutoScrollStart: () => {},
 });
 
@@ -50,31 +50,19 @@ export default function VoiceSyncProvider({
   children: ReactNode;
 }) {
   const [enabled, setEnabledState] = useState(false);
-  const [supported, setSupported] = useState(false);
   const [activeLineIndex, setActiveLineIndex] = useState<number | null>(null);
   const [voiceSessionActive, setVoiceSessionActive] = useState(false);
 
   const enabledRef = useRef(false);
   const youtubeOpenRef = useRef(false);
-  const sessionRef = useRef(false);
+  const videoIdRef = useRef<string | null>(null);
+  const cuesRef = useRef<YoutubeCaptionCue[]>([]);
+  const cuesReadyRef = useRef(false);
+  const playbackActiveRef = useRef(false);
   const lineIndexRef = useRef<number | null>(null);
-  const recognitionRef = useRef<{
-    start: () => void;
-    stop: () => void;
-    abort: () => void;
-    onresult: ((event: {
-      resultIndex: number;
-      results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
-    }) => void) | null;
-    onerror: ((event: { error: string }) => void) | null;
-    onend: (() => void) | null;
-  } | null>(null);
   const autoScrollStartRef = useRef<(() => void) | null>(null);
   const lyricsTextRef = useRef(lyricsText);
-
-  useEffect(() => {
-    setSupported(Boolean(getSpeechRecognitionCtor()));
-  }, []);
+  const loadSeqRef = useRef(0);
 
   useEffect(() => {
     lyricsTextRef.current = lyricsText;
@@ -84,97 +72,51 @@ export default function VoiceSyncProvider({
     lineIndexRef.current = activeLineIndex;
   }, [activeLineIndex]);
 
-  const stopRecognition = useCallback(() => {
-    sessionRef.current = false;
-    setVoiceSessionActive(false);
-    const recognition = recognitionRef.current;
-    recognitionRef.current = null;
-    if (recognition) {
-      recognition.onresult = null;
-      recognition.onerror = null;
-      recognition.onend = null;
-      try {
-        recognition.stop();
-      } catch {
-        try {
-          recognition.abort();
-        } catch {
-          /* já parado */
-        }
-      }
-    }
-  }, []);
-
   const clearHighlight = useCallback(() => {
     lineIndexRef.current = null;
     setActiveLineIndex(null);
   }, []);
 
   const endSession = useCallback(() => {
-    stopRecognition();
+    playbackActiveRef.current = false;
+    setVoiceSessionActive(false);
     clearHighlight();
-  }, [stopRecognition, clearHighlight]);
+  }, [clearHighlight]);
 
-  const handleTranscript = useCallback((transcript: string) => {
-    const lines = splitLyricLines(lyricsTextRef.current);
-    const match = findMatchingLineIndex(lines, transcript, lineIndexRef.current);
-    if (match == null || match === lineIndexRef.current) return;
-    lineIndexRef.current = match;
-    setActiveLineIndex(match);
+  const activateVoiceFollow = useCallback(() => {
+    if (!enabledRef.current || !youtubeOpenRef.current) return;
+    if (!cuesReadyRef.current || cuesRef.current.length === 0) return;
+    setVoiceSessionActive(true);
   }, []);
 
-  const startRecognition = useCallback(() => {
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor || !enabledRef.current || !youtubeOpenRef.current) return;
-
-    stopRecognition();
-    sessionRef.current = true;
-    setVoiceSessionActive(true);
-
-    const recognition = new Ctor();
-    recognition.lang = 'pt-BR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
-
-    recognition.onresult = (event) => {
-      if (!sessionRef.current) return;
-      const parts: string[] = [];
-      const start = Math.max(0, event.results.length - 4);
-      for (let i = start; i < event.results.length; i++) {
-        parts.push(event.results[i][0].transcript);
-      }
-      handleTranscript(parts.join(' '));
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        endSession();
-      }
-    };
-
-    recognition.onend = () => {
-      if (!sessionRef.current || !enabledRef.current || !youtubeOpenRef.current) return;
+  const loadCaptions = useCallback(
+    async (videoId: string) => {
+      const seq = ++loadSeqRef.current;
+      cuesRef.current = [];
+      cuesReadyRef.current = false;
       try {
-        recognition.start();
+        const res = await fetch(`/api/youtube/captions/${encodeURIComponent(videoId)}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { cues?: YoutubeCaptionCue[] };
+        if (seq !== loadSeqRef.current || videoIdRef.current !== videoId) return;
+        cuesRef.current = Array.isArray(data.cues) ? data.cues : [];
+        cuesReadyRef.current = true;
+        if (playbackActiveRef.current) activateVoiceFollow();
       } catch {
-        /* reinício pode falhar se já estiver ativo */
+        if (seq !== loadSeqRef.current) return;
+        cuesRef.current = [];
+        cuesReadyRef.current = true;
       }
-    };
+    },
+    [activateVoiceFollow]
+  );
 
-    try {
-      recognition.start();
-    } catch {
-      endSession();
-    }
-  }, [stopRecognition, handleTranscript, endSession]);
-
-  const beginSession = useCallback(() => {
+  const beginPlaybackSync = useCallback(() => {
     if (!enabledRef.current || !youtubeOpenRef.current) return;
+    playbackActiveRef.current = true;
     autoScrollStartRef.current?.();
-    startRecognition();
-  }, [startRecognition]);
+    activateVoiceFollow();
+  }, [activateVoiceFollow]);
 
   const setEnabled = useCallback(
     (value: boolean) => {
@@ -184,20 +126,58 @@ export default function VoiceSyncProvider({
         endSession();
         return;
       }
-      if (youtubeOpenRef.current) beginSession();
+      const videoId = videoIdRef.current;
+      if (videoId && youtubeOpenRef.current) {
+        void loadCaptions(videoId);
+      }
     },
-    [endSession, beginSession]
+    [endSession, loadCaptions]
   );
 
-  const onYoutubePlayerOpen = useCallback(() => {
-    youtubeOpenRef.current = true;
-    if (enabledRef.current) beginSession();
-  }, [beginSession]);
+  const onYoutubePlayerOpen = useCallback(
+    (videoId: string) => {
+      youtubeOpenRef.current = true;
+      videoIdRef.current = videoId;
+      endSession();
+      if (enabledRef.current) void loadCaptions(videoId);
+    },
+    [endSession, loadCaptions]
+  );
 
   const onYoutubePlayerClose = useCallback(() => {
     youtubeOpenRef.current = false;
+    videoIdRef.current = null;
+    cuesRef.current = [];
+    cuesReadyRef.current = false;
+    loadSeqRef.current += 1;
     endSession();
   }, [endSession]);
+
+  const onYoutubePlaying = useCallback(() => {
+    if (!enabledRef.current || !youtubeOpenRef.current) return;
+    beginPlaybackSync();
+  }, [beginPlaybackSync]);
+
+  const onYoutubeTime = useCallback((timeSec: number) => {
+    if (!enabledRef.current || !youtubeOpenRef.current) return;
+    const cues = cuesRef.current;
+    if (!cues.length) return;
+
+    const cue = findCueAtTime(cues, timeSec);
+    if (!cue) return;
+
+    // Inclui o cue anterior para melhorar o casamento com linhas da letra.
+    const index = cues.indexOf(cue);
+    const prev = index > 0 ? cues[index - 1] : null;
+    const transcript = [prev?.text, cue.text].filter(Boolean).join(' ');
+
+    const lines = splitLyricLines(lyricsTextRef.current);
+    const match = findMatchingLineIndex(lines, transcript, lineIndexRef.current);
+    if (match == null || match === lineIndexRef.current) return;
+    lineIndexRef.current = match;
+    setActiveLineIndex(match);
+    setVoiceSessionActive(true);
+  }, []);
 
   const registerAutoScrollStart = useCallback((fn: (() => void) | null) => {
     autoScrollStartRef.current = fn;
@@ -205,6 +185,7 @@ export default function VoiceSyncProvider({
 
   useEffect(() => {
     return () => {
+      loadSeqRef.current += 1;
       endSession();
     };
   }, [endSession]);
@@ -213,21 +194,24 @@ export default function VoiceSyncProvider({
     () => ({
       enabled,
       setEnabled,
-      supported,
+      supported: true,
       activeLineIndex,
       voiceSessionActive,
       onYoutubePlayerOpen,
       onYoutubePlayerClose,
+      onYoutubePlaying,
+      onYoutubeTime,
       registerAutoScrollStart,
     }),
     [
       enabled,
       setEnabled,
-      supported,
       activeLineIndex,
       voiceSessionActive,
       onYoutubePlayerOpen,
       onYoutubePlayerClose,
+      onYoutubePlaying,
+      onYoutubeTime,
       registerAutoScrollStart,
     ]
   );

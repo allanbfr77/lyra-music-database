@@ -89,35 +89,24 @@ export function findMatchingLineIndex(
   return null;
 }
 
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
+export type YoutubeCaptionCue = {
+  start: number;
+  duration: number;
+  text: string;
 };
 
-type SpeechRecognitionResultEventLike = {
-  resultIndex: number;
-  results: ArrayLike<{
-    isFinal: boolean;
-    0: { transcript: string };
-  }>;
-};
+/** Cue ativa no instante do player (áudio do vídeo). */
+export function findCueAtTime(cues: YoutubeCaptionCue[], timeSec: number): YoutubeCaptionCue | null {
+  if (!cues.length) return null;
 
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+  for (const cue of cues) {
+    if (timeSec >= cue.start && timeSec < cue.start + cue.duration) return cue;
+  }
 
-/** Construtor da Web Speech API, se o navegador oferecer. */
-export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === 'undefined') return null;
-  const scope = window as Window & {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return scope.SpeechRecognition ?? scope.webkitSpeechRecognition ?? null;
+  let previous: YoutubeCaptionCue | null = null;
+  for (const cue of cues) {
+    if (cue.start <= timeSec) previous = cue;
+    else break;
+  }
+  return previous;
 }

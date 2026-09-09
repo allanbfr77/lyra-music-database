@@ -218,8 +218,8 @@ export default function SongControlPanel({
               }`}
               title={
                 voiceSyncSupported
-                  ? 'Sincronizar letra com a voz do vídeo'
-                  : 'Reconhecimento de voz não disponível neste navegador'
+                  ? 'Sincronizar letra com o áudio do YouTube'
+                  : 'Sincronização por voz indisponível'
               }
             >
               <span className="control-label">VOZ</span>
