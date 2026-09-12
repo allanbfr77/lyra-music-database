@@ -6,7 +6,23 @@ import SongList, { type CatalogSong } from '@/components/SongList';
 import { ChevronDownIcon, CloseIcon } from '@/components/icons';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
 
-type ContentFilter = 'all' | 'chords' | 'lyrics';
+type ContentFilter = 'all' | 'chords' | 'lyrics' | 'no-lyrics' | 'no-chords';
+
+const CONTENT_FILTERS: { id: ContentFilter; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'chords', label: 'Com cifra' },
+  { id: 'lyrics', label: 'Com letra' },
+  { id: 'no-lyrics', label: 'Sem letra' },
+  { id: 'no-chords', label: 'Sem cifra' },
+];
+
+const CONTENT_FILTER_LABELS: Record<ContentFilter, string | null> = {
+  all: null,
+  chords: 'Com cifra',
+  lyrics: 'Com letra',
+  'no-lyrics': 'Sem letra',
+  'no-chords': 'Sem cifra',
+};
 
 function foldText(value: string) {
   return value
@@ -104,6 +120,8 @@ export default function HomeCatalog({
     return songs.filter((song) => {
       if (contentFilter === 'chords' && !song.has_chords) return false;
       if (contentFilter === 'lyrics' && !songHasLyrics(song)) return false;
+      if (contentFilter === 'no-lyrics' && songHasLyrics(song)) return false;
+      if (contentFilter === 'no-chords' && song.has_chords) return false;
       if (activeKey && normalizeKey(song.base_key) !== activeKey) return false;
       if (activeArtist && song.artist.trim() !== activeArtist) return false;
       if (artistNeedle && !foldText(song.artist).includes(artistNeedle)) return false;
@@ -137,13 +155,7 @@ export default function HomeCatalog({
       <div className="catalog-filters">
         <div className="catalog-filters__row">
           <div className="catalog-filters__chips" role="group" aria-label="Filtrar por conteúdo">
-            {(
-              [
-                { id: 'all', label: 'Todos' },
-                { id: 'chords', label: 'Com cifra' },
-                { id: 'lyrics', label: 'Com letra' },
-              ] as const
-            ).map((item) => (
+            {CONTENT_FILTERS.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -230,8 +242,7 @@ export default function HomeCatalog({
         {!filtersOpen && hasAnyFilter ? (
           <div className="catalog-filters__summary">
             <span className="catalog-filters__summary-text">
-              {contentFilter === 'chords' ? 'Com cifra' : null}
-              {contentFilter === 'lyrics' ? 'Com letra' : null}
+              {CONTENT_FILTER_LABELS[contentFilter]}
               {activeArtist ? `${contentFilter !== 'all' ? ' · ' : ''}${activeArtist}` : null}
               {!activeArtist && artistQuery.trim()
                 ? `${contentFilter !== 'all' ? ' · ' : ''}Artista: ${artistQuery.trim()}`

@@ -15,7 +15,7 @@ import {
 } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
-import { ExternalLinkIcon, PencilIcon, CheckIcon } from '@/components/icons';
+import { ExternalLinkIcon, PencilIcon, CheckIcon, PlusIcon } from '@/components/icons';
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -103,8 +103,10 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   const pendingHref = useRef<string | null>(null);
   const okRef = useRef<HTMLButtonElement>(null);
+  const duplicateOkRef = useRef<HTMLButtonElement>(null);
 
   const effectiveSlug = slugTouched ? slugify(slug || title) : slugify(title);
   const detectedKey = useMemo(
@@ -189,6 +191,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
     if (!result.ok) {
       setError(result.error);
+      if (result.code === 'duplicate_title') setDuplicateOpen(true);
       return;
     }
 
@@ -207,6 +210,10 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   useEffect(() => {
     if (savedOpen) okRef.current?.focus();
   }, [savedOpen]);
+
+  useEffect(() => {
+    if (duplicateOpen) duplicateOkRef.current?.focus();
+  }, [duplicateOpen]);
 
   async function onDelete() {
     if (!initial.id) return;
@@ -513,12 +520,40 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               <ExternalLinkIcon size={12} />
               Ver no site
             </Link>
+            <Link className="btn btn--ghost-mono" href="/admin/nova">
+              <PlusIcon size={13} />
+              Nova música
+            </Link>
             <button className="btn btn--danger-tint sticky-actions__end" onClick={onDelete} disabled={busy} type="button">
               Excluir
             </button>
           </>
         )}
       </div>
+      {duplicateOpen && (
+        <div className="dialog-backdrop">
+          <div
+            className="dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="duplicate-title"
+            aria-describedby="duplicate-desc"
+          >
+            <strong id="duplicate-title">Música já cadastrada</strong>
+            <p id="duplicate-desc">
+              Já existe uma música com esse título. Altere o título ou edite a música existente.
+            </p>
+            <button
+              ref={duplicateOkRef}
+              className="btn btn--tint"
+              type="button"
+              onClick={() => setDuplicateOpen(false)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
       {savedOpen && (
         <div className="dialog-backdrop">
           <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="saved-title" aria-describedby="saved-desc">

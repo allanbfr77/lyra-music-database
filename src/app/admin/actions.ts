@@ -27,7 +27,21 @@ export type SongPayload = {
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
-type Result = { ok: true; id: string; slug: string } | { ok: false; error: string };
+type Result =
+  | { ok: true; id: string; slug: string }
+  | { ok: false; error: string; code?: 'duplicate_title' };
+
+const DUPLICATE_TITLE_ERROR =
+  'Já existe uma música cadastrada com esse título. Altere o título ou edite a música existente.';
+
+/** Mesma regra do índice único do banco (lower + btrim): título igual, artista à parte. */
+function normalizeTitle(value: string) {
+  return value.trim().toLocaleLowerCase('pt-BR');
+}
+
+function isDuplicateTitle(message: string) {
+  return message.includes('duplicate key') && message.includes('songs_title_unico');
+}
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -80,12 +94,36 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
 
     let songId = payload.id ?? null;
 
+    // Trava de duplicidade: um mesmo título não pode ser cadastrado duas vezes,
+    // independentemente do artista. O índice único songs_title_unico_idx garante
+    // a mesma regra no banco, para qualquer outro fluxo de gravação.
+    const { data: sameTitle, error: sameTitleError } = await supabase
+      .from('songs')
+      .select('id, title')
+      .ilike('title', title);
+    if (sameTitleError) return { ok: false, error: translate(sameTitleError.message) };
+
+    const clash = (sameTitle ?? []).find(
+      (row) => row.id !== songId && normalizeTitle(String(row.title ?? '')) === normalizeTitle(title)
+    );
+    if (clash) return { ok: false, error: DUPLICATE_TITLE_ERROR, code: 'duplicate_title' };
+
     if (songId) {
       const { error } = await supabase.from('songs').update(record).eq('id', songId);
-      if (error) return { ok: false, error: translate(error.message) };
+      if (error) {
+        if (isDuplicateTitle(error.message)) {
+          return { ok: false, error: DUPLICATE_TITLE_ERROR, code: 'duplicate_title' };
+        }
+        return { ok: false, error: translate(error.message) };
+      }
     } else {
       const { data, error } = await supabase.from('songs').insert(record).select('id').single();
-      if (error) return { ok: false, error: translate(error.message) };
+      if (error) {
+        if (isDuplicateTitle(error.message)) {
+          return { ok: false, error: DUPLICATE_TITLE_ERROR, code: 'duplicate_title' };
+        }
+        return { ok: false, error: translate(error.message) };
+      }
       songId = data.id as string;
     }
 
@@ -145,6 +183,9 @@ export async function deleteSong(id: string): Promise<{ ok: boolean; error?: str
 }
 
 function translate(message: string): string {
+  if (isDuplicateTitle(message)) {
+    return DUPLICATE_TITLE_ERROR;
+  }
   if (message.includes('duplicate key') && message.includes('slug')) {
     return 'Já existe uma música com esse endereço (slug). Ajuste o campo "Endereço no site".';
   }
