@@ -15,7 +15,7 @@ import {
 } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
-import { ExternalLinkIcon, PencilIcon, CheckIcon, PlusIcon } from '@/components/icons';
+import { ExternalLinkIcon, PencilIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -197,6 +197,39 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
     pendingHref.current = initial.id ? null : `/admin/musica/${result.id}`;
     setSavedOpen(true);
+  }
+
+  /** Mesmo resultado do botão "+ Nova música" da Home: formulário limpo, pronto para cadastrar. */
+  function startNewSong() {
+    if (initial.id) {
+      router.push('/admin/nova');
+      return;
+    }
+    setTitle(EMPTY.title);
+    setArtist(EMPTY.artist);
+    setSlug(EMPTY.slug);
+    setSlugTouched(false);
+    setBaseKey(normalizeKey(EMPTY.base_key, 'G'));
+    setKeyTouched(false);
+    setLyrics(EMPTY.lyrics);
+    setChords(EMPTY.chords);
+    setChordsGuitar(EMPTY.chords_guitar);
+    setAvailableKeys([]);
+    setKeysTouched(false);
+    setCapo(EMPTY.capo);
+    setBpm('');
+    setTimeSignature('');
+    setSourceUrl('');
+    setYoutubeUrl('');
+    setNotes('');
+    setPublished(EMPTY.published);
+    setOverridesByInst({ teclado: {}, violao: {} });
+    setTab('letra');
+    setInstrumentTab('teclado');
+    setTuningKey(null);
+    setError(null);
+    setDuplicateOpen(false);
+    window.scrollTo({ top: 0 });
   }
 
   function dismissSaved() {
@@ -506,6 +539,10 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         <button className="btn btn--tint" onClick={onSave} disabled={busy || !title.trim()} type="button">
           {busy ? 'Salvando...' : 'Salvar'}
         </button>
+        <button className="btn btn--ghost-mono" onClick={startNewSong} disabled={busy} type="button">
+          <PlusIcon size={13} />
+          Nova música
+        </button>
         {initial.id && (
           <>
             <Link
@@ -520,10 +557,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               <ExternalLinkIcon size={12} />
               Ver no site
             </Link>
-            <Link className="btn btn--ghost-mono" href="/admin/nova">
-              <PlusIcon size={13} />
-              Nova música
-            </Link>
             <button className="btn btn--danger-tint sticky-actions__end" onClick={onDelete} disabled={busy} type="button">
               Excluir
             </button>
@@ -533,15 +566,19 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       {duplicateOpen && (
         <div className="dialog-backdrop">
           <div
-            className="dialog"
+            className="dialog dialog--error"
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="duplicate-title"
             aria-describedby="duplicate-desc"
           >
-            <strong id="duplicate-title">Música já cadastrada</strong>
+            <span className="dialog__icon" aria-hidden="true">
+              <AlertTriangleIcon size={22} />
+            </span>
+            <strong id="duplicate-title">Cadastro bloqueado</strong>
             <p id="duplicate-desc">
-              Já existe uma música com esse título. Altere o título ou edite a música existente.
+              Já existe uma música cadastrada com esse título. A música <b>não foi salva</b>. Altere o
+              título ou edite a música existente.
             </p>
             <button
               ref={duplicateOkRef}

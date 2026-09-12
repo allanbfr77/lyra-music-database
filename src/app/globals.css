@@ -2525,6 +2525,20 @@ html:has(.slides-page) .shell {
 .dialog strong { display: block; font-size: 17px; margin-bottom: 6px; }
 .dialog p { margin: 0 0 16px; font-size: 14.5px; color: var(--text-muted); }
 .dialog .btn { min-width: 96px; }
+.dialog--error {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border-strong));
+  border-top: 3px solid var(--danger);
+}
+.dialog--error strong { color: var(--danger); }
+.dialog--error p { color: var(--text); }
+.dialog__icon {
+  display: grid; place-items: center;
+  width: 44px; height: 44px;
+  margin: 2px auto 12px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
 .dialog--wide {
   width: min(100%, 560px);
   text-align: left;

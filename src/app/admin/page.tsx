@@ -15,6 +15,7 @@ type Row = {
   available_keys: string[];
   published: boolean;
   chords: string;
+  lyrics: string;
   updated_at: string;
 };
 
@@ -25,7 +26,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
 
   let request = supabase
     .from('songs')
-    .select('id, slug, title, artist, base_key, available_keys, published, chords, updated_at')
+    .select('id, slug, title, artist, base_key, available_keys, published, chords, lyrics, updated_at')
     .order('title', { ascending: true })
     .limit(200);
 
@@ -41,7 +42,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     base_key: song.base_key,
     available_keys: song.available_keys ?? [],
     has_chords: Boolean(song.chords?.trim()),
-    snippet: null,
+    snippet: song.lyrics?.trim() ? song.lyrics.replace(/\s+/g, ' ').slice(0, 160) : null,
     updated_at: song.updated_at,
     rank: 0,
     href: `/admin/musica/${song.id}`,
@@ -76,6 +77,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           query={query}
           fieldLabels="título e artista"
           showKeyFilter={false}
+          contentFilterIds={['all', 'no-lyrics', 'no-chords']}
           emptyNoQuery={{
             title: 'Nenhuma música cadastrada',
             hint: 'Comece cadastrando a primeira.',

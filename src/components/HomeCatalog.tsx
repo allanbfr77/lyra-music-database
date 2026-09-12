@@ -75,6 +75,7 @@ export default function HomeCatalog({
   fieldLabels,
   showSnippet = false,
   showKeyFilter = true,
+  contentFilterIds,
   search,
   emptyNoQuery = {
     title: 'Nenhuma música cadastrada',
@@ -90,6 +91,8 @@ export default function HomeCatalog({
   fieldLabels: string;
   showSnippet?: boolean;
   showKeyFilter?: boolean;
+  /** Quais chips de conteúdo exibir. Por padrão, todos. */
+  contentFilterIds?: ContentFilter[];
   /** Slot do painel de busca (SearchBox). Quando presente, monta o query builder. */
   search?: ReactNode;
   emptyNoQuery?: { title: string; hint: string };
@@ -148,26 +151,33 @@ export default function HomeCatalog({
     ) : null;
 
   const showPublicFilters = showKeyFilter && Boolean(search);
+  const contentOptions = contentFilterIds
+    ? CONTENT_FILTERS.filter((item) => contentFilterIds.includes(item.id))
+    : CONTENT_FILTERS;
+
+  const contentChips = (
+    <div className="catalog-filters__chips" role="group" aria-label="Filtrar por conteúdo">
+      {contentOptions.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className="catalog-chip"
+          data-active={contentFilter === item.id}
+          aria-pressed={contentFilter === item.id}
+          onClick={() => setContentFilter(item.id)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
 
   let metaRow: ReactNode = null;
   if (showPublicFilters) {
     metaRow = (
       <div className="catalog-filters">
         <div className="catalog-filters__row">
-          <div className="catalog-filters__chips" role="group" aria-label="Filtrar por conteúdo">
-            {CONTENT_FILTERS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="catalog-chip"
-                data-active={contentFilter === item.id}
-                aria-pressed={contentFilter === item.id}
-                onClick={() => setContentFilter(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+          {contentChips}
 
           <div className="catalog-filters__actions">
             <button
@@ -256,6 +266,15 @@ export default function HomeCatalog({
             </button>
           </div>
         ) : null}
+      </div>
+    );
+  } else if (contentFilterIds && contentOptions.length > 1) {
+    metaRow = (
+      <div className="catalog-filters">
+        <div className="catalog-filters__row">
+          {contentChips}
+          <div className="catalog-filters__actions">{countNode}</div>
+        </div>
       </div>
     );
   } else if (countNode) {
