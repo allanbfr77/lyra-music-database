@@ -61,6 +61,35 @@ const EMPTY: EditorInitial = {
   overrides: [],
 };
 
+/**
+ * Diz se o tom salvo de uma música existente foi escolhido pelo admin (e deve travar o
+ * detector automático). Não conta como escolha:
+ * - música sem cifra salva — o tom é só o padrão do formulário;
+ * - tom salvo igual ao detectado — ele veio do próprio detector, então segue a cifra;
+ * - tom padrão do formulário (G) divergente da cifra — nunca foi escolhido de verdade.
+ */
+function isSavedKeyConfirmed(initial: EditorInitial): boolean {
+  if (!initial.id) return false;
+  const detection = detectSongKey(initial.chords ?? '', initial.chords_guitar ?? '');
+  if (!detection) return false;
+  const saved = normalizeKey(initial.base_key, EMPTY.base_key);
+  if (saved === normalizeKey(detection.key)) return false;
+  return saved !== normalizeKey(EMPTY.base_key);
+}
+
+/**
+ * Tom exibido ao abrir o editor. O banco exige um tom, então música sem tom definido
+ * fica gravada com o padrão (G); aqui ela abre sem tom ("A detectar") até a cifra indicar um.
+ * G só é mantido quando foi escolhido de outra forma: bate com a cifra salva.
+ */
+function initialBaseKey(initial: EditorInitial): string {
+  if (!initial.id) return '';
+  const saved = normalizeKey(initial.base_key, EMPTY.base_key);
+  if (saved !== normalizeKey(EMPTY.base_key)) return saved;
+  const detection = detectSongKey(initial.chords ?? '', initial.chords_guitar ?? '');
+  return detection && normalizeKey(detection.key) === saved ? saved : '';
+}
+
 export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitial }) {
   const router = useRouter();
 
@@ -68,9 +97,11 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [artist, setArtist] = useState(initial.artist);
   const [slug, setSlug] = useState(initial.slug);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.slug));
-  const [baseKey, setBaseKey] = useState(normalizeKey(initial.base_key, 'G'));
-  // Música já salva: o admin confirmou o tom. Música nova: a cifra preenche sozinha.
-  const [keyTouched, setKeyTouched] = useState(Boolean(initial.id));
+  // '' = tom ainda não definido (exibido como "A detectar").
+  const [baseKey, setBaseKey] = useState(() => initialBaseKey(initial));
+  // Música nova: a cifra preenche o tom sozinha. Música já salva: só respeitamos o tom
+  // salvo como escolha do admin quando ele de fato diverge da cifra e não é o padrão (G).
+  const [keyTouched, setKeyTouched] = useState(() => isSavedKeyConfirmed(initial));
   const [lyrics, setLyrics] = useState(initial.lyrics);
   const [chords, setChords] = useState(initial.chords);
   const [chordsGuitar, setChordsGuitar] = useState(initial.chords_guitar ?? '');
@@ -108,6 +139,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const okRef = useRef<HTMLButtonElement>(null);
   const duplicateOkRef = useRef<HTMLButtonElement>(null);
 
+  const baseKeyNorm = baseKey ? normalizeKey(baseKey) : '';
   const effectiveSlug = slugTouched ? slugify(slug || title) : slugify(title);
   const detectedKey = useMemo(
     () => detectSongKey(chords, chordsGuitar),
@@ -118,21 +150,21 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     if (!detectedKey || keyTouched) return;
     if (detectedKey.confidence === 'low') return;
     const next = normalizeKey(detectedKey.key);
-    if (next !== normalizeKey(baseKey)) setBaseKey(next);
-  }, [detectedKey, keyTouched, baseKey]);
+    if (next !== baseKeyNorm) setBaseKey(next);
+  }, [detectedKey, keyTouched, baseKeyNorm]);
 
   const twelveKeys = useMemo(() => allKeysFor(baseKey), [baseKey]);
   const effectiveKeys = useMemo(
-    () => (keysTouched ? availableKeys : twelveKeys.filter((k) => k !== normalizeKey(baseKey))),
-    [keysTouched, availableKeys, twelveKeys, baseKey]
+    () => (keysTouched ? availableKeys : twelveKeys.filter((k) => k !== baseKeyNorm)),
+    [keysTouched, availableKeys, twelveKeys, baseKeyNorm]
   );
   const publishedSet = useMemo(
-    () => new Set([normalizeKey(baseKey), ...effectiveKeys]),
-    [baseKey, effectiveKeys]
+    () => new Set(baseKeyNorm ? [baseKeyNorm, ...effectiveKeys] : effectiveKeys),
+    [baseKeyNorm, effectiveKeys]
   );
 
   function toggleKey(key: string) {
-    if (key === normalizeKey(baseKey)) return;
+    if (key === baseKeyNorm) return;
     const current = effectiveKeys;
     setKeysTouched(true);
     setAvailableKeys(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
@@ -152,7 +184,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
   const tunedChart =
     tuningKey !== null
-      ? overrides[tuningKey] ?? transposeChart(activeChords, normalizeKey(baseKey), tuningKey)
+      ? overrides[tuningKey] ?? transposeChart(activeChords, normalizeKey(baseKey, EMPTY.base_key), tuningKey)
       : '';
 
   async function onSave() {
@@ -171,7 +203,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       base_key: normalizeKey(
         !keyTouched && detectedKey && detectedKey.confidence !== 'low'
           ? detectedKey.key
-          : baseKey
+          : baseKey,
+        EMPTY.base_key
       ),
       available_keys: effectiveKeys,
       capo,
@@ -209,7 +242,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     setArtist(EMPTY.artist);
     setSlug(EMPTY.slug);
     setSlugTouched(false);
-    setBaseKey(normalizeKey(EMPTY.base_key, 'G'));
+    setBaseKey('');
     setKeyTouched(false);
     setLyrics(EMPTY.lyrics);
     setChords(EMPTY.chords);
@@ -277,7 +310,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Galileu"
             required
           />
         </label>
@@ -288,7 +320,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             className="input"
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
-            placeholder="Fernandinho"
           />
         </label>
 
@@ -301,7 +332,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               setSlugTouched(true);
               setSlug(e.target.value);
             }}
-            placeholder="galileu"
           />
         </label>
 
@@ -313,7 +343,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             autoComplete="url"
             value={youtubeUrl}
             onChange={(e) => setYoutubeUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=…"
           />
         </label>
 
@@ -351,7 +380,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               onChange={(e) => setLyrics(e.target.value)}
               rows={18}
               aria-label="Letra"
-              placeholder={'Tu és o Deus de toda a terra\nE nada é impossível pra Ti…'}
             />
           </label>
         </div>
@@ -383,13 +411,16 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                 <span className="cifra-editor__key-label">Tom</span>
                 <select
                   className="select cifra-editor__key-select"
-                  value={normalizeKey(baseKey)}
+                  value={baseKeyNorm}
                   aria-label="Tom original da cifra"
                   onChange={(e) => {
                     setKeyTouched(true);
                     setBaseKey(e.target.value);
                   }}
                 >
+                  <option value="" disabled>
+                    A detectar
+                  </option>
                   <optgroup label="Maior">
                     {MAJOR_KEYS.map((k) => (
                       <option key={k} value={k}>
@@ -428,13 +459,12 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               rows={16}
               spellCheck={false}
               aria-label={`Cifra de ${instrumentTab === 'violao' ? 'violão' : 'teclado'}`}
-              placeholder={'[Intro] G  D  Em  C\n\nG            D/F#      Em\nTu és o Deus de toda a terra'}
             />
 
             <div className="cifra-editor__status">
               <KeyDetectionHint
                 detection={detectedKey}
-                currentKey={baseKey}
+                currentKey={baseKeyNorm}
                 onApply={(key) => {
                   setKeyTouched(true);
                   setBaseKey(key);
@@ -452,7 +482,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               <button
                 type="button"
                 className="btn btn--sm"
-                onClick={() => { setKeysTouched(true); setAvailableKeys(twelveKeys.filter((k) => k !== normalizeKey(baseKey))); }}
+                onClick={() => { setKeysTouched(true); setAvailableKeys(twelveKeys.filter((k) => k !== baseKeyNorm)); }}
               >
                 Marcar os 12
               </button>
@@ -462,7 +492,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             </div>
             <div className="keys-grid">
               {twelveKeys.map((key) => {
-                const isBase = key === normalizeKey(baseKey);
+                const isBase = key === baseKeyNorm;
                 return (
                   <button
                     key={key}
@@ -490,7 +520,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             >
               <option value="">Selecione um tom para revisar…</option>
               {twelveKeys
-                .filter((k) => k !== normalizeKey(baseKey) && (publishedSet.has(k) || overrides[k]))
+                .filter((k) => k !== baseKeyNorm && (publishedSet.has(k) || overrides[k]))
                 .map((k) => (
                   <option key={k} value={k}>
                     {k}
@@ -549,7 +579,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               className="btn btn--ghost-mono"
               href={
                 (instrumentTab === 'violao' ? chordsGuitar : chords).trim()
-                  ? cifraPath(effectiveSlug, normalizeKey(baseKey), instrumentTab)
+                  ? cifraPath(effectiveSlug, normalizeKey(baseKey || initial.base_key, EMPTY.base_key), instrumentTab)
                   : `/musica/${effectiveSlug}`
               }
               target="_blank"
@@ -620,7 +650,7 @@ function KeyDetectionHint({
   }
 
   const detected = normalizeKey(detection.key);
-  const current = normalizeKey(currentKey);
+  const current = currentKey ? normalizeKey(currentKey) : '';
   const matches = detected === current;
   const possible = detection.confidence !== 'high';
   const label = possible

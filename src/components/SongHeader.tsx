@@ -10,7 +10,9 @@ import { CloseIcon, ExternalLinkIcon, YouTubeIcon } from '@/components/icons';
 export default function SongHeader({ song }: { song: Song; currentKey?: string }) {
   const youtubeUrl = parseYoutubeUrl(song.youtube_url);
   const embedUrl = youtubeEmbedUrl(song.youtube_url);
-  const originalKey = normalizeKey(song.base_key);
+  // Sem cifra, o tom gravado é só o padrão do cadastro — não exibimos como tom original.
+  const hasChords = Boolean((song.chords ?? '').trim() || (song.chords_guitar ?? '').trim());
+  const originalKey = hasChords ? normalizeKey(song.base_key) : 'A detectar';
   const extraChips = Boolean(song.capo > 0 || song.tempo_bpm || song.time_signature || song.source_url);
   const [showPlayer, setShowPlayer] = useState(false);
 
