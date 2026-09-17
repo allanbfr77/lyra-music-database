@@ -24,6 +24,7 @@ export type SongPayload = {
   youtube_url: string | null;
   notes: string | null;
   published: boolean;
+  chords_reviewed: boolean;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -90,6 +91,7 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       youtube_url: youtubeUrl,
       notes: payload.notes?.trim() || null,
       published: payload.published,
+      chords_reviewed: Boolean(payload.chords_reviewed),
     };
 
     let songId = payload.id ?? null;
@@ -197,6 +199,9 @@ function translate(message: string): string {
   }
   if (message.includes('chords_guitar') || message.includes('instrumento')) {
     return 'O banco ainda não tem a cifra de violão. Execute supabase/migrations/004_violao.sql no SQL Editor do Supabase.';
+  }
+  if (message.includes('chords_reviewed')) {
+    return 'O banco ainda não tem o status de revisão. Execute supabase/migrations/013_chords_reviewed.sql no SQL Editor do Supabase.';
   }
   return message;
 }

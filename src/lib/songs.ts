@@ -6,20 +6,21 @@ import type { Instrumento, KeyOverride, SearchHit, Song } from '@/lib/types';
 export { availableInstruments, chartForKey, cifraPath } from '@/lib/chords';
 
 export const SONG_COLUMNS =
-  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, created_at, updated_at';
+  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, chords_reviewed, created_at, updated_at';
 
 const OVERRIDE_COLUMNS = 'id, song_id, key, chords, instrumento, created_at, updated_at';
 const OVERRIDE_COLUMNS_LEGACY = 'id, song_id, key, chords, created_at, updated_at';
 
 export type SongWithOverrides = Song & { overrides: KeyOverride[] };
 
-/** Tons publicados de uma música, sempre começando pelo tom base. */
+/** Os 12 tons cromáticos na modalidade do tom base — sem restrição por available_keys. */
 export function publishedKeys(song: Pick<Song, 'base_key' | 'available_keys'>): string[] {
-  const base = normalizeKey(song.base_key);
-  const order = allKeysFor(base);
-  const chosen = new Set([base, ...(song.available_keys ?? []).map((k) => normalizeKey(k, ''))]);
-  chosen.delete('');
-  return order.filter((k) => chosen.has(k));
+  return allKeysFor(normalizeKey(song.base_key));
+}
+
+/** Lista cromática completa para UI ao vivo (mesmo critério de publishedKeys). */
+export function chromaticKeys(baseKey: string): string[] {
+  return allKeysFor(normalizeKey(baseKey));
 }
 
 function overrideInstrumento(value: string | null | undefined): Instrumento {
@@ -56,6 +57,9 @@ function dropMissingColumn(
   }
   if (message.includes('chords_guitar') && columns.includes('chords_guitar')) {
     return { columns: columns.replace(', chords_guitar', ''), extra, changed: true };
+  }
+  if (message.includes('chords_reviewed') && columns.includes('chords_reviewed')) {
+    return { columns: columns.replace(', chords_reviewed', ''), extra, changed: true };
   }
   if (message.includes('instrumento') && extra.includes('instrumento')) {
     return { columns, extra: extra.replace(OVERRIDE_COLUMNS, OVERRIDE_COLUMNS_LEGACY), changed: true };
@@ -159,6 +163,84 @@ export async function searchSongs(
     updated_at: row.updated_at,
     rank: 0,
   }));
+}
+
+export type AdminSearchHit = SearchHit & { published: boolean; chords_reviewed: boolean };
+
+/**
+ * Busca do painel admin: mesma lógica de campos/pesos da home, mas inclui
+ * rascunhos (published=false) via cliente autenticado.
+ */
+export async function searchAdminSongs(
+  q: string,
+  limit = 20,
+  offset = 0,
+  weights = 'ABC'
+): Promise<AdminSearchHit[]> {
+  const { createClient } = await import('@/lib/supabase/server');
+  const supabase = await createClient();
+  const query = (q ?? '').trim();
+  const fields = weights.toUpperCase().replace(/[^ABC]/g, '') || 'ABC';
+  let columns =
+    'id, slug, title, artist, base_key, available_keys, published, chords_reviewed, chords, lyrics, updated_at';
+
+  type AdminRow = {
+    id: string;
+    slug: string;
+    title: string;
+    artist: string;
+    base_key: string;
+    available_keys: string[] | null;
+    published: boolean;
+    chords_reviewed?: boolean;
+    chords: string | null;
+    lyrics: string | null;
+    updated_at: string;
+  };
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let request = supabase.from('songs').select(columns);
+
+    if (query) {
+      const needle = escapeIlike(query);
+      const parts: string[] = [];
+      if (fields.includes('A')) parts.push(`title.ilike.%${needle}%`);
+      if (fields.includes('B')) parts.push(`artist.ilike.%${needle}%`);
+      if (fields.includes('C')) parts.push(`lyrics.ilike.%${needle}%`);
+      if (!parts.length) return [];
+      request = request.or(parts.join(','));
+    }
+
+    const { data, error } = await request
+      .order('title', { ascending: true })
+      .range(offset, offset + Math.max(limit, 0) - 1);
+
+    if (error) {
+      if (error.message.includes('chords_reviewed') && columns.includes('chords_reviewed')) {
+        columns = columns.replace(', chords_reviewed', '');
+        continue;
+      }
+      throw new Error(error.message);
+    }
+
+    return ((data ?? []) as unknown as AdminRow[]).map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      artist: row.artist,
+      base_key: row.base_key,
+      available_keys: row.available_keys ?? [],
+      has_chords: Boolean(String(row.chords ?? '').trim()),
+      snippet: row.lyrics ? String(row.lyrics).replace(/\s+/g, ' ').slice(0, 160) : null,
+      updated_at: row.updated_at,
+      rank: 0,
+      published: Boolean(row.published),
+      // Sem coluna / null → Revisar (nunca assume Revisada por omissão).
+      chords_reviewed: Boolean(row.chords_reviewed),
+    }));
+  }
+
+  return [];
 }
 
 export async function listRecentSongs(limit = 30): Promise<SearchHit[]> {

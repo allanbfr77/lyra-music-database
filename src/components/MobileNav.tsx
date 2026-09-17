@@ -30,10 +30,12 @@ const SWIPE_CLOSE_MIN_PX = 72;
 
 export default function MobileNav({
   signedIn,
+  isAdmin = false,
   accountLabel,
   showOfflineDownload = true,
 }: {
   signedIn: boolean;
+  isAdmin?: boolean;
   accountLabel: string;
   showOfflineDownload?: boolean;
 }) {
@@ -241,7 +243,7 @@ export default function MobileNav({
                   <span className="mobile-drawer__txt">
                     <span className="mobile-drawer__main">Admin</span>
                     <span className="mobile-drawer__sub">
-                      Online · {accountLabel || 'Conta'}
+                      {isAdmin ? 'Modo admin' : accountLabel || 'Conta'}
                     </span>
                   </span>
                 </Link>

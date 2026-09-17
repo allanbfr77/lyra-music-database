@@ -14,11 +14,17 @@ import {
   normalizeKey,
   slugToKey,
   uniqueChords,
+  allKeysFor,
 } from '@/lib/chords';
 import { getCachedSong, payloadFromServerSong, putCachedSongIfNewer } from '@/lib/song-cache';
 import type { Instrumento, Song } from '@/lib/types';
 
 type Override = { key: string; chords: string; instrumento?: Instrumento };
+
+/** Sempre os 12 tons — nunca a lista legada de available_keys/cache. */
+function fullKeys(baseKey: string) {
+  return allKeysFor(normalizeKey(baseKey));
+}
 
 function pathFromLocation(pathname: string): { tab: SongTab; key: string | null; instrumento: Instrumento } {
   const match = pathname.match(/\/cifra\/([^/]+)(?:\/(violao))?/);
@@ -51,7 +57,7 @@ export default function ChordView({
   const [viewKey, setViewKey] = useState(initialKey);
   const [instrumento, setInstrumento] = useState<Instrumento>(initialInstrumento);
   const [activeSong, setActiveSong] = useState(song);
-  const [activeKeys, setActiveKeys] = useState(keys);
+  const [activeKeys, setActiveKeys] = useState(() => fullKeys(song.base_key));
   const [activeOverrides, setActiveOverrides] = useState(overrides);
 
   // Prefere cache local na primeira pintura do cliente quando o conteúdo local
@@ -65,17 +71,17 @@ export default function ChordView({
 
       if (cached && Date.parse(cached.updated_at) >= Date.parse(song.updated_at)) {
         setActiveSong(cached.song);
-        setActiveKeys(cached.keys);
+        setActiveKeys(fullKeys(cached.song.base_key));
         setActiveOverrides(cached.overrides);
       } else {
         setActiveSong(song);
-        setActiveKeys(keys);
+        setActiveKeys(fullKeys(song.base_key));
         setActiveOverrides(overrides);
       }
 
       // Atualiza o cache só se ainda não existir ou se o servidor estiver mais novo.
       try {
-        await putCachedSongIfNewer(payloadFromServerSong(song, overrides, keys));
+        await putCachedSongIfNewer(payloadFromServerSong(song, overrides, fullKeys(song.base_key)));
       } catch {
         /* cache opcional */
       }

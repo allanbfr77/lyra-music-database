@@ -25,6 +25,8 @@ export type Song = {
   youtube_url: string | null;
   notes: string | null;
   published: boolean;
+  /** false/ausente = Revisar; true = Revisada. */
+  chords_reviewed?: boolean;
   created_at: string;
   updated_at: string;
 };

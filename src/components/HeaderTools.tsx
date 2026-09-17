@@ -5,11 +5,11 @@ import OfflineSongsDownload from '@/components/OfflineSongsDownload';
 import { LockIcon } from '@/components/icons';
 
 export default function HeaderTools({
-  accountLabel,
+  isAdmin = false,
   signedIn,
   showOfflineDownload = true,
 }: {
-  accountLabel: string;
+  isAdmin?: boolean;
   signedIn: boolean;
   showOfflineDownload?: boolean;
 }) {
@@ -17,43 +17,33 @@ export default function HeaderTools({
     <div
       className="header-tools"
       data-signed={signedIn ? 'true' : 'false'}
+      data-admin={isAdmin ? 'true' : 'false'}
       role="group"
       aria-label="Controles do site"
     >
-      <div className="header-slot header-slot--status">
-        <span
-          className="header-status"
-          data-on={signedIn ? 'true' : 'false'}
-          title={signedIn ? 'Online' : 'Visitante'}
-          aria-label={signedIn ? 'Online' : 'Visitante'}
-        >
-          <span className="header-status__dot" aria-hidden="true" />
-          <span className="header-status__text">{signedIn ? 'Online' : 'Visitante'}</span>
-        </span>
-      </div>
-
-      <div className="header-slot header-slot--account">
-        {signedIn ? (
-          <span className="header-ctrl header-ctrl--static" title={accountLabel}>
-            <span className="header-ctrl__text">{accountLabel || 'Conta'}</span>
+      {isAdmin ? (
+        <div className="header-slot header-slot--status">
+          <span className="header-status" data-on="true" title="Modo admin" aria-label="Modo admin">
+            <span className="header-status__dot" aria-hidden="true" />
+            <span className="header-status__text">Modo admin</span>
           </span>
-        ) : (
+        </div>
+      ) : null}
+
+      {!signedIn ? (
+        <div className="header-slot header-slot--account">
           <Link href="/login" className="header-ctrl" title="Entrar">
             <LockIcon size={14} />
             <span className="header-ctrl__text">Login</span>
           </Link>
-        )}
-      </div>
+        </div>
+      ) : null}
 
-      <div className="header-slot header-slot--leave">
-        {signedIn ? (
-          <SignOutButton className="header-ctrl" />
-        ) : (
-          <span className="header-ctrl header-ctrl--ghost" aria-hidden="true">
-            Sair
-          </span>
-        )}
-      </div>
+      {signedIn ? (
+        <div className="header-slot header-slot--leave">
+          <SignOutButton className="header-ctrl header-ctrl--leave" />
+        </div>
+      ) : null}
 
       {showOfflineDownload ? (
         <div className="header-slot header-slot--download">

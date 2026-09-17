@@ -16,9 +16,9 @@ export default async function SiteHeader({
   /** @deprecated O bloco da direita é fixo (status, conta, sair, tema). */
   right?: React.ReactNode;
 }) {
-  const { user } = await getAuthSession();
+  const { user, isAdmin } = await getAuthSession();
   const signedIn = Boolean(user);
-  const isAdmin = homeHref.startsWith('/admin');
+  const onAdminArea = homeHref.startsWith('/admin');
   const accountLabel = accountLabelFromEmail(user?.email);
 
   return (
@@ -56,13 +56,14 @@ export default async function SiteHeader({
         <div className="site-header__progress" id="lyra-header-progress" />
         <HeaderTools
           signedIn={signedIn}
-          accountLabel={accountLabel}
-          showOfflineDownload={!isAdmin}
+          isAdmin={isAdmin}
+          showOfflineDownload={!onAdminArea}
         />
         <MobileNav
           signedIn={signedIn}
+          isAdmin={isAdmin}
           accountLabel={accountLabel}
-          showOfflineDownload={!isAdmin}
+          showOfflineDownload={!onAdminArea}
         />
       </div>
     </header>

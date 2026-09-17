@@ -6,6 +6,8 @@ import { ChevronRightIcon } from '@/components/icons';
 export type CatalogSong = SearchHit & {
   href?: string;
   draft?: boolean;
+  /** false/ausente = Revisar; true = Revisada. */
+  chords_reviewed?: boolean;
 };
 
 /** O Postgres marca os trechos com [[ ]]; escapamos tudo e só então viram <mark>. */

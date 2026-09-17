@@ -160,6 +160,31 @@ check(
   'Em'
 );
 check(
+  'Tom: C declara o tom (ignora acordes)',
+  detectKey('Tom: C\nG  D  Em  C')?.key,
+  'C'
+);
+check(
+  'Tom: Am com espaços e minúsculas',
+  detectKey('  tom : Am  \nC  G  Am  F')?.key,
+  'Am'
+);
+check(
+  'letra com "tom:" no meio não declara',
+  detectKey('o tom: C do amor\nG  D  Em  C')?.key,
+  'G'
+);
+check(
+  'Tom: inválido cai no fallback',
+  detectKey('Tom: XYZ\nEm  C  G  D')?.key,
+  'Em'
+);
+check(
+  'detectSongKey prioriza Tom: no teclado',
+  detectSongKey('Tom: F#\nC  G  Am  F', 'Em  C  G  D')?.key,
+  'F#'
+);
+check(
   'sequência ignora letra',
   extractChordSequence(formatted).map((c) => c.root),
   ['A', 'F', 'C', 'G', 'A', 'F', 'C', 'G', 'D']

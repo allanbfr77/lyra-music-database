@@ -533,17 +533,43 @@ function detectFromSequence(chords: ParsedChord[]): KeyDetection | null {
 /**
  * Detecta o tom mais provável de uma cifra. Não altera o texto original.
  * Em inversões, a análise usa a fundamental (`F9/C` → F).
+ * Prioridade: linha explícita `Tom: X`; senão, análise pelos acordes.
  */
 export function detectKey(chart: string): KeyDetection | null {
+  const declared = extractDeclaredKey(chart);
+  if (declared) return detectionFromDeclaredKey(declared);
   return detectFromSequence(extractChordSequence(chart));
 }
 
 /**
  * Detecta o tom da música a partir das cifras de teclado e/ou violão.
  * Usa a sequência com mais acordes — o tom original é o mesmo nos dois.
+ * Prioridade: linha explícita `Tom: X` (teclado, depois violão); senão, análise pelos acordes.
  */
 export function detectSongKey(chords: string, chordsGuitar = ''): KeyDetection | null {
+  const declared = extractDeclaredKey(chords) ?? extractDeclaredKey(chordsGuitar);
+  if (declared) return detectionFromDeclaredKey(declared);
+
   const keyboard = extractChordSequence(chords);
   const guitar = extractChordSequence(chordsGuitar);
   return detectFromSequence(keyboard.length >= guitar.length ? keyboard : guitar);
+}
+
+/**
+ * Linha inteira no formato `Tom: C` (maiúsculas/minúsculas e espaços flexíveis).
+ * Não casa texto corrido da letra — a linha precisa ser só o rótulo + o tom.
+ */
+function extractDeclaredKey(chart: string): string | null {
+  if (!chart.trim()) return null;
+  for (const raw of chart.replace(/\r\n?/g, '\n').split('\n')) {
+    const m = raw.match(/^\s*Tom\s*:\s*(.+?)\s*$/i);
+    if (!m) continue;
+    const parsed = parseKey(m[1]);
+    if (parsed) return parsed.name;
+  }
+  return null;
+}
+
+function detectionFromDeclaredKey(key: string): KeyDetection {
+  return { key, confidence: 'high', alternatives: [], chordCount: 0 };
 }

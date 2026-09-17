@@ -35,6 +35,10 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
       columns = columns.replace(', chords_guitar', '');
       continue;
     }
+    if (error.message.includes('chords_reviewed') && columns.includes('chords_reviewed')) {
+      columns = columns.replace(', chords_reviewed', '');
+      continue;
+    }
     if (error.message.includes('instrumento') && extra.includes('instrumento')) {
       extra = OVERRIDE_LEGACY;
       continue;
@@ -63,6 +67,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     youtube_url: song.youtube_url ?? null,
     notes: song.notes,
     published: song.published,
+    chords_reviewed: Boolean(song.chords_reviewed),
     overrides: (song.song_key_overrides ?? []).map((o) => ({
       key: o.key,
       chords: o.chords,

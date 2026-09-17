@@ -1,31 +1,36 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { allKeysFor, cifraPath, normalizeKey } from '@/lib/chords';
+import { allKeysFor, normalizeKey } from '@/lib/chords';
 import type { Instrumento } from '@/lib/types';
 import { ChevronDownIcon, UndoIcon } from '@/components/icons';
 
-function stepPublished(current: string, dir: 1 | -1, published: string[]): string {
+/** Grafia fixa dos 12 tons maiores (mesmo padrão do motor de cifras). */
+const MAJOR_CHROMATIC = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
+/** Grafia fixa dos 12 tons menores. */
+const MINOR_CHROMATIC = ['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'] as const;
+
+/** Sempre 12 opções; começa no tom original e sobe cromaticamente. */
+function chromaticOptions(baseKey: string): string[] {
+  const original = normalizeKey(baseKey);
+  const table: readonly string[] = original.endsWith('m') ? MINOR_CHROMATIC : MAJOR_CHROMATIC;
+  const start = table.indexOf(original);
+  if (start < 0) return [...MAJOR_CHROMATIC];
+  return [...table.slice(start), ...table.slice(0, start)];
+}
+
+function stepKey(current: string, dir: 1 | -1): string {
   const cycle = allKeysFor(current);
-  if (dir === 1) {
-    for (let i = 1; i < cycle.length; i++) {
-      if (published.includes(cycle[i])) return cycle[i];
-    }
-  } else {
-    for (let i = cycle.length - 1; i >= 1; i--) {
-      if (published.includes(cycle[i])) return cycle[i];
-    }
-  }
-  return current;
+  if (dir === 1) return cycle[1] ?? current;
+  return cycle[cycle.length - 1] ?? current;
 }
 
 /**
- * Mostra o tom atual. O clique abre o painel em grade com os tons cadastrados,
- * meio-tom acima/abaixo e retorno ao tom original.
+ * Seletor de tom ao vivo: sempre os 12 tons cromáticos da modalidade,
+ * independente de available_keys / lista publicada. Tom original pré-selecionado.
  */
 export default function KeyBar({
   slug,
-  keys,
   activeKey,
   baseKey,
   manualKeys = [],
@@ -33,7 +38,8 @@ export default function KeyBar({
   onSelect,
 }: {
   slug: string;
-  keys: string[];
+  /** @deprecated Ignorado — as opções são sempre os 12 tons cromáticos. */
+  keys?: string[];
   activeKey: string;
   baseKey: string;
   manualKeys?: string[];
@@ -45,12 +51,7 @@ export default function KeyBar({
   const pickerId = useId();
 
   const original = normalizeKey(baseKey);
-  const published = useMemo(() => keys.map((k) => normalizeKey(k)).filter(Boolean), [keys]);
-  const ordered = useMemo(() => {
-    const start = published.some((k) => k.endsWith('m')) ? 'Am' : 'A';
-    const allowed = new Set(published);
-    return allKeysFor(start).filter((k) => allowed.has(k));
-  }, [published]);
+  const ordered = useMemo(() => chromaticOptions(original || activeKey || 'C'), [original, activeKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -67,8 +68,6 @@ export default function KeyBar({
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
-
-  if (published.length < 2) return null;
 
   function choose(next: string, keepOpen = false) {
     onSelect?.(next);
@@ -104,10 +103,10 @@ export default function KeyBar({
             >
               <UndoIcon size={16} />
             </button>
-            <button type="button" className="key-picker__step" onClick={() => choose(stepPublished(activeKey, -1, published), true)}>
+            <button type="button" className="key-picker__step" onClick={() => choose(stepKey(activeKey, -1), true)}>
               −1/2 tom
             </button>
-            <button type="button" className="key-picker__step" onClick={() => choose(stepPublished(activeKey, 1, published), true)}>
+            <button type="button" className="key-picker__step" onClick={() => choose(stepKey(activeKey, 1), true)}>
               +1/2 tom
             </button>
             <button
@@ -122,24 +121,19 @@ export default function KeyBar({
 
           <div className="key-picker__grid">
             {ordered.map((key) => {
-              const href = cifraPath(slug, key, instrumento);
               const active = key === activeKey;
               return (
-                <a
+                <button
                   key={key}
-                  href={href}
+                  type="button"
                   className="key-picker__cell"
                   data-active={active}
                   data-manual={manualKeys.includes(key)}
-                  aria-current={active ? 'page' : undefined}
-                  onClick={(event) => {
-                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                    event.preventDefault();
-                    choose(key);
-                  }}
+                  aria-current={active ? 'true' : undefined}
+                  onClick={() => choose(key)}
                 >
                   {key}
-                </a>
+                </button>
               );
             })}
           </div>

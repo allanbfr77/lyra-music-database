@@ -6,23 +6,21 @@ import SongList, { type CatalogSong } from '@/components/SongList';
 import { ChevronDownIcon, CloseIcon } from '@/components/icons';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
 
-type ContentFilter = 'all' | 'chords' | 'lyrics' | 'no-lyrics' | 'no-chords';
+/** Filtro tri-estado independente (cifra ou letra). */
+type TriFilter = 'all' | 'yes' | 'no';
+type ReviewFilter = 'all' | 'pending' | 'done';
 
-const CONTENT_FILTERS: { id: ContentFilter; label: string }[] = [
+const TRI_OPTIONS: { id: TriFilter; label: string }[] = [
   { id: 'all', label: 'Todos' },
-  { id: 'chords', label: 'Com cifra' },
-  { id: 'lyrics', label: 'Com letra' },
-  { id: 'no-lyrics', label: 'Sem letra' },
-  { id: 'no-chords', label: 'Sem cifra' },
+  { id: 'yes', label: 'Com' },
+  { id: 'no', label: 'Sem' },
 ];
 
-const CONTENT_FILTER_LABELS: Record<ContentFilter, string | null> = {
-  all: null,
-  chords: 'Com cifra',
-  lyrics: 'Com letra',
-  'no-lyrics': 'Sem letra',
-  'no-chords': 'Sem cifra',
-};
+const REVIEW_OPTIONS: { id: ReviewFilter; label: string }[] = [
+  { id: 'all', label: 'Todas' },
+  { id: 'pending', label: 'A revisar' },
+  { id: 'done', label: 'Revisadas' },
+];
 
 function foldText(value: string) {
   return value
@@ -69,13 +67,45 @@ function recordLabel(total: number, visible: number, query: string, filtered: bo
   );
 }
 
+function TriGroup({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: TriFilter;
+  onChange: (next: TriFilter) => void;
+}) {
+  return (
+    <div className="catalog-filters__group" role="group" aria-label={label}>
+      <span className="catalog-filters__group-label">{label}</span>
+      <div className="catalog-filters__control">
+        <div className="catalog-filters__chips">
+          {TRI_OPTIONS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="catalog-chip"
+              data-active={value === item.id}
+              aria-pressed={value === item.id}
+              onClick={() => onChange(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeCatalog({
   songs,
   query,
   fieldLabels,
   showSnippet = false,
   showKeyFilter = true,
-  contentFilterIds,
+  showReviewFilter = false,
   search,
   emptyNoQuery = {
     title: 'Nenhuma música cadastrada',
@@ -91,14 +121,16 @@ export default function HomeCatalog({
   fieldLabels: string;
   showSnippet?: boolean;
   showKeyFilter?: boolean;
-  /** Quais chips de conteúdo exibir. Por padrão, todos. */
-  contentFilterIds?: ContentFilter[];
+  /** Select de status de revisão (painel admin). */
+  showReviewFilter?: boolean;
   /** Slot do painel de busca (SearchBox). Quando presente, monta o query builder. */
   search?: ReactNode;
   emptyNoQuery?: { title: string; hint: string };
   emptyNoResults?: { title: string; hint: string };
 }) {
-  const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
+  const [chordsFilter, setChordsFilter] = useState<TriFilter>('all');
+  const [lyricsFilter, setLyricsFilter] = useState<TriFilter>('all');
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [artistQuery, setArtistQuery] = useState('');
@@ -121,23 +153,28 @@ export default function HomeCatalog({
 
   const visible = useMemo(() => {
     return songs.filter((song) => {
-      if (contentFilter === 'chords' && !song.has_chords) return false;
-      if (contentFilter === 'lyrics' && !songHasLyrics(song)) return false;
-      if (contentFilter === 'no-lyrics' && songHasLyrics(song)) return false;
-      if (contentFilter === 'no-chords' && song.has_chords) return false;
+      if (chordsFilter === 'yes' && !song.has_chords) return false;
+      if (chordsFilter === 'no' && song.has_chords) return false;
+      if (lyricsFilter === 'yes' && !songHasLyrics(song)) return false;
+      if (lyricsFilter === 'no' && songHasLyrics(song)) return false;
+      if (reviewFilter === 'pending' && song.chords_reviewed) return false;
+      if (reviewFilter === 'done' && !song.chords_reviewed) return false;
       if (activeKey && normalizeKey(song.base_key) !== activeKey) return false;
       if (activeArtist && song.artist.trim() !== activeArtist) return false;
       if (artistNeedle && !foldText(song.artist).includes(artistNeedle)) return false;
       return true;
     });
-  }, [songs, contentFilter, activeKey, activeArtist, artistNeedle]);
+  }, [songs, chordsFilter, lyricsFilter, reviewFilter, activeKey, activeArtist, artistNeedle]);
 
   const hasExtraFilters = Boolean(activeKey || activeArtist || artistQuery.trim());
-  const hasAnyFilter = contentFilter !== 'all' || hasExtraFilters;
+  const hasTriFilters = chordsFilter !== 'all' || lyricsFilter !== 'all' || reviewFilter !== 'all';
+  const hasAnyFilter = hasTriFilters || hasExtraFilters;
   const filtered = hasAnyFilter;
 
   function clearFilters() {
-    setContentFilter('all');
+    setChordsFilter('all');
+    setLyricsFilter('all');
+    setReviewFilter('all');
     setSelectedKey(null);
     setSelectedArtist(null);
     setArtistQuery('');
@@ -151,53 +188,75 @@ export default function HomeCatalog({
     ) : null;
 
   const showPublicFilters = showKeyFilter && Boolean(search);
-  const contentOptions = contentFilterIds
-    ? CONTENT_FILTERS.filter((item) => contentFilterIds.includes(item.id))
-    : CONTENT_FILTERS;
+  const showFilterBar = showPublicFilters || showReviewFilter;
 
-  const contentChips = (
-    <div className="catalog-filters__chips" role="group" aria-label="Filtrar por conteúdo">
-      {contentOptions.map((item) => (
+  const matrix = (
+    <div className="catalog-filters__matrix">
+      <TriGroup label="Cifra" value={chordsFilter} onChange={setChordsFilter} />
+      <TriGroup label="Letra" value={lyricsFilter} onChange={setLyricsFilter} />
+      {showReviewFilter ? (
+        <div className="catalog-filters__group" role="group" aria-label="Revisão">
+          <span className="catalog-filters__group-label">Revisão</span>
+          <div className="catalog-filters__control">
+            <select
+              className="catalog-filters__review"
+              value={reviewFilter}
+              aria-label="Filtrar por revisão"
+              onChange={(event) => setReviewFilter(event.target.value as ReviewFilter)}
+            >
+              {REVIEW_OPTIONS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const actions = (
+    <div className="catalog-filters__actions">
+      {showPublicFilters ? (
         <button
-          key={item.id}
           type="button"
-          className="catalog-chip"
-          data-active={contentFilter === item.id}
-          aria-pressed={contentFilter === item.id}
-          onClick={() => setContentFilter(item.id)}
+          className="catalog-filters__toggle"
+          data-open={filtersOpen}
+          data-active={hasExtraFilters}
+          aria-expanded={filtersOpen}
+          aria-controls={`${filterId}-extra`}
+          onClick={() => setFiltersOpen((open) => !open)}
         >
-          {item.label}
+          Filtros
+          {hasExtraFilters ? <span className="catalog-filters__dot" aria-hidden="true" /> : null}
+          <ChevronDownIcon size={14} />
         </button>
-      ))}
+      ) : null}
+      <button
+        type="button"
+        className="catalog-filters__clear"
+        onClick={clearFilters}
+        disabled={!hasAnyFilter}
+      >
+        <CloseIcon size={13} />
+        Limpar filtros
+      </button>
     </div>
   );
 
   let metaRow: ReactNode = null;
-  if (showPublicFilters) {
+  if (showFilterBar) {
     metaRow = (
       <div className="catalog-filters">
-        <div className="catalog-filters__row">
-          {contentChips}
-
-          <div className="catalog-filters__actions">
-            <button
-              type="button"
-              className="catalog-filters__toggle"
-              data-open={filtersOpen}
-              data-active={hasExtraFilters}
-              aria-expanded={filtersOpen}
-              aria-controls={`${filterId}-extra`}
-              onClick={() => setFiltersOpen((open) => !open)}
-            >
-              Filtros
-              {hasExtraFilters ? <span className="catalog-filters__dot" aria-hidden="true" /> : null}
-              <ChevronDownIcon size={14} />
-            </button>
-            {countNode}
-          </div>
+        <div className="catalog-filters__toolbar">
+          {matrix}
+          {actions}
         </div>
 
-        {filtersOpen ? (
+        {countNode ? <div className="catalog-filters__footer">{countNode}</div> : null}
+
+        {showPublicFilters && filtersOpen ? (
           <div className="catalog-filters__extra" id={`${filterId}-extra`}>
             <label className="catalog-filters__field">
               <span className="catalog-filters__label">Artista</span>
@@ -239,42 +298,8 @@ export default function HomeCatalog({
                 ))}
               </select>
             </label>
-
-            {hasAnyFilter ? (
-              <button type="button" className="catalog-filters__clear" onClick={clearFilters}>
-                <CloseIcon size={13} />
-                Limpar filtros
-              </button>
-            ) : null}
           </div>
         ) : null}
-
-        {!filtersOpen && hasAnyFilter ? (
-          <div className="catalog-filters__summary">
-            <span className="catalog-filters__summary-text">
-              {CONTENT_FILTER_LABELS[contentFilter]}
-              {activeArtist ? `${contentFilter !== 'all' ? ' · ' : ''}${activeArtist}` : null}
-              {!activeArtist && artistQuery.trim()
-                ? `${contentFilter !== 'all' ? ' · ' : ''}Artista: ${artistQuery.trim()}`
-                : null}
-              {activeKey
-                ? `${contentFilter !== 'all' || activeArtist || artistQuery.trim() ? ' · ' : ''}Tom ${activeKey}`
-                : null}
-            </span>
-            <button type="button" className="catalog-filters__clear catalog-filters__clear--inline" onClick={clearFilters}>
-              Limpar
-            </button>
-          </div>
-        ) : null}
-      </div>
-    );
-  } else if (contentFilterIds && contentOptions.length > 1) {
-    metaRow = (
-      <div className="catalog-filters">
-        <div className="catalog-filters__row">
-          {contentChips}
-          <div className="catalog-filters__actions">{countNode}</div>
-        </div>
       </div>
     );
   } else if (countNode) {

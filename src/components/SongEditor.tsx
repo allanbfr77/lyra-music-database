@@ -10,12 +10,11 @@ import {
   detectSongKey,
   keyDisplayName,
   normalizeKey,
-  transposeChart,
   type KeyDetection,
 } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
-import { ExternalLinkIcon, PencilIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
+import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -38,6 +37,7 @@ export type EditorInitial = {
   youtube_url: string | null;
   notes: string | null;
   published: boolean;
+  chords_reviewed: boolean;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -58,6 +58,7 @@ const EMPTY: EditorInitial = {
   youtube_url: null,
   notes: null,
   published: true,
+  chords_reviewed: false,
   overrides: [],
 };
 
@@ -105,11 +106,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [lyrics, setLyrics] = useState(initial.lyrics);
   const [chords, setChords] = useState(initial.chords);
   const [chordsGuitar, setChordsGuitar] = useState(initial.chords_guitar ?? '');
-  const [availableKeys, setAvailableKeys] = useState<string[]>(
-    (initial.available_keys ?? []).map((k) => normalizeKey(k, '')).filter(Boolean)
-  );
-  // Música nova já nasce com os 12 tons publicados; se o admin mexer, respeitamos a escolha.
-  const [keysTouched, setKeysTouched] = useState(Boolean(initial.id));
   const [capo, setCapo] = useState(initial.capo ?? 0);
   const [bpm, setBpm] = useState<string>(initial.tempo_bpm ? String(initial.tempo_bpm) : '');
   const [timeSignature, setTimeSignature] = useState(initial.time_signature ?? '');
@@ -117,6 +113,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [youtubeUrl, setYoutubeUrl] = useState(initial.youtube_url ?? '');
   const [notes, setNotes] = useState(initial.notes ?? '');
   const [published, setPublished] = useState(initial.published);
+  // Ausente/false = Revisar (nunca assume Revisada por omissão).
+  const [chordsReviewed, setChordsReviewed] = useState(Boolean(initial.chords_reviewed));
 
   const [overridesByInst, setOverridesByInst] = useState<Record<Instrumento, Record<string, string>>>(() => {
     const teclado: Record<string, string> = {};
@@ -129,8 +127,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   });
 
   const [tab, setTab] = useState<'letra' | 'cifra'>('letra');
-  const [instrumentTab, setInstrumentTab] = useState<Instrumento>('teclado');
-  const [tuningKey, setTuningKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
@@ -153,44 +149,17 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     if (next !== baseKeyNorm) setBaseKey(next);
   }, [detectedKey, keyTouched, baseKeyNorm]);
 
-  const twelveKeys = useMemo(() => allKeysFor(baseKey), [baseKey]);
-  const effectiveKeys = useMemo(
-    () => (keysTouched ? availableKeys : twelveKeys.filter((k) => k !== baseKeyNorm)),
-    [keysTouched, availableKeys, twelveKeys, baseKeyNorm]
-  );
-  const publishedSet = useMemo(
-    () => new Set(baseKeyNorm ? [baseKeyNorm, ...effectiveKeys] : effectiveKeys),
-    [baseKeyNorm, effectiveKeys]
-  );
-
-  function toggleKey(key: string) {
-    if (key === baseKeyNorm) return;
-    const current = effectiveKeys;
-    setKeysTouched(true);
-    setAvailableKeys(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
-  }
-
-  const activeChords = instrumentTab === 'violao' ? chordsGuitar : chords;
-  const overrides = overridesByInst[instrumentTab];
-
-  function setActiveChords(value: string) {
-    if (instrumentTab === 'violao') setChordsGuitar(value);
-    else setChords(value);
-  }
-
-  function patchOverrides(updater: (prev: Record<string, string>) => Record<string, string>) {
-    setOverridesByInst((prev) => ({ ...prev, [instrumentTab]: updater(prev[instrumentTab]) }));
-  }
-
-  const tunedChart =
-    tuningKey !== null
-      ? overrides[tuningKey] ?? transposeChart(activeChords, normalizeKey(baseKey, EMPTY.base_key), tuningKey)
-      : '';
-
   async function onSave() {
     if (busy || !title.trim()) return;
     setBusy(true);
     setError(null);
+
+    const resolvedBase = normalizeKey(
+      !keyTouched && detectedKey && detectedKey.confidence !== 'low'
+        ? detectedKey.key
+        : baseKey,
+      EMPTY.base_key
+    );
 
     const payload: SongPayload = {
       id: initial.id,
@@ -200,13 +169,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       lyrics,
       chords,
       chords_guitar: chordsGuitar,
-      base_key: normalizeKey(
-        !keyTouched && detectedKey && detectedKey.confidence !== 'low'
-          ? detectedKey.key
-          : baseKey,
-        EMPTY.base_key
-      ),
-      available_keys: effectiveKeys,
+      base_key: resolvedBase,
+      // Coluna legado: grava os 12 tons (exceto o base). A seleção pública não filtra mais por ela.
+      available_keys: allKeysFor(resolvedBase).filter((k) => k !== resolvedBase),
       capo,
       tempo_bpm: bpm.trim() ? Number(bpm) : null,
       time_signature: timeSignature || null,
@@ -214,6 +179,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       youtube_url: youtubeUrl || null,
       notes: notes || null,
       published,
+      chords_reviewed: chordsReviewed,
       overrides: (['teclado', 'violao'] as Instrumento[]).flatMap((inst) =>
         Object.entries(overridesByInst[inst]).map(([key, value]) => ({ key, chords: value, instrumento: inst }))
       ),
@@ -247,8 +213,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     setLyrics(EMPTY.lyrics);
     setChords(EMPTY.chords);
     setChordsGuitar(EMPTY.chords_guitar);
-    setAvailableKeys([]);
-    setKeysTouched(false);
     setCapo(EMPTY.capo);
     setBpm('');
     setTimeSignature('');
@@ -256,10 +220,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     setYoutubeUrl('');
     setNotes('');
     setPublished(EMPTY.published);
+    setChordsReviewed(EMPTY.chords_reviewed);
     setOverridesByInst({ teclado: {}, violao: {} });
     setTab('letra');
-    setInstrumentTab('teclado');
-    setTuningKey(null);
     setError(null);
     setDuplicateOpen(false);
     window.scrollTo({ top: 0 });
@@ -297,8 +260,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
   return (
     <main className="shell song-editor">
-      <div style={{ padding: '20px 0 4px' }}>
+      <div className="song-editor__head">
         <h1 className="song-editor__title">{initial.id ? 'Editar música' : 'Nova música'}</h1>
+        <span className="header-spacer" />
+        <button className="btn btn--tint btn--sm" onClick={startNewSong} disabled={busy} type="button">
+          <PlusIcon size={13} />
+          Nova música
+        </button>
       </div>
 
       {error && <div className="alert alert--error">{error}</div>}
@@ -387,25 +355,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         <div style={{ paddingTop: 12 }}>
           <div className="cifra-editor">
             <div className="cifra-editor__toolbar">
-              <nav className="seg" aria-label="Instrumento da cifra">
-                <button
-                  className="seg__item"
-                  data-active={instrumentTab === 'teclado'}
-                  onClick={() => setInstrumentTab('teclado')}
-                  type="button"
-                >
-                  Teclado
-                </button>
-                <button
-                  className="seg__item"
-                  data-active={instrumentTab === 'violao'}
-                  onClick={() => setInstrumentTab('violao')}
-                  type="button"
-                >
-                  Violão
-                </button>
-              </nav>
-
               <div className="cifra-editor__meta">
               <label className="cifra-editor__key">
                 <span className="cifra-editor__key-label">Tom</span>
@@ -454,11 +403,11 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 
             <textarea
               className="textarea textarea--mono cifra-editor__body"
-              value={activeChords}
-              onChange={(e) => setActiveChords(e.target.value)}
+              value={chords}
+              onChange={(e) => setChords(e.target.value)}
               rows={16}
               spellCheck={false}
-              aria-label={`Cifra de ${instrumentTab === 'violao' ? 'violão' : 'teclado'}`}
+              aria-label="Cifra de teclado"
             />
 
             <div className="cifra-editor__status">
@@ -474,94 +423,29 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           </div>
 
           <div className="field">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span className="field__label" style={{ margin: 0 }}>
-                TONS DISPONÍVEIS
-              </span>
-              <span className="header-spacer" />
+            <span className="field__label">REVISÃO</span>
+            <nav className="seg" aria-label="Status de revisão da cifra">
               <button
                 type="button"
-                className="btn btn--sm"
-                onClick={() => { setKeysTouched(true); setAvailableKeys(twelveKeys.filter((k) => k !== baseKeyNorm)); }}
+                className="seg__item"
+                data-active={!chordsReviewed}
+                aria-pressed={!chordsReviewed}
+                onClick={() => setChordsReviewed(false)}
               >
-                Marcar os 12
+                Revisar
               </button>
-              <button type="button" className="btn btn--sm" onClick={() => { setKeysTouched(true); setAvailableKeys([]); }}>
-                Só o original
+              <button
+                type="button"
+                className="seg__item"
+                data-active={chordsReviewed}
+                aria-pressed={chordsReviewed}
+                onClick={() => setChordsReviewed(true)}
+              >
+                <CheckIcon size={12} />
+                Revisada
               </button>
-            </div>
-            <div className="keys-grid">
-              {twelveKeys.map((key) => {
-                const isBase = key === baseKeyNorm;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    className="key-toggle"
-                    data-on={publishedSet.has(key)}
-                    data-base={isBase}
-                    onClick={() => toggleKey(key)}
-                    title={isBase ? 'Tom original — sempre publicado' : 'Publicar/despublicar este tom'}
-                  >
-                    {key}
-                    {overrides[key] ? <PencilIcon size={12} /> : null}
-                  </button>
-                );
-              })}
-            </div>
+            </nav>
           </div>
-
-          <div className="field">
-            <span className="field__label">AJUSTE MANUAL DE UM TOM (OPCIONAL)</span>
-            <select
-              className="select"
-              value={tuningKey ?? ''}
-              onChange={(e) => setTuningKey(e.target.value || null)}
-            >
-              <option value="">Selecione um tom para revisar…</option>
-              {twelveKeys
-                .filter((k) => k !== baseKeyNorm && (publishedSet.has(k) || overrides[k]))
-                .map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                    {overrides[k] ? ' — manual' : ' — automático'}
-                    {!publishedSet.has(k) ? ' (tom despublicado)' : ''}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          {tuningKey && (
-            <div className="card" style={{ marginTop: 4 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <strong style={{ fontSize: 15 }}>Cifra em {tuningKey}</strong>
-                <span className="chip">{overrides[tuningKey] ? 'manual' : 'automática'}</span>
-                <span className="header-spacer" />
-                {overrides[tuningKey] && (
-                  <button
-                    type="button"
-                    className="btn btn--sm"
-                    onClick={() =>
-                      patchOverrides((prev) => {
-                        const next = { ...prev };
-                        delete next[tuningKey];
-                        return next;
-                      })
-                    }
-                  >
-                    Voltar ao automático
-                  </button>
-                )}
-              </div>
-              <textarea
-                className="textarea textarea--mono"
-                rows={14}
-                spellCheck={false}
-                value={tunedChart}
-                onChange={(e) => patchOverrides((prev) => ({ ...prev, [tuningKey]: e.target.value }))}
-              />
-            </div>
-          )}
         </div>
       )}
 
@@ -569,17 +453,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         <button className="btn btn--tint" onClick={onSave} disabled={busy || !title.trim()} type="button">
           {busy ? 'Salvando...' : 'Salvar'}
         </button>
-        <button className="btn btn--ghost-mono" onClick={startNewSong} disabled={busy} type="button">
-          <PlusIcon size={13} />
-          Nova música
-        </button>
         {initial.id && (
           <>
             <Link
               className="btn btn--ghost-mono"
               href={
-                (instrumentTab === 'violao' ? chordsGuitar : chords).trim()
-                  ? cifraPath(effectiveSlug, normalizeKey(baseKey || initial.base_key, EMPTY.base_key), instrumentTab)
+                chords.trim()
+                  ? cifraPath(effectiveSlug, normalizeKey(baseKey || initial.base_key, EMPTY.base_key), 'teclado')
                   : `/musica/${effectiveSlug}`
               }
               target="_blank"

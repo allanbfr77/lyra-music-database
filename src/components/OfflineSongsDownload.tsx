@@ -72,7 +72,7 @@ export default function OfflineSongsDownload() {
   }, [startDownload]);
 
   const busy = phase === 'running';
-  const label = busy ? 'Baixando…' : 'Baixar';
+  const label = busy ? 'Baixando…' : 'Baixar cifras';
 
   const title =
     phase === 'running'
@@ -81,7 +81,7 @@ export default function OfflineSongsDownload() {
         ? 'Download concluído — letras e cifras disponíveis localmente'
         : phase === 'error'
           ? errorMessage ?? 'Falha no download.'
-          : 'Baixar músicas para acesso rápido';
+          : 'Baixar cifras para acesso rápido';
 
   const showProgress = phase === 'running' || phase === 'done' || phase === 'error';
 

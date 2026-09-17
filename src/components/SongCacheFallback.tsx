@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ChordView from '@/components/ChordView';
+import { allKeysFor, normalizeKey } from '@/lib/chords';
 import { getCachedSong, type CachedSongPayload } from '@/lib/song-cache';
 import type { Instrumento } from '@/lib/types';
 import type { SongTab } from '@/components/SongTabs';
@@ -51,12 +52,14 @@ export default function SongCacheFallback({
     );
   }
 
-  const key = initialKey && cached.keys.includes(initialKey) ? initialKey : cached.keys[0] ?? cached.song.base_key;
+  const keys = allKeysFor(normalizeKey(cached.song.base_key));
+  const key =
+    initialKey && keys.includes(initialKey) ? initialKey : normalizeKey(cached.song.base_key);
 
   return (
     <ChordView
       song={cached.song}
-      keys={cached.keys}
+      keys={keys}
       overrides={cached.overrides}
       initialKey={key}
       instrumento={instrumento}

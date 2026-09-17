@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
-import { cifraPath, keyToSlug, slugToKey } from '@/lib/chords';
-import { getSongBySlug, publishedKeys, type SongWithOverrides } from '@/lib/songs';
+import { allKeysFor, cifraPath, keyToSlug, normalizeKey, slugToKey } from '@/lib/chords';
+import { getSongBySlug, type SongWithOverrides } from '@/lib/songs';
 import type { Instrumento } from '@/lib/types';
 
 export type ResolvedChord = {
@@ -23,7 +23,8 @@ export async function resolveChordPage(
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
 
-  const keys = publishedKeys(song);
+  // Sempre os 12 tons cromáticos da modalidade — não usa available_keys.
+  const keys = allKeysFor(normalizeKey(song.base_key));
   if (!keys.includes(key)) {
     redirect(`${cifraPath(song.slug, keys[0], instrumento)}?tom=${keyToSlug(key)}`);
   }

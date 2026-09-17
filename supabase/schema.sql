@@ -65,6 +65,7 @@ create table if not exists public.songs (
   youtube_url    text,
   notes          text,
   published      boolean not null default true,
+  chords_reviewed boolean not null default false, -- false = Revisar, true = Revisada
   search_vector  tsvector,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
@@ -73,9 +74,11 @@ create table if not exists public.songs (
 comment on column public.songs.chords is
   'Cifra base no formato texto, acordes em linhas próprias acima da letra.';
 comment on column public.songs.available_keys is
-  'Tons que ganham URL pública. O tom base é sempre incluído automaticamente.';
+  'Legado: antes listava tons publicados. A UI/API agora oferece os 12 tons cromáticos a partir do tom base; a coluna não restringe mais a seleção.';
 comment on column public.songs.youtube_url is
   'Link do vídeo no YouTube. Se vazio, o ícone não aparece na página da música.';
+comment on column public.songs.chords_reviewed is
+  'Revisão da cifra: false = Revisar, true = Revisada. Ausência/falso = precisa revisar.';
 
 -- ---------------------------------------------------------------------------
 -- Tabela: song_key_overrides
