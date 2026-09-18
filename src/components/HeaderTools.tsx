@@ -22,6 +22,10 @@ export default function HeaderTools({
       role="group"
       aria-label="Controles do site"
     >
+      <div className="header-slot header-slot--tom-louvores">
+        <TomLouvoresLink />
+      </div>
+
       {isAdmin ? (
         <div className="header-slot header-slot--status">
           <span className="header-status" data-on="true" title="Modo admin" aria-label="Modo admin">
@@ -30,10 +34,6 @@ export default function HeaderTools({
           </span>
         </div>
       ) : null}
-
-      <div className="header-slot header-slot--tom-louvores">
-        <TomLouvoresLink />
-      </div>
 
       {!signedIn ? (
         <div className="header-slot header-slot--account">
