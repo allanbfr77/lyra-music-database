@@ -18,7 +18,7 @@ import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/comp
 
 // Uma grafia por altura, para que cada tom tenha um único link permanente.
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-const MINOR_KEYS = ['Am', 'Bbm', 'Bm', 'Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m'];
+const MINOR_KEYS = ['Am', 'A#m', 'Bm', 'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m'];
 
 export type EditorInitial = {
   id: string | null;

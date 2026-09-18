@@ -21,8 +21,12 @@ export const FLAT_NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A',
 
 /** Grafia convencional de cada tom maior, por classe de altura (0 = C). */
 const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-/** Grafia convencional de cada tom menor, por classe de altura (0 = C). */
-const MINOR_KEYS = ['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'];
+/**
+ * Grafia convencional de cada tom menor, por classe de altura (0 = C).
+ * Acidentais sempre em sustenido (C#m, não Dbm; D#m, não Ebm) — mesma altura,
+ * um único nome permanente.
+ */
+const MINOR_KEYS = ['Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'];
 
 const PITCH_CLASS: Record<string, number> = {
   'C': 0, 'B#': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
@@ -30,10 +34,10 @@ const PITCH_CLASS: Record<string, number> = {
   'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11,
 };
 
-/** Tons cuja armadura usa bemóis. */
+/** Tons cuja armadura usa bemóis (só maiores com bemol + menores naturais). */
 const FLAT_KEYS = new Set([
   'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb',
-  'Dm', 'Gm', 'Cm', 'Fm', 'Bbm', 'Ebm', 'Abm',
+  'Dm', 'Gm', 'Cm', 'Fm',
 ]);
 
 const ROOT = '[A-G](?:#|b)?';
@@ -78,7 +82,8 @@ export function parseKey(key: string | null | undefined): ParsedKey | null {
 }
 
 /**
- * Cada altura tem UMA grafia oficial (Db e não C#; F# e não Gb).
+ * Cada altura tem UMA grafia oficial (maior: Db e não C#; F# e não Gb;
+ * menor: C#m e não Dbm; D#m e não Ebm).
  * Sem isso, o mesmo tom teria dois links diferentes — e os favoritos do
  * usuário precisam ser únicos e permanentes.
  */

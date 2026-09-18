@@ -8,7 +8,7 @@ import { ChevronDownIcon, UndoIcon } from '@/components/icons';
 /** Grafia fixa dos 12 tons maiores (mesmo padrão do motor de cifras). */
 const MAJOR_CHROMATIC = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 /** Grafia fixa dos 12 tons menores. */
-const MINOR_CHROMATIC = ['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'] as const;
+const MINOR_CHROMATIC = ['Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'] as const;
 
 /** Sempre 12 opções; começa no tom original e sobe cromaticamente. */
 function chromaticOptions(baseKey: string): string[] {

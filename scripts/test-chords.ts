@@ -12,6 +12,7 @@ import {
   extractChordSequence,
   keyDisplayName,
   keyToSlug,
+  normalizeKey,
   parseChart,
   parseChord,
   slugToKey,
@@ -44,7 +45,14 @@ check('bb → Bb', slugToKey('bb'), 'Bb');
 check('fsm → F#m', slugToKey('fsm'), 'F#m');
 check('slug inválido', slugToKey('h'), null);
 check('12 tons a partir de G', allKeysFor('G'), ['G', 'Ab', 'A', 'Bb', 'B', 'C', 'Db', 'D', 'Eb', 'E', 'F', 'F#']);
-check('12 tons a partir de Am', allKeysFor('Am'), ['Am', 'Bbm', 'Bm', 'Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m']);
+check('12 tons a partir de Am', allKeysFor('Am'), ['Am', 'A#m', 'Bm', 'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m']);
+check('Dbm → C#m (grafia única)', normalizeKey('Dbm'), 'C#m');
+check('Ebm → D#m (grafia única)', normalizeKey('Ebm'), 'D#m');
+check('Bbm → A#m (grafia única)', normalizeKey('Bbm'), 'A#m');
+check('slug antigo ebm → D#m', slugToKey('ebm'), 'D#m');
+check('slug antigo bbm → A#m', slugToKey('bbm'), 'A#m');
+check('D#m → dsm', keyToSlug('D#m'), 'dsm');
+check('A#m → asm', keyToSlug('A#m'), 'asm');
 
 console.log('\nClassificação de linhas');
 const chart = [
