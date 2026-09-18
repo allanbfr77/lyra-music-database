@@ -2,6 +2,7 @@ import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
 import SignOutButton from '@/components/SignOutButton';
 import OfflineSongsDownload from '@/components/OfflineSongsDownload';
+import TomLouvoresLink from '@/components/TomLouvoresLink';
 import { LockIcon } from '@/components/icons';
 
 export default function HeaderTools({
@@ -29,6 +30,10 @@ export default function HeaderTools({
           </span>
         </div>
       ) : null}
+
+      <div className="header-slot header-slot--tom-louvores">
+        <TomLouvoresLink />
+      </div>
 
       {!signedIn ? (
         <div className="header-slot header-slot--account">

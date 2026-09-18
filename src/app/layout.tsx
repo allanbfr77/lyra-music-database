@@ -38,17 +38,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icons/lyra-db-favicon-dark.svg',
-        type: 'image/svg+xml',
+        url: '/icons/lyra-db-favicon-dark.png',
+        type: 'image/png',
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/icons/lyra-db-favicon-light.svg',
-        type: 'image/svg+xml',
+        url: '/icons/lyra-db-favicon-light.png',
+        type: 'image/png',
         media: '(prefers-color-scheme: light)',
       },
       { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/favicon-32-light.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: light)' },
       { url: '/icons/icon-64.png', sizes: '64x64', type: 'image/png' },
+      { url: '/icons/icon-64-light.png', sizes: '64x64', type: 'image/png', media: '(prefers-color-scheme: light)' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
       {

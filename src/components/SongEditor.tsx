@@ -487,8 +487,8 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             </span>
             <strong id="duplicate-title">Cadastro bloqueado</strong>
             <p id="duplicate-desc">
-              Já existe uma música cadastrada com esse título. A música <b>não foi salva</b>. Altere o
-              título ou edite a música existente.
+              Já existe uma música cadastrada com esse título e esse artista. A música <b>não foi
+              salva</b>. Altere o título/artista ou edite a música existente.
             </p>
             <button
               ref={duplicateOkRef}

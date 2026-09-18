@@ -194,6 +194,54 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   flex-shrink: 0;
   position: relative;
   z-index: 2;
+  align-items: center;
+  gap: 8px;
+}
+
+.tom-louvores-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  min-width: 0;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tom-louvores-link:hover {
+  opacity: 0.88;
+}
+.tom-louvores-link__img {
+  display: block;
+  height: 28px;
+  width: auto;
+  flex: none;
+  object-fit: contain;
+  /* PNG com fundo preto: some no tema escuro, como no site Tom Louvores */
+  mix-blend-mode: screen;
+}
+:root[data-theme='light'] .tom-louvores-link__img {
+  mix-blend-mode: normal;
+  background: #0a0a0a;
+  border-radius: 3px;
+}
+.tom-louvores-link__sep {
+  flex: none;
+  width: 1px;
+  height: 26px;
+  background: #2e2e2e;
+}
+:root[data-theme='light'] .tom-louvores-link__sep {
+  background: var(--border-strong);
+}
+.tom-louvores-link__text {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffe000;
+  white-space: nowrap;
 }
 
 .mobile-nav__burger {
@@ -233,7 +281,11 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 
 @media (max-width: 720px) {
   .brand__sub { display: none; }
-  .mobile-nav { display: block; }
+  .mobile-nav { display: flex; }
+  .tom-louvores-link { gap: 8px; }
+  .tom-louvores-link__img { height: 24px; }
+  .tom-louvores-link__sep { height: 22px; }
+  .tom-louvores-link__text { font-size: 9px; letter-spacing: 0.1em; }
 
   .mobile-nav-scrim {
     display: block;
@@ -459,6 +511,7 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   min-width: 0;
 }
 .header-slot--status { width: auto; min-width: 0; }
+.header-slot--tom-louvores { width: auto; min-width: 0; }
 .header-slot--account { width: auto; min-width: 0; max-width: 160px; }
 .header-slot--leave { width: 52px; }
 .header-slot--download { width: auto; min-width: 34px; }
@@ -1044,6 +1097,11 @@ svg { flex: none; }
     /* Evita padding interno extra do type=search no WebKit/iOS que corta o texto */
     -webkit-appearance: none;
     appearance: textfield;
+  }
+  /* Placeholder menor: texto completo cabe sem reticências; input permanece 16px (sem zoom no iOS) */
+  .query-search input::placeholder {
+    font-size: 12px;
+    letter-spacing: -0.02em;
   }
   .query-search__clear {
     padding: 6px;

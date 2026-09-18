@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/browser';
 import { ADMIN_HOME } from '@/lib/auth-routes';
 import { DEFAULT_THEME, THEME_COLOR, THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
 import { requestOfflineSongsDownload } from '@/components/OfflineSongsDownload';
+import TomLouvoresLink from '@/components/TomLouvoresLink';
 import { isSongCacheDownloadRunning } from '@/lib/song-cache';
 
 function readTheme(): Theme {
@@ -352,6 +353,7 @@ export default function MobileNav({
 
   return (
     <div className="mobile-nav no-print">
+      <TomLouvoresLink />
       <button
         type="button"
         className={`mobile-nav__burger${open ? ' is-open' : ''}`}

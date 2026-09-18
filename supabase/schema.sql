@@ -142,8 +142,10 @@ create index if not exists songs_title_trgm_idx on public.songs (lower(title));
 create index if not exists songs_artist_idx     on public.songs (lower(artist));
 create index if not exists songs_updated_idx    on public.songs (updated_at desc);
 
--- Título único (independe do artista): trava de duplicidade no cadastro.
-create unique index if not exists songs_title_unico_idx on public.songs (lower(btrim(title)));
+-- Título + artista únicos: trava de duplicidade no cadastro.
+-- Mesmo título com artistas diferentes é permitido.
+create unique index if not exists songs_title_artist_unico_idx
+  on public.songs (lower(btrim(title)), lower(btrim(coalesce(artist, ''))));
 create index if not exists overrides_song_idx   on public.song_key_overrides (song_id);
 
 -- ---------------------------------------------------------------------------
