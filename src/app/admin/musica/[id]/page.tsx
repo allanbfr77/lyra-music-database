@@ -18,7 +18,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
   let data: unknown = null;
   let error: { message: string } | null = null;
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 6; attempt++) {
     const result = await supabase.from('songs').select(`${columns}, ${extra}`).eq('id', id).maybeSingle();
     data = result.data;
     error = result.error;
@@ -37,6 +37,10 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     }
     if (error.message.includes('chords_reviewed') && columns.includes('chords_reviewed')) {
       columns = columns.replace(', chords_reviewed', '');
+      continue;
+    }
+    if (error.message.includes('lyrics_reviewed') && columns.includes('lyrics_reviewed')) {
+      columns = columns.replace(', lyrics_reviewed', '');
       continue;
     }
     if (error.message.includes('instrumento') && extra.includes('instrumento')) {
@@ -68,6 +72,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     notes: song.notes,
     published: song.published,
     chords_reviewed: Boolean(song.chords_reviewed),
+    lyrics_reviewed: Boolean(song.lyrics_reviewed),
     overrides: (song.song_key_overrides ?? []).map((o) => ({
       key: o.key,
       chords: o.chords,

@@ -66,6 +66,7 @@ create table if not exists public.songs (
   notes          text,
   published      boolean not null default true,
   chords_reviewed boolean not null default false, -- false = Revisar, true = Revisada
+  lyrics_reviewed boolean not null default false, -- false = Revisar, true = Revisada (independente da cifra)
   search_vector  tsvector,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
@@ -79,6 +80,8 @@ comment on column public.songs.youtube_url is
   'Link do vídeo no YouTube. Se vazio, o ícone não aparece na página da música.';
 comment on column public.songs.chords_reviewed is
   'Revisão da cifra: false = Revisar, true = Revisada. Ausência/falso = precisa revisar.';
+comment on column public.songs.lyrics_reviewed is
+  'Revisão da letra: false = Revisar, true = Revisada. Ausência/falso = precisa revisar. Independente de chords_reviewed.';
 
 -- ---------------------------------------------------------------------------
 -- Tabela: song_key_overrides

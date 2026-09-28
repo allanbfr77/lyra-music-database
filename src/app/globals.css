@@ -1593,6 +1593,8 @@ svg { flex: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Biblioteca de Admin apenas: letra revisada. Nunca aplicado na página pública. */
+.song-item__title--reviewed { color: var(--ok); }
 .song-item__draft { margin-left: 8px; font-size: 11px; vertical-align: 1px; }
 .song-item__artist {
   font-size: 13.5px;

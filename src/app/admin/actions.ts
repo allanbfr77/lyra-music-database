@@ -25,6 +25,7 @@ export type SongPayload = {
   notes: string | null;
   published: boolean;
   chords_reviewed: boolean;
+  lyrics_reviewed: boolean;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -95,6 +96,7 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       notes: payload.notes?.trim() || null,
       published: payload.published,
       chords_reviewed: Boolean(payload.chords_reviewed),
+      lyrics_reviewed: Boolean(payload.lyrics_reviewed),
     };
 
     let songId = payload.id ?? null;
@@ -207,7 +209,10 @@ function translate(message: string): string {
     return 'O banco ainda não tem a cifra de violão. Execute supabase/migrations/004_violao.sql no SQL Editor do Supabase.';
   }
   if (message.includes('chords_reviewed')) {
-    return 'O banco ainda não tem o status de revisão. Execute supabase/migrations/013_chords_reviewed.sql no SQL Editor do Supabase.';
+    return 'O banco ainda não tem o status de revisão da cifra. Execute supabase/migrations/013_chords_reviewed.sql no SQL Editor do Supabase.';
+  }
+  if (message.includes('lyrics_reviewed')) {
+    return 'O banco ainda não tem o status de revisão da letra. Execute supabase/migrations/015_lyrics_reviewed.sql no SQL Editor do Supabase.';
   }
   return message;
 }

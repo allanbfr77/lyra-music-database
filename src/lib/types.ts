@@ -27,6 +27,8 @@ export type Song = {
   published: boolean;
   /** false/ausente = Revisar; true = Revisada. */
   chords_reviewed?: boolean;
+  /** false/ausente = Revisar; true = Revisada. Independente de chords_reviewed. */
+  lyrics_reviewed?: boolean;
   created_at: string;
   updated_at: string;
 };

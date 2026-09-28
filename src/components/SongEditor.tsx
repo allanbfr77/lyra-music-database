@@ -38,6 +38,7 @@ export type EditorInitial = {
   notes: string | null;
   published: boolean;
   chords_reviewed: boolean;
+  lyrics_reviewed: boolean;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -59,6 +60,7 @@ const EMPTY: EditorInitial = {
   notes: null,
   published: true,
   chords_reviewed: false,
+  lyrics_reviewed: false,
   overrides: [],
 };
 
@@ -115,6 +117,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [published, setPublished] = useState(initial.published);
   // Ausente/false = Revisar (nunca assume Revisada por omissão).
   const [chordsReviewed, setChordsReviewed] = useState(Boolean(initial.chords_reviewed));
+  // Status independente do de chords_reviewed: marcar uma letra/cifra como revisada não
+  // afeta a outra.
+  const [lyricsReviewed, setLyricsReviewed] = useState(Boolean(initial.lyrics_reviewed));
 
   const [overridesByInst, setOverridesByInst] = useState<Record<Instrumento, Record<string, string>>>(() => {
     const teclado: Record<string, string> = {};
@@ -179,6 +184,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       notes: notes || null,
       published,
       chords_reviewed: chordsReviewed,
+      lyrics_reviewed: lyricsReviewed,
       overrides: (['teclado', 'violao'] as Instrumento[]).flatMap((inst) =>
         Object.entries(overridesByInst[inst]).map(([key, value]) => ({ key, chords: value, instrumento: inst }))
       ),
@@ -219,6 +225,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     setNotes('');
     setPublished(EMPTY.published);
     setChordsReviewed(EMPTY.chords_reviewed);
+    setLyricsReviewed(EMPTY.lyrics_reviewed);
     setOverridesByInst({ teclado: {}, violao: {} });
     setTab('letra');
     setError(null);
@@ -355,6 +362,31 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               aria-label="Letra"
             />
           </label>
+
+          <div className="field">
+            <span className="field__label">REVISÃO</span>
+            <nav className="seg" aria-label="Status de revisão da letra">
+              <button
+                type="button"
+                className="seg__item"
+                data-active={!lyricsReviewed}
+                aria-pressed={!lyricsReviewed}
+                onClick={() => setLyricsReviewed(false)}
+              >
+                Revisar
+              </button>
+              <button
+                type="button"
+                className="seg__item"
+                data-active={lyricsReviewed}
+                aria-pressed={lyricsReviewed}
+                onClick={() => setLyricsReviewed(true)}
+              >
+                <CheckIcon size={12} />
+                Revisada
+              </button>
+            </nav>
+          </div>
         </div>
       ) : (
         <div style={{ paddingTop: 12 }}>

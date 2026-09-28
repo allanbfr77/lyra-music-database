@@ -36,6 +36,7 @@ export default async function AdminHome({
       href: `/admin/musica/${song.id}`,
       draft: !song.published,
       chords_reviewed: song.chords_reviewed,
+      lyrics_reviewed: song.lyrics_reviewed,
     }));
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Erro ao consultar o banco.';
@@ -74,6 +75,7 @@ export default async function AdminHome({
             fieldLabels={activeLabels}
             showSnippet={Boolean(query) && fieldIds.includes('l')}
             showReviewFilter
+            admin
             emptyNoQuery={{
               title: 'Nenhuma música cadastrada',
               hint: 'Comece cadastrando a primeira.',

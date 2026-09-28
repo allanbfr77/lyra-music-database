@@ -6,7 +6,7 @@ import type { Instrumento, KeyOverride, SearchHit, Song } from '@/lib/types';
 export { availableInstruments, chartForKey, cifraPath } from '@/lib/chords';
 
 export const SONG_COLUMNS =
-  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, chords_reviewed, created_at, updated_at';
+  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, chords_reviewed, lyrics_reviewed, created_at, updated_at';
 
 const OVERRIDE_COLUMNS = 'id, song_id, key, chords, instrumento, created_at, updated_at';
 const OVERRIDE_COLUMNS_LEGACY = 'id, song_id, key, chords, created_at, updated_at';
@@ -61,6 +61,9 @@ function dropMissingColumn(
   if (message.includes('chords_reviewed') && columns.includes('chords_reviewed')) {
     return { columns: columns.replace(', chords_reviewed', ''), extra, changed: true };
   }
+  if (message.includes('lyrics_reviewed') && columns.includes('lyrics_reviewed')) {
+    return { columns: columns.replace(', lyrics_reviewed', ''), extra, changed: true };
+  }
   if (message.includes('instrumento') && extra.includes('instrumento')) {
     return { columns, extra: extra.replace(OVERRIDE_COLUMNS, OVERRIDE_COLUMNS_LEGACY), changed: true };
   }
@@ -72,7 +75,7 @@ export const getSongBySlug = cache(async function getSongBySlug(slug: string): P
   let columns = SONG_COLUMNS;
   let extra = OVERRIDE_COLUMNS;
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 6; attempt++) {
     const { data, error } = await supabase
       .from('songs')
       .select(`${columns}, song_key_overrides(${extra})`)
@@ -165,7 +168,11 @@ export async function searchSongs(
   }));
 }
 
-export type AdminSearchHit = SearchHit & { published: boolean; chords_reviewed: boolean };
+export type AdminSearchHit = SearchHit & {
+  published: boolean;
+  chords_reviewed: boolean;
+  lyrics_reviewed: boolean;
+};
 
 /**
  * Busca do painel admin: mesma lógica de campos/pesos da home, mas inclui
@@ -182,7 +189,7 @@ export async function searchAdminSongs(
   const query = (q ?? '').trim();
   const fields = weights.toUpperCase().replace(/[^ABC]/g, '') || 'ABC';
   let columns =
-    'id, slug, title, artist, base_key, available_keys, published, chords_reviewed, chords, lyrics, updated_at';
+    'id, slug, title, artist, base_key, available_keys, published, chords_reviewed, lyrics_reviewed, chords, lyrics, updated_at';
 
   type AdminRow = {
     id: string;
@@ -193,12 +200,13 @@ export async function searchAdminSongs(
     available_keys: string[] | null;
     published: boolean;
     chords_reviewed?: boolean;
+    lyrics_reviewed?: boolean;
     chords: string | null;
     lyrics: string | null;
     updated_at: string;
   };
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     let request = supabase.from('songs').select(columns);
 
     if (query) {
@@ -220,6 +228,10 @@ export async function searchAdminSongs(
         columns = columns.replace(', chords_reviewed', '');
         continue;
       }
+      if (error.message.includes('lyrics_reviewed') && columns.includes('lyrics_reviewed')) {
+        columns = columns.replace(', lyrics_reviewed', '');
+        continue;
+      }
       throw new Error(error.message);
     }
 
@@ -237,6 +249,7 @@ export async function searchAdminSongs(
       published: Boolean(row.published),
       // Sem coluna / null → Revisar (nunca assume Revisada por omissão).
       chords_reviewed: Boolean(row.chords_reviewed),
+      lyrics_reviewed: Boolean(row.lyrics_reviewed),
     }));
   }
 

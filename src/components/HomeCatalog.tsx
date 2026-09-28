@@ -22,6 +22,37 @@ const REVIEW_OPTIONS: { id: ReviewFilter; label: string }[] = [
   { id: 'done', label: 'Revisadas' },
 ];
 
+/** Um <select> de status de revisão (letra ou cifra) — mesmo padrão, campo independente. */
+function ReviewSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: ReviewFilter;
+  onChange: (next: ReviewFilter) => void;
+}) {
+  return (
+    <div className="catalog-filters__group" role="group" aria-label={label}>
+      <span className="catalog-filters__group-label">{label}</span>
+      <div className="catalog-filters__control">
+        <select
+          className="catalog-filters__review"
+          value={value}
+          aria-label={`Filtrar por ${label.toLowerCase()}`}
+          onChange={(event) => onChange(event.target.value as ReviewFilter)}
+        >
+          {REVIEW_OPTIONS.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 function foldText(value: string) {
   return value
     .normalize('NFD')
@@ -106,6 +137,7 @@ export default function HomeCatalog({
   showSnippet = false,
   showKeyFilter = true,
   showReviewFilter = false,
+  admin = false,
   search,
   emptyNoQuery = {
     title: 'Nenhuma música cadastrada',
@@ -121,8 +153,10 @@ export default function HomeCatalog({
   fieldLabels: string;
   showSnippet?: boolean;
   showKeyFilter?: boolean;
-  /** Select de status de revisão (painel admin). */
+  /** Selects de status de revisão da letra/cifra (painel admin). */
   showReviewFilter?: boolean;
+  /** Biblioteca de Admin: habilita a cor verde de "letra revisada". Nunca na página pública. */
+  admin?: boolean;
   /** Slot do painel de busca (SearchBox). Quando presente, monta o query builder. */
   search?: ReactNode;
   emptyNoQuery?: { title: string; hint: string };
@@ -130,7 +164,9 @@ export default function HomeCatalog({
 }) {
   const [chordsFilter, setChordsFilter] = useState<TriFilter>('all');
   const [lyricsFilter, setLyricsFilter] = useState<TriFilter>('all');
-  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
+  // Revisão da letra e da cifra são independentes: cada filtro considera só o seu campo.
+  const [lyricsReviewFilter, setLyricsReviewFilter] = useState<ReviewFilter>('all');
+  const [chordsReviewFilter, setChordsReviewFilter] = useState<ReviewFilter>('all');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [artistQuery, setArtistQuery] = useState('');
@@ -157,24 +193,40 @@ export default function HomeCatalog({
       if (chordsFilter === 'no' && song.has_chords) return false;
       if (lyricsFilter === 'yes' && !songHasLyrics(song)) return false;
       if (lyricsFilter === 'no' && songHasLyrics(song)) return false;
-      if (reviewFilter === 'pending' && song.chords_reviewed) return false;
-      if (reviewFilter === 'done' && !song.chords_reviewed) return false;
+      if (lyricsReviewFilter === 'pending' && song.lyrics_reviewed) return false;
+      if (lyricsReviewFilter === 'done' && !song.lyrics_reviewed) return false;
+      if (chordsReviewFilter === 'pending' && song.chords_reviewed) return false;
+      if (chordsReviewFilter === 'done' && !song.chords_reviewed) return false;
       if (activeKey && normalizeKey(song.base_key) !== activeKey) return false;
       if (activeArtist && song.artist.trim() !== activeArtist) return false;
       if (artistNeedle && !foldText(song.artist).includes(artistNeedle)) return false;
       return true;
     });
-  }, [songs, chordsFilter, lyricsFilter, reviewFilter, activeKey, activeArtist, artistNeedle]);
+  }, [
+    songs,
+    chordsFilter,
+    lyricsFilter,
+    lyricsReviewFilter,
+    chordsReviewFilter,
+    activeKey,
+    activeArtist,
+    artistNeedle,
+  ]);
 
   const hasExtraFilters = Boolean(activeKey || activeArtist || artistQuery.trim());
-  const hasTriFilters = chordsFilter !== 'all' || lyricsFilter !== 'all' || reviewFilter !== 'all';
+  const hasTriFilters =
+    chordsFilter !== 'all' ||
+    lyricsFilter !== 'all' ||
+    lyricsReviewFilter !== 'all' ||
+    chordsReviewFilter !== 'all';
   const hasAnyFilter = hasTriFilters || hasExtraFilters;
   const filtered = hasAnyFilter;
 
   function clearFilters() {
     setChordsFilter('all');
     setLyricsFilter('all');
-    setReviewFilter('all');
+    setLyricsReviewFilter('all');
+    setChordsReviewFilter('all');
     setSelectedKey(null);
     setSelectedArtist(null);
     setArtistQuery('');
@@ -195,23 +247,10 @@ export default function HomeCatalog({
       <TriGroup label="Cifra" value={chordsFilter} onChange={setChordsFilter} />
       <TriGroup label="Letra" value={lyricsFilter} onChange={setLyricsFilter} />
       {showReviewFilter ? (
-        <div className="catalog-filters__group" role="group" aria-label="Revisão">
-          <span className="catalog-filters__group-label">Revisão</span>
-          <div className="catalog-filters__control">
-            <select
-              className="catalog-filters__review"
-              value={reviewFilter}
-              aria-label="Filtrar por revisão"
-              onChange={(event) => setReviewFilter(event.target.value as ReviewFilter)}
-            >
-              {REVIEW_OPTIONS.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <>
+          <ReviewSelect label="Revisor de letra" value={lyricsReviewFilter} onChange={setLyricsReviewFilter} />
+          <ReviewSelect label="Revisor de cifra" value={chordsReviewFilter} onChange={setChordsReviewFilter} />
+        </>
       ) : null}
     </div>
   );
@@ -370,7 +409,7 @@ export default function HomeCatalog({
   return (
     <>
       {panel}
-      <SongList songs={visible} showSnippet={showSnippet} />
+      <SongList songs={visible} showSnippet={showSnippet} admin={admin} />
       <footer className="db-foot">
         <span>lyra.music.db — v1</span>
         <span>ordenado por título</span>

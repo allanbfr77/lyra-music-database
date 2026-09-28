@@ -8,6 +8,8 @@ export type CatalogSong = SearchHit & {
   draft?: boolean;
   /** false/ausente = Revisar; true = Revisada. */
   chords_reviewed?: boolean;
+  /** false/ausente = Revisar; true = Revisada. Independente de chords_reviewed. */
+  lyrics_reviewed?: boolean;
 };
 
 /** O Postgres marca os trechos com [[ ]]; escapamos tudo e só então viram <mark>. */
@@ -59,14 +61,25 @@ function songHref(song: CatalogSong) {
   return `/musica/${song.slug}`;
 }
 
-function SongRow({ song, showSnippet }: { song: CatalogSong; showSnippet: boolean }) {
+function SongRow({
+  song,
+  showSnippet,
+  admin,
+}: {
+  song: CatalogSong;
+  showSnippet: boolean;
+  admin: boolean;
+}) {
   const key = normalizeKey(song.base_key);
   const artist = song.artist || 'Sem artista';
+  // A cor verde de "letra revisada" é exclusiva da Biblioteca de Admin — a página
+  // pública sempre mostra o título na cor padrão, revisado ou não.
+  const lyricsReviewed = admin && Boolean(song.lyrics_reviewed);
   return (
     <li className="song-item">
       <Link href={songHref(song)} className="song-item__link">
         <div className="song-item__title-wrap">
-          <div className="song-item__title">
+          <div className={lyricsReviewed ? 'song-item__title song-item__title--reviewed' : 'song-item__title'}>
             {song.title}
             {song.draft ? <span className="chip song-item__draft">rascunho</span> : null}
           </div>
@@ -91,7 +104,16 @@ function SongRow({ song, showSnippet }: { song: CatalogSong; showSnippet: boolea
   );
 }
 
-export default function SongList({ songs, showSnippet = false }: { songs: CatalogSong[]; showSnippet?: boolean }) {
+export default function SongList({
+  songs,
+  showSnippet = false,
+  admin = false,
+}: {
+  songs: CatalogSong[];
+  showSnippet?: boolean;
+  /** Biblioteca de Admin: habilita a cor verde de "letra revisada" no título. Nunca na página pública. */
+  admin?: boolean;
+}) {
   const groups = groupSongs(songs);
 
   return (
@@ -109,7 +131,7 @@ export default function SongList({ songs, showSnippet = false }: { songs: Catalo
           </div>
           <ul className="song-list song-list--grouped">
             {group.songs.map((song) => (
-              <SongRow key={song.id} song={song} showSnippet={showSnippet} />
+              <SongRow key={song.id} song={song} showSnippet={showSnippet} admin={admin} />
             ))}
           </ul>
         </section>
