@@ -131,7 +131,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [busy, setBusy] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
-  const pendingHref = useRef<string | null>(null);
   const okRef = useRef<HTMLButtonElement>(null);
   const duplicateOkRef = useRef<HTMLButtonElement>(null);
 
@@ -194,7 +193,6 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       return;
     }
 
-    pendingHref.current = initial.id ? null : `/admin/musica/${result.id}`;
     setSavedOpen(true);
   }
 
@@ -228,12 +226,19 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     window.scrollTo({ top: 0 });
   }
 
+  /**
+   * Confirmação do pop-up "Música salva". Ao cadastrar uma música nova, o admin
+   * permanece na aba "Adicionar nova música" com o formulário limpo, pronto para o
+   * próximo cadastro — sem redirecionar para a edição, a biblioteca ou qualquer outra
+   * aba. Ao editar uma música existente, o comportamento anterior é mantido.
+   */
   function dismissSaved() {
     setSavedOpen(false);
-    const href = pendingHref.current;
-    pendingHref.current = null;
-    if (href) router.replace(href);
-    else router.refresh();
+    if (!initial.id) {
+      startNewSong();
+      return;
+    }
+    router.refresh();
   }
 
   useEffect(() => {
