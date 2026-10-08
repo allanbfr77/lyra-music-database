@@ -13,6 +13,13 @@ const slidesSans = Montserrat({
   display: 'swap',
 });
 
+const sansBody = Montserrat({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
 const plexMono = IBM_Plex_Mono({
   weight: ['400', '500', '600'],
   subsets: ['latin', 'latin-ext'],
@@ -99,7 +106,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" data-theme="dark" className={`${slidesSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="dark" className={`${slidesSans.variable} ${sansBody.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

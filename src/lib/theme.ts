@@ -7,8 +7,8 @@ export const THEME_STORAGE_KEY = 'lyra-theme';
 
 /** Cor da barra do navegador (meta theme-color) em cada tema. */
 export const THEME_COLOR: Record<Theme, string> = {
-  dark: '#0a0a0c',
-  light: '#ffffff',
+  dark: '#0b0b0c',
+  light: '#0b0b0c',
 };
 
 /**

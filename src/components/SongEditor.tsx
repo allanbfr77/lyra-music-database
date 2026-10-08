@@ -93,6 +93,36 @@ function initialBaseKey(initial: EditorInitial): string {
   return detection && normalizeKey(detection.key) === saved ? saved : '';
 }
 
+type DraftFields = {
+  title: string;
+  artist: string;
+  slug: string;
+  slugTouched: boolean;
+  baseKey: string;
+  keyTouched: boolean;
+  lyrics: string;
+  chords: string;
+  chordsGuitar: string;
+  capo: number;
+  bpm: string;
+  timeSignature: string;
+  sourceUrl: string;
+  youtubeUrl: string;
+  notes: string;
+  published: boolean;
+  chordsReviewed: boolean;
+  lyricsReviewed: boolean;
+  overridesByInst: Record<Instrumento, Record<string, string>>;
+};
+
+type AutosaveStatus = 'idle' | 'pending' | 'saved' | 'error';
+
+const AUTOSAVE_DELAY_MS = 800;
+
+function draftStorageKey(id: string | null) {
+  return `lyra-admin-draft:${id ?? 'nova'}`;
+}
+
 export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitial }) {
   const router = useRouter();
 
@@ -139,6 +169,20 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const okRef = useRef<HTMLButtonElement>(null);
   const duplicateOkRef = useRef<HTMLButtonElement>(null);
 
+  const [autosave, setAutosave] = useState<AutosaveStatus>('idle');
+  const [draftRestored, setDraftRestored] = useState(false);
+  // Só começa a gravar o rascunho depois de tentar restaurar o anterior.
+  const draftReady = useRef(false);
+  const draftKey = draftStorageKey(initial.id);
+
+  const draft: DraftFields = {
+    title, artist, slug, slugTouched, baseKey, keyTouched, lyrics, chords, chordsGuitar,
+    capo, bpm, timeSignature, sourceUrl, youtubeUrl, notes, published, chordsReviewed,
+    lyricsReviewed, overridesByInst,
+  };
+  const draftJson = JSON.stringify(draft);
+  const initialDraftJson = useRef(draftJson);
+
   const baseKeyNorm = baseKey ? normalizeKey(baseKey) : '';
   const effectiveSlug = slugTouched ? slugify(slug || title) : slugify(title);
   const detectedKey = useMemo(
@@ -152,6 +196,75 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     const next = normalizeKey(detectedKey.key);
     if (next !== baseKeyNorm) setBaseKey(next);
   }, [detectedKey, keyTouched, baseKeyNorm]);
+
+  // Restaura o rascunho local (se houver) ao abrir o editor.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw && raw !== initialDraftJson.current) {
+        const d = JSON.parse(raw) as Partial<DraftFields>;
+        if (typeof d.title === 'string') {
+          setTitle(d.title);
+          setArtist(d.artist ?? '');
+          setSlug(d.slug ?? '');
+          setSlugTouched(Boolean(d.slugTouched));
+          setBaseKey(d.baseKey ?? '');
+          setKeyTouched(Boolean(d.keyTouched));
+          setLyrics(d.lyrics ?? '');
+          setChords(d.chords ?? '');
+          setChordsGuitar(d.chordsGuitar ?? '');
+          setCapo(d.capo ?? 0);
+          setBpm(d.bpm ?? '');
+          setTimeSignature(d.timeSignature ?? '');
+          setSourceUrl(d.sourceUrl ?? '');
+          setYoutubeUrl(d.youtubeUrl ?? '');
+          setNotes(d.notes ?? '');
+          setPublished(d.published ?? true);
+          setChordsReviewed(Boolean(d.chordsReviewed));
+          setLyricsReviewed(Boolean(d.lyricsReviewed));
+          setOverridesByInst(d.overridesByInst ?? { teclado: {}, violao: {} });
+          setDraftRestored(true);
+        }
+      }
+    } catch {
+      /* armazenamento indisponível: segue sem rascunho */
+    }
+    draftReady.current = true;
+  }, [draftKey]);
+
+  // Salvamento automático do rascunho enquanto o admin preenche.
+  useEffect(() => {
+    if (!draftReady.current) return;
+    if (draftJson === initialDraftJson.current) {
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch {
+        /* ignora */
+      }
+      setAutosave('idle');
+      return;
+    }
+    setAutosave('pending');
+    const t = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(draftKey, draftJson);
+        setAutosave('saved');
+      } catch {
+        setAutosave('error');
+      }
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(t);
+  }, [draftJson, draftKey]);
+
+  function clearDraft() {
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch {
+      /* ignora */
+    }
+    setAutosave('idle');
+    setDraftRestored(false);
+  }
 
   async function onSave() {
     if (busy || !title.trim()) return;
@@ -199,6 +312,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       return;
     }
 
+    clearDraft();
     setSavedOpen(true);
   }
 
@@ -208,6 +322,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       router.push('/admin/nova');
       return;
     }
+    clearDraft();
     setTitle(EMPTY.title);
     setArtist(EMPTY.artist);
     setSlug(EMPTY.slug);
@@ -266,6 +381,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       setError(result.error ?? 'Erro ao excluir.');
       return;
     }
+    clearDraft();
     router.replace('/admin');
     router.refresh();
   }
@@ -280,6 +396,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           Nova música
         </button>
       </div>
+
+      <p className="autosave-status" role="status" aria-live="polite" data-state={autosave}>
+        {autosave === 'pending' && 'Salvando rascunho…'}
+        {autosave === 'saved' && 'Rascunho salvo automaticamente'}
+        {autosave === 'error' && 'Não foi possível salvar o rascunho automático'}
+        {autosave === 'idle' && draftRestored && 'Rascunho restaurado'}
+      </p>
 
       {error && <div className="alert alert--error">{error}</div>}
 
