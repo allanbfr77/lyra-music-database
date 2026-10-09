@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, Montserrat } from 'next/font/google';
 import './globals.css';
 import { siteUrl } from '@/lib/env';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
+import SiteFooter from '@/components/SiteFooter';
 import { THEME_COLOR, THEME_INIT_SCRIPT } from '@/lib/theme';
 
 /** Base da CMG Sans (OFL). Se a CMG Sans estiver instalada no sistema, ela prevalece nos slides. */
@@ -112,6 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <SiteFooter />
         <ServiceWorkerRegistrar />
       </body>
     </html>

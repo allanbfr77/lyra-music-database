@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   CloseIcon,
   DownloadIcon,
-  InfoIcon,
-  LockIcon,
-  LogOutIcon,
   MenuIcon,
   MoonIcon,
   ShieldIcon,
@@ -17,6 +14,7 @@ import {
 } from '@/components/icons';
 import { createClient } from '@/lib/supabase/browser';
 import { ADMIN_HOME } from '@/lib/auth-routes';
+import { siteNav } from '@/lib/nav';
 import { DEFAULT_THEME, THEME_COLOR, THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
 import { requestOfflineSongsDownload } from '@/components/OfflineSongsDownload';
 import TomLouvoresLink from '@/components/TomLouvoresLink';
@@ -34,11 +32,14 @@ export default function MobileNav({
   isAdmin = false,
   accountLabel,
   showOfflineDownload = true,
+  homeHref = '/',
 }: {
   signedIn: boolean;
   isAdmin?: boolean;
   accountLabel: string;
   showOfflineDownload?: boolean;
+  /** Destino de "Músicas" — /admin no painel. */
+  homeHref?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -46,6 +47,7 @@ export default function MobileNav({
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const router = useRouter();
+  const pathname = usePathname() ?? '/';
   const titleId = useId();
   const drawerId = useId();
   const drawerRef = useRef<HTMLElement | null>(null);
@@ -193,6 +195,16 @@ export default function MobileNav({
 
   const drawerWidth = typeof window !== 'undefined' ? drawerRef.current?.offsetWidth || 300 : 300;
   const scrimOpacity = open ? Math.max(0, 1 - dragX / Math.max(drawerWidth, 1)) : 0;
+  const tab = open ? 0 : -1;
+
+  function downloadSongs() {
+    if (isSongCacheDownloadRunning()) {
+      close();
+      return;
+    }
+    requestOfflineSongsDownload();
+    close();
+  }
 
   const drawer = mounted
     ? createPortal(
@@ -216,96 +228,119 @@ export default function MobileNav({
           >
             <div className="mobile-drawer__head">
               <span className="mobile-drawer__title" id={titleId}>
-                MENU
+                Menu
               </span>
               <button
                 type="button"
                 className="mobile-drawer__close"
                 onClick={close}
                 aria-label="Fechar menu"
-                tabIndex={open ? 0 : -1}
+                tabIndex={tab}
               >
-                <CloseIcon size={13} />
+                <CloseIcon size={24} strokeWidth={1.75} />
               </button>
             </div>
 
-            <nav className="mobile-drawer__nav" aria-label="Menu do site">
-              {signedIn ? (
+            {/* Botão de destaque dourado, o primeiro a entrar — como o "Primeira
+                vez aqui?" na gaveta do site da INVB. No painel admin, onde não
+                há download, o destaque é o próprio painel. */}
+            {showOfflineDownload ? (
+              <>
+                <button
+                  type="button"
+                  className="mobile-drawer__cta"
+                  style={{ ['--stagger' as string]: nextStagger() }}
+                  onClick={downloadSongs}
+                  tabIndex={tab}
+                >
+                  <DownloadIcon size={17} />
+                  Baixar letras e cifras
+                </button>
+                <p className="mobile-drawer__cta-note">Para abertura rápida no aparelho</p>
+              </>
+            ) : signedIn ? (
+              <>
                 <Link
                   href={ADMIN_HOME}
-                  className="mobile-drawer__item mobile-drawer__item--accent"
+                  className="mobile-drawer__cta"
                   style={{ ['--stagger' as string]: nextStagger() }}
                   onClick={close}
-                  tabIndex={open ? 0 : -1}
+                  tabIndex={tab}
                 >
-                  <span className="mobile-drawer__ic" aria-hidden="true">
-                    <ShieldIcon size={15} />
-                  </span>
+                  <ShieldIcon size={17} />
+                  Painel admin
+                </Link>
+                <p className="mobile-drawer__cta-note">{isAdmin ? 'Modo admin' : accountLabel || 'Conta'}</p>
+              </>
+            ) : null}
+
+            <nav className="mobile-drawer__nav" aria-label="Menu do site">
+              {siteNav(homeHref).map((item) => {
+                const active = item.match(pathname);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="mobile-drawer__item"
+                    data-active={active}
+                    aria-current={active ? 'page' : undefined}
+                    style={{ ['--stagger' as string]: nextStagger() }}
+                    onClick={close}
+                    tabIndex={tab}
+                  >
+                    <span className="mobile-drawer__txt">
+                      <span className="mobile-drawer__main">{item.label}</span>
+                      {item.sub ? <span className="mobile-drawer__sub">{item.sub}</span> : null}
+                    </span>
+                  </Link>
+                );
+              })}
+
+              {signedIn && showOfflineDownload ? (
+                <Link
+                  href={ADMIN_HOME}
+                  className="mobile-drawer__item"
+                  style={{ ['--stagger' as string]: nextStagger() }}
+                  onClick={close}
+                  tabIndex={tab}
+                >
                   <span className="mobile-drawer__txt">
                     <span className="mobile-drawer__main">Admin</span>
-                    <span className="mobile-drawer__sub">
-                      {isAdmin ? 'Modo admin' : accountLabel || 'Conta'}
-                    </span>
+                    <span className="mobile-drawer__sub">{isAdmin ? 'Modo admin' : accountLabel || 'Conta'}</span>
                   </span>
                 </Link>
-              ) : (
+              ) : null}
+
+              {!signedIn ? (
                 <Link
                   href="/login"
-                  className="mobile-drawer__item mobile-drawer__item--accent"
+                  className="mobile-drawer__item"
                   style={{ ['--stagger' as string]: nextStagger() }}
                   onClick={close}
-                  tabIndex={open ? 0 : -1}
+                  tabIndex={tab}
                 >
-                  <span className="mobile-drawer__ic" aria-hidden="true">
-                    <LockIcon size={15} />
-                  </span>
                   <span className="mobile-drawer__txt">
                     <span className="mobile-drawer__main">Login</span>
                     <span className="mobile-drawer__sub">Entrar como administrador</span>
                   </span>
                 </Link>
-              )}
+              ) : null}
 
               <button
                 type="button"
                 className="mobile-drawer__item"
                 style={{ ['--stagger' as string]: nextStagger() }}
                 onClick={toggleTheme}
-                tabIndex={open ? 0 : -1}
+                tabIndex={tab}
               >
-                <span className="mobile-drawer__ic" aria-hidden="true">
-                  {theme === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
-                </span>
                 <span className="mobile-drawer__txt">
                   <span className="mobile-drawer__main">Tema</span>
                   <span className="mobile-drawer__sub">{theme === 'dark' ? 'Escuro' : 'Claro'}</span>
                 </span>
+                <span className="mobile-drawer__ic" aria-hidden="true">
+                  {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+                </span>
               </button>
-
-              {showOfflineDownload ? (
-                <button
-                  type="button"
-                  className="mobile-drawer__item"
-                  style={{ ['--stagger' as string]: nextStagger() }}
-                  onClick={() => {
-                    if (isSongCacheDownloadRunning()) {
-                      close();
-                      return;
-                    }
-                    requestOfflineSongsDownload();
-                    close();
-                  }}
-                  tabIndex={open ? 0 : -1}
-                >
-                  <span className="mobile-drawer__ic" aria-hidden="true">
-                    <DownloadIcon size={15} />
-                  </span>
-                  <span className="mobile-drawer__txt">
-                    <span className="mobile-drawer__main">Baixar letras e cifras</span>
-                    <span className="mobile-drawer__sub">Para abertura rápida no aparelho</span>
-                  </span>
-                </button>
-              ) : null}
 
               {signedIn ? (
                 <button
@@ -313,38 +348,20 @@ export default function MobileNav({
                   className="mobile-drawer__item"
                   style={{ ['--stagger' as string]: nextStagger() }}
                   onClick={signOut}
-                  tabIndex={open ? 0 : -1}
+                  tabIndex={tab}
                 >
-                  <span className="mobile-drawer__ic" aria-hidden="true">
-                    <LogOutIcon size={15} />
-                  </span>
                   <span className="mobile-drawer__txt">
                     <span className="mobile-drawer__main">Sair</span>
                     <span className="mobile-drawer__sub">Encerrar sessão</span>
                   </span>
                 </button>
               ) : null}
-
-              <div className="mobile-drawer__divider" role="separator" />
-
-              <Link
-                href="/integracao"
-                className="mobile-drawer__item"
-                style={{ ['--stagger' as string]: nextStagger() }}
-                onClick={close}
-                tabIndex={open ? 0 : -1}
-              >
-                <span className="mobile-drawer__ic" aria-hidden="true">
-                  <InfoIcon size={15} />
-                </span>
-                <span className="mobile-drawer__txt">
-                  <span className="mobile-drawer__main">Sobre o Lyra</span>
-                  <span className="mobile-drawer__sub">Versão e informações</span>
-                </span>
-              </Link>
             </nav>
 
-            <div className="mobile-drawer__footer">lyra.music.db — v1</div>
+            <div className="mobile-drawer__footer">
+              <span className="mobile-drawer__footer-name">Banco de Músicas do Lyra</span>
+              <span className="mobile-drawer__footer-version">lyra.music.db — v1</span>
+            </div>
           </aside>
         </div>,
         document.body
@@ -362,8 +379,8 @@ export default function MobileNav({
         aria-expanded={open}
         aria-controls={drawerId}
       >
-        <MenuIcon size={16} className="mobile-nav__icon-menu" />
-        <CloseIcon size={16} className="mobile-nav__icon-close" />
+        <MenuIcon size={26} strokeWidth={1.75} className="mobile-nav__icon-menu" />
+        <CloseIcon size={26} strokeWidth={1.75} className="mobile-nav__icon-close" />
       </button>
       {drawer}
     </div>

@@ -38,6 +38,15 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <SiteHeader />
 
       <main className="shell shell--browse">
+        {/* Abertura no padrão das páginas da INVB: rótulo dourado, título e texto ao lado. */}
+        <header className="page-intro">
+          <div className="page-intro__head">
+            <p className="page-kicker">Banco de Músicas do Lyra</p>
+            <h1 className="page-title">Letras e cifras</h1>
+          </div>
+          <p className="page-lead">Em todos os tons, com link direto para cada tom.</p>
+        </header>
+
         <div className="db-browse">
           {failure ? (
             <>

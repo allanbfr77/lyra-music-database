@@ -44,10 +44,13 @@ export default function IntegrationPage() {
     <>
       <SiteHeader />
       <main className="shell">
-        <div className="song-head">
-          <h1 className="song-head__title">Integração com o Lyra</h1>
-          <div className="song-head__artist">API pública, somente leitura, sem chave de acesso.</div>
-        </div>
+        <header className="page-intro">
+          <div className="page-intro__head">
+            <p className="page-kicker">Sobre o Lyra</p>
+            <h1 className="page-title">Integração com o Lyra</h1>
+          </div>
+          <p className="page-lead">API pública, somente leitura, sem chave de acesso.</p>
+        </header>
 
         <p className="muted" style={{ fontSize: 15 }}>
           Configure no Lyra apenas a URL base abaixo. O primeiro endereço descreve todos os outros, então o

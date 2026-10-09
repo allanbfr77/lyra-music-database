@@ -50,16 +50,18 @@ export default async function AdminHome({
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '22px 0 6px' }}>
-        <h1 style={{ fontSize: 22 }}>Músicas</h1>
-        <span className="header-spacer" />
-        <Link href="/admin/nova" className="btn btn--tint btn--sm">
-          <PlusIcon size={13} />
+      <header className="page-intro page-intro--action">
+        <div className="page-intro__head">
+          <p className="page-kicker">Biblioteca</p>
+          <h1 className="page-title">Músicas</h1>
+        </div>
+        <Link href="/admin/nova" className="btn btn--primary">
+          <PlusIcon size={15} />
           Nova música
         </Link>
-      </div>
+      </header>
 
-      <div className="db-browse" style={{ paddingTop: 12, minHeight: 0 }}>
+      <div className="db-browse">
         {failure ? (
           <>
             <div className="query-panel">{search}</div>

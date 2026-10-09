@@ -5,6 +5,11 @@ import OfflineSongsDownload from '@/components/OfflineSongsDownload';
 import TomLouvoresLink from '@/components/TomLouvoresLink';
 import { LockIcon } from '@/components/icons';
 
+/**
+ * Controles do cabeçalho no computador. A ordem segue o site da INVB: o botão
+ * de destaque dourado fica por último, na ponta direita — aqui, "Baixar
+ * cifras", o que mais serve a quem usa o banco no culto.
+ */
 export default function HeaderTools({
   isAdmin = false,
   signedIn,
@@ -35,6 +40,10 @@ export default function HeaderTools({
         </div>
       ) : null}
 
+      <div className="header-slot header-slot--theme">
+        <ThemeToggle />
+      </div>
+
       {!signedIn ? (
         <div className="header-slot header-slot--account">
           <Link href="/login" className="header-ctrl" title="Entrar">
@@ -55,10 +64,6 @@ export default function HeaderTools({
           <OfflineSongsDownload />
         </div>
       ) : null}
-
-      <div className="header-slot header-slot--theme">
-        <ThemeToggle />
-      </div>
     </div>
   );
 }

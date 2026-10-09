@@ -1,14 +1,37 @@
 /* ------------------------------------------------------------------ temas
- * Dark é o padrão (preto / dourado / laranja / branco).
- * O tema claro é aplicado com <html data-theme="light">, controlado pelo
- * botão sol/lua do cabeçalho e persistido em localStorage.
+ * Visual no padrão do site da INVB (invbotafogo.com.br): a foto do louvor
+ * escurecida ao fundo, painéis de vidro escuro com cantos de 14px, rótulos
+ * dourados em caixa alta, botões em pílula e Montserrat em tudo — a fonte
+ * mono fica só onde o alinhamento importa (a cifra, os códigos da API).
+ *
+ * Dark é o padrão. O tema claro é aplicado com <html data-theme="light">,
+ * controlado pelo botão sol/lua do cabeçalho e persistido em localStorage.
+ * Nos dois temas o cabeçalho, a gaveta do menu e o rodapé ficam escuros,
+ * como no site da igreja.
  */
 
 :root {
+  /* Paleta da INVB — os mesmos valores do header.css e do home.css de lá.
+     Não mudam com o tema: valem nas peças que são sempre escuras. */
+  --ink: #0b0b0c;
+  --paper: #f6f5f1;
+  --dim: rgba(246, 245, 241, 0.62);
+  --gold: #e6b23e;
+  --gold-hi: #f6d27a;
+  --navbar-height: 70px;
+
   --bg: #14110e;
   --bg-soft: #1b1712;
   --bg-sunk: #221d17;
   --surface: #17140f;
+  /* Vidro dos painéis (o --glass da INVB) e seus fios. */
+  --panel: rgba(20, 20, 22, 0.55);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --divider: rgba(255, 255, 255, 0.08);
+  --hover: rgba(246, 245, 241, 0.05);
+  /* Campos de formulário — os do formulário de Contato da INVB. */
+  --field: rgba(246, 245, 241, 0.06);
+  --field-border: rgba(246, 245, 241, 0.2);
   --border: #2b251c;
   --border-strong: #433a2a;
   --text: #f6f5f1;
@@ -18,7 +41,7 @@
   --accent-hi: #f6d27a;
   --accent-soft: #2a2113;
   --on-accent: #0b0b0c;
-  --header-bg: rgba(11, 11, 12, 0.97);
+  --header-bg: rgba(11, 11, 12, 0.95);
   --header-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   --line-gold: rgba(230, 178, 62, 0.26);
   --chord: #ff8f3c;
@@ -33,8 +56,10 @@
   --brand-to: #f6d27a;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 28px -16px rgba(0, 0, 0, 0.85);
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa49a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --radius: 12px;
-  --radius-sm: 6px;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --gutter: clamp(16px, 4vw, 28px);
+  --wrap: 1040px;
   --mono: var(--font-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --sans: var(--font-sans), Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --serif: var(--font-sans), Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -46,6 +71,12 @@
   --bg-soft: #efede6;
   --bg-sunk: #e6e3d9;
   --surface: #ffffff;
+  --panel: #ffffff;
+  --panel-border: #e4dfd2;
+  --divider: #ebe7dc;
+  --hover: rgba(20, 17, 14, 0.04);
+  --field: #ffffff;
+  --field-border: #cfc8b6;
   --border: #e2ded1;
   --border-strong: #cbc5b2;
   --text: #14110e;
@@ -72,12 +103,48 @@
   color-scheme: light;
 }
 
+/* Cabeçalho, gaveta do menu e rodapé são sempre escuros (como no site da
+   INVB), inclusive no tema claro: dentro deles valem as cores do dark. */
+:root[data-theme='light'] :is(.site-header, .mobile-drawer, .site-footer) {
+  --bg: #14110e;
+  --bg-soft: #1b1712;
+  --bg-sunk: #221d17;
+  --surface: #17140f;
+  --panel: rgba(20, 20, 22, 0.55);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --divider: rgba(255, 255, 255, 0.08);
+  --hover: rgba(246, 245, 241, 0.05);
+  --field: rgba(246, 245, 241, 0.06);
+  --field-border: rgba(246, 245, 241, 0.2);
+  --border: #2b251c;
+  --border-strong: #433a2a;
+  --text: #f6f5f1;
+  --text-muted: #b9b4a8;
+  --text-faint: #8a8478;
+  --accent: #e6b23e;
+  --accent-hi: #f6d27a;
+  --accent-soft: #2a2113;
+  --on-accent: #0b0b0c;
+  --line-gold: rgba(230, 178, 62, 0.26);
+  --ok: #4ade80;
+  --danger: #ff7060;
+  --brand-from: #e6b23e;
+  --brand-to: #f6d27a;
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* Coluna que ocupa a tela inteira: o rodapé fica embaixo mesmo em páginas
+   curtas (login, "sem conexão"), sem position: fixed. */
 body {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -87,6 +154,40 @@ body {
   overflow-wrap: break-word;
 }
 
+/*
+ * A foto do louvor escurecida a 70% — a mesma de Cultos, Estudos e Primeira
+ * vez no site da INVB. Vem de uma camada `position: fixed` própria, e não de
+ * `background-attachment: fixed`: o Safari do iPhone e o Chrome do Android
+ * tratam esse valor como `scroll` e a foto subiria junto com a página.
+ * A altura é fixa (100lvh) para a foto não ser redimensionada cada vez que a
+ * barra do navegador aparece ou some. Só no tema escuro.
+ */
+:root:not([data-theme='light']) body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  z-index: -1;
+  pointer-events: none;
+  transform: translateZ(0);
+  background-color: #14110e;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    url('../assets/fundo-louvor.webp');
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
+  background-size: 100% 100%, cover;
+}
+
+/* O <option> aberto usa o fundo do <select>; translúcido, ficaria ilegível. */
+:root:not([data-theme='light']) option {
+  background: #17140f;
+  color: #f6f5f1;
+}
+
 a { color: inherit; text-decoration: none; }
 a:hover { text-decoration: none; }
 
@@ -94,68 +195,130 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 
 /* ---------------------------------------------------------------- layout */
 
+/* O conteúdo ocupa a sobra da tela e empurra o rodapé para baixo. */
+body > main {
+  flex: 1 0 auto;
+}
+
 .shell {
-  max-width: 780px;
+  width: 100%;
+  max-width: calc(var(--wrap) + 2 * var(--gutter));
   margin: 0 auto;
-  padding: 0 16px calc(56px + env(safe-area-inset-bottom));
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) calc(clamp(40px, 7vw, 72px) + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
 }
 .shell--fab {
   padding-bottom: calc(74px + env(safe-area-inset-bottom));
 }
-.shell--browse {
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+
+/* ---------- abertura das páginas (rótulo + título + texto) ---------- */
+/* Título à esquerda e o texto à direita, na mesma linha, como em Estudos e
+   Ministérios no site da INVB. Abaixo de 980px, um embaixo do outro. */
+.page-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 48px;
+  padding: clamp(32px, 6vw, 64px) 0 clamp(22px, 3.5vw, 34px);
 }
+.page-intro--action { align-items: center; }
+.page-intro__head { flex: 1 1 auto; min-width: 0; }
+
+.page-kicker {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.page-title {
+  margin: 0;
+  font-size: clamp(2.1rem, 5.4vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.page-lead {
+  flex: 0 1 auto;
+  max-width: 440px;
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.1rem);
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+@media (max-width: 980px) {
+  .page-intro {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ---------------------------------------------------------------- cabeçalho */
+/* Barra escura com fio dourado, quase opaca: legível sobre qualquer coisa que
+   passe por baixo, mesmo onde não existe backdrop-filter. */
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 30;
+  flex: none;
   background: var(--header-bg);
-  backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--line-gold);
   box-shadow: var(--header-shadow);
-  color: #f6f5f1;
+  color: var(--paper);
   padding-top: env(safe-area-inset-top);
 }
 
-/* Cabeçalho sempre escuro (como o site de referência), inclusive no tema claro. */
-:root[data-theme='light'] .site-header {
-  --bg: #14110e;
-  --bg-soft: #1b1712;
-  --bg-sunk: #221d17;
-  --surface: #17140f;
-  --border: #2b251c;
-  --border-strong: #433a2a;
-  --text: #f6f5f1;
-  --text-muted: #b9b4a8;
-  --text-faint: #8a8478;
-  --accent: #e6b23e;
-  --ok: #4ade80;
-  --danger: #ff7060;
-  --brand-from: #e6b23e;
-  --brand-to: #f6d27a;
+/* Vidro só no computador: no celular o desfoque custa caro na rolagem
+   (mesma decisão do site da INVB). E só no tema escuro: sobre o fundo claro,
+   o preto translúcido viraria cinza. */
+@media (min-width: 1025px) {
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root:not([data-theme='light']) .site-header {
+      background: rgba(11, 11, 12, 0.8);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+    }
+  }
 }
 
+/* 7,5% de cada lado, como o header da INVB. */
 .site-header__inner {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 10px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 54px;
+  gap: 28px;
+  height: var(--navbar-height);
+  padding: 0 max(7.5%, env(safe-area-inset-right)) 0 max(7.5%, env(safe-area-inset-left));
   min-width: 0;
 }
 .site-header__lead {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
   flex: 0 1 auto;
-  overflow: hidden;
 }
 
+/* Fio de progresso da rolagem, por cima do fio dourado da borda. Sem
+   transition: qualquer transição faria a barra correr atrás do scroll. */
+.site-header__scroll {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-hi));
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Vaga da barra do download (OfflineSongsDownload): fechada, não ocupa nada. */
 .site-header__progress {
   flex: 1 1 0;
   min-width: 0;
@@ -171,61 +334,112 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   pointer-events: none;
 }
 
+/* ---------- marca: símbolo + "Lyra" com "music.db" embaixo ---------- */
 .brand {
   display: flex;
   align-items: center;
+  /* O desenho do símbolo já tem uma margem própria dentro do quadrado. */
   gap: 6px;
   min-width: 0;
-  font-weight: 680;
-  letter-spacing: -0.02em;
-  font-size: 17px;
+  color: var(--paper);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
+.brand:hover .brand__text { opacity: 0.85; }
 .brand__mark {
   position: relative;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   flex: none;
   overflow: hidden;
 }
 .brand__logo {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  display: none;
   object-fit: cover;
+  /* O PNG tem um quadrado quase preto (#0b0b0d) atrás do desenho. O contraste
+     leva esse quadrado ao preto puro e o `lighten` o deixa sumir em qualquer
+     fundo escuro: só o desenho branco aparece, como a logo da INVB. */
+  filter: contrast(1.1);
+  mix-blend-mode: lighten;
 }
-:root:not([data-theme='light']) .brand__logo--dark { display: block; }
-:root[data-theme='light'] .brand__logo--light { display: block; }
-.brand__name {
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1;
+  transition: opacity 0.2s ease;
+}
+.brand__name {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 .brand__sub {
-  flex: none;
-  margin-left: 2px;
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0;
-  color: var(--text-faint);
+  margin-top: 4px;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  /* Compensa o espaçamento depois da última letra no texto centralizado. */
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: rgba(246, 245, 241, 0.78);
+  white-space: nowrap;
 }
 
-.mobile-nav {
-  display: none;
+/* ---------- links (computador) ---------- */
+.header-nav {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
   flex: none;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 2;
+}
+.header-nav__list {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
+/* Mesma linguagem do menu da INVB: caixa alta pequena e espaçada. */
+.header-nav__link {
+  position: relative;
+  display: inline-block;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(246, 245, 241, 0.78);
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.25s ease;
+}
+/* Fio dourado que nasce do centro no hover e fica na página atual. */
+.header-nav__link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s ease;
+}
+.header-nav__link:hover,
+.header-nav__link:focus-visible { color: var(--paper); }
+.header-nav__link:hover::after,
+.header-nav__link[data-active='true']::after { transform: scaleX(1); }
+.header-nav__link[data-active='true'] { color: var(--gold); }
 
+/* ---------- Tom Louvores (as cores e a tipografia são as do site deles) ---------- */
 .tom-louvores-link {
   display: flex;
   align-items: center;
@@ -234,9 +448,10 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   min-width: 0;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s ease;
 }
 .tom-louvores-link:hover {
-  opacity: 0.88;
+  opacity: 0.85;
 }
 .tom-louvores-link__img {
   display: block;
@@ -244,22 +459,14 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   width: auto;
   flex: none;
   object-fit: contain;
-  /* PNG com fundo preto: some no tema escuro, como no site Tom Louvores */
+  /* PNG com fundo preto: some no cabeçalho escuro, como no site Tom Louvores. */
   mix-blend-mode: screen;
-}
-:root[data-theme='light'] .tom-louvores-link__img {
-  mix-blend-mode: normal;
-  background: #0a0a0a;
-  border-radius: 3px;
 }
 .tom-louvores-link__sep {
   flex: none;
   width: 1px;
   height: 26px;
-  background: #2e2e2e;
-}
-:root[data-theme='light'] .tom-louvores-link__sep {
-  background: var(--border-strong);
+  background: rgba(246, 245, 241, 0.16);
 }
 .tom-louvores-link__text {
   flex: none;
@@ -272,23 +479,39 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   white-space: nowrap;
 }
 
+/* ---------- celular: hambúrguer e gaveta ---------- */
+.mobile-nav {
+  display: none;
+  flex: none;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* Três barras finas, sem caixa, com área de toque de 48px (como na INVB). */
 .mobile-nav__burger {
   position: relative;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-soft);
-  color: var(--text-muted);
+  width: 48px;
+  height: 48px;
+  margin-right: -11px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--paper);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease;
 }
-.mobile-nav__burger:hover {
-  color: var(--text);
-  border-color: var(--border-strong);
-  background: var(--bg-sunk);
+.mobile-nav__burger:active,
+.mobile-nav__burger.is-open { background: rgba(255, 255, 255, 0.06); }
+@media (hover: hover) {
+  .mobile-nav__burger:hover { background: rgba(255, 255, 255, 0.06); }
 }
 .mobile-nav__burger svg {
   transition: opacity 0.15s ease;
@@ -307,27 +530,40 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   display: none;
 }
 
-@media (max-width: 720px) {
-  .brand__sub { display: none; }
+@media (max-width: 1024px) {
+  .site-header__inner {
+    gap: 12px;
+    padding: 0 max(5%, env(safe-area-inset-right)) 0 max(5%, env(safe-area-inset-left));
+  }
+  .header-nav { display: none; }
   .mobile-nav { display: flex; }
-  .tom-louvores-link { gap: 8px; }
-  .tom-louvores-link__img { height: 24px; }
-  .tom-louvores-link__sep { height: 22px; }
-  .tom-louvores-link__text { font-size: 9px; letter-spacing: 0.1em; }
 
   .mobile-nav-scrim {
     display: block;
     position: fixed;
     inset: 0;
     z-index: 80;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.62);
+    /* Sem isto, arrastar sobre o véu rola a página por trás no iOS. */
+    touch-action: none;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+  }
+  /* Onde o filtro existe, o véu clareia para o desfoque aparecer. */
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .mobile-nav-scrim {
+      background: rgba(0, 0, 0, 0.42);
+      -webkit-backdrop-filter: blur(7px);
+      backdrop-filter: blur(7px);
+    }
   }
   .mobile-nav-scrim.is-visible {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition: opacity 0.3s ease, visibility 0s linear 0s;
   }
 
   .mobile-drawer {
@@ -339,85 +575,140 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
     bottom: 0;
     left: auto;
     z-index: 81;
-    width: min(300px, 78vw);
+    width: min(320px, 80vw);
     max-width: 100vw;
-    padding: 16px;
-    padding-top: calc(16px + env(safe-area-inset-top));
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    padding-right: max(16px, env(safe-area-inset-right));
-    background: var(--surface);
-    border-left: 1px solid var(--border);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) 0;
+    background: var(--ink);
+    border-left: 1px solid var(--line-gold);
+    box-shadow: -18px 0 40px rgba(0, 0, 0, 0.55);
+    color: var(--paper);
     transform: translateX(100%);
-    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    /* Fechada, a gaveta sai de cena só depois do deslize: sem isto a sombra
+       dela aparecia na borda direita da tela (no tema claro, bem visível). */
+    visibility: hidden;
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.32s;
     box-sizing: border-box;
     overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
-  .mobile-drawer.is-open { transform: translateX(0); }
+  .mobile-drawer.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
+  }
   .mobile-drawer.is-dragging { transition: none; }
   .mobile-drawer:not(.is-open) { pointer-events: none; }
 
+  /* Topo: rótulo dourado + X, na mesma altura da barra do cabeçalho. */
   .mobile-drawer__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 14px;
+    gap: 12px;
+    flex: none;
+    height: var(--navbar-height);
+    padding: 0 10px 0 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
   .mobile-drawer__title {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.08em;
-    color: var(--text-faint);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
   }
   .mobile-drawer__close {
     display: grid;
     place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text-muted);
+    flex: none;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--paper);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, color 0.2s ease;
   }
-  .mobile-drawer__close:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
+  .mobile-drawer__close:active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--gold);
+  }
+
+  /* Botão de destaque — o primeiro a entrar na cascata. */
+  .mobile-drawer__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: none;
+    margin: 18px 22px 0;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    opacity: 0;
+    transform: translateX(16px);
+    transition: background 0.2s ease;
+  }
+  .mobile-drawer__cta:active { background: var(--gold-hi); }
+  .mobile-drawer__cta-note {
+    flex: none;
+    margin: 8px 22px 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+    color: rgba(246, 245, 241, 0.5);
   }
 
   .mobile-drawer__nav {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-height: 0;
-    overflow: auto;
+    flex: none;
+    padding: 8px 0;
   }
 
   .mobile-drawer__item {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: 12px;
     width: 100%;
-    padding: 12px 10px;
+    min-height: 56px;
+    padding: 14px 22px;
     border: 0;
-    border-radius: 7px;
+    border-radius: 0;
     background: transparent;
-    color: inherit;
+    color: var(--paper);
     font: inherit;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
     opacity: 0;
-    transform: translateX(10px);
-    transition: background 0.15s ease;
+    transform: translateX(16px);
+    transition: background 0.2s ease, color 0.2s ease;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     box-sizing: border-box;
   }
-  .mobile-drawer.is-open .mobile-drawer__item {
-    animation: mobile-drawer-item-in 0.32s ease forwards;
-    animation-delay: calc(0.06s + (var(--stagger, 0) * 0.05s));
+  .mobile-drawer__item + .mobile-drawer__item {
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+  }
+  /* Entrada escalonada; na saída todos somem juntos. */
+  .mobile-drawer.is-open :is(.mobile-drawer__item, .mobile-drawer__cta) {
+    animation: mobile-drawer-item-in 0.28s ease forwards;
+    animation-delay: calc(0.08s + (var(--stagger, 0) * 0.05s));
   }
   @keyframes mobile-drawer-item-in {
     to {
@@ -425,9 +716,27 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
       transform: translateX(0);
     }
   }
-  .mobile-drawer__item:hover,
-  .mobile-drawer__item:focus-visible {
-    background: var(--bg-soft);
+  /* Marcador dourado à esquerda na página atual — o eco vertical do fio do
+     menu do computador. */
+  .mobile-drawer__item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--gold);
+    transform: scaleY(0);
+    transition: transform 0.25s ease;
+  }
+  .mobile-drawer__item[data-active='true'] { color: var(--gold); }
+  .mobile-drawer__item[data-active='true']::before { transform: scaleY(1); }
+  .mobile-drawer__item:active { background: rgba(255, 255, 255, 0.06); }
+  /* Janela estreita no computador: o mouse também ganha retorno. */
+  @media (hover: hover) {
+    .mobile-drawer__item:hover { background: rgba(255, 255, 255, 0.04); }
+    .mobile-drawer__close:hover { color: var(--gold); }
   }
   .mobile-drawer__item--disabled {
     cursor: default;
@@ -444,18 +753,9 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
     flex: none;
-  }
-  .mobile-drawer__item--accent .mobile-drawer__ic {
-    color: var(--accent);
-    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    margin-left: auto;
+    color: var(--gold);
   }
 
   .mobile-drawer__txt {
@@ -464,69 +764,134 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   }
   .mobile-drawer__main {
     display: block;
-    font-size: 13.5px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.25;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.2px;
+    color: inherit;
   }
   .mobile-drawer__sub {
     display: block;
-    font-size: 11px;
-    color: var(--text-faint);
-    margin-top: 1px;
-    line-height: 1.3;
+    margin-top: 2px;
+    font-size: 12.5px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: rgba(246, 245, 241, 0.55);
   }
   .mobile-drawer__tag {
     flex: none;
-    font-family: var(--mono);
     font-size: 9px;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-faint);
-    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 6px;
+    border-radius: 999px;
+    padding: 2px 8px;
   }
 
   .mobile-drawer__divider {
     height: 1px;
-    background: var(--border);
-    opacity: 0.7;
+    background: rgba(255, 255, 255, 0.08);
     margin: 8px 0;
   }
 
+  /* Pé da gaveta, empurrado para o fim, como o versículo da gaveta da INVB. */
   .mobile-drawer__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
     margin-top: auto;
-    padding-top: 12px;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-faint);
+    padding: 22px 22px calc(22px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     text-align: center;
   }
-
-  .site-header__inner {
-    gap: 8px;
-    padding: 10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
-    overflow: visible;
+  .mobile-drawer__footer-name {
+    font-size: 0.875rem;
+    font-style: italic;
+    font-weight: 400;
+    color: rgba(246, 245, 241, 0.62);
   }
-  .site-header__lead { gap: 6px; }
-  .brand { gap: 5px; font-size: 16px; }
+  .mobile-drawer__footer-version {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-indent: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .site-header__lead { gap: 8px; }
   .back-btn { margin-right: 0; }
 }
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .site-header__inner {
+    gap: 20px;
+    padding: 0 4%;
+  }
+  .header-nav__list { gap: 22px; }
+  .header-nav__link { font-size: 12px; }
+}
+
+@media (max-width: 640px) {
+  :root { --navbar-height: 64px; }
+  .brand__mark { width: 32px; height: 32px; border-radius: 8px; }
+  .brand__name { font-size: 21px; }
+  .tom-louvores-link { gap: 8px; }
+  .tom-louvores-link__img { height: 24px; }
+  .tom-louvores-link__sep { height: 22px; }
+  .tom-louvores-link__text { font-size: 9px; letter-spacing: 0.1em; }
+}
+
+/* Telas bem estreitas (iPhone SE, Androids pequenos) numa página de música:
+   voltar + marca + Tom Louvores + menu precisam caber sem se encostar. */
+@media (max-width: 380px) {
+  .site-header__inner {
+    gap: 8px;
+    padding: 0 max(4%, env(safe-area-inset-right)) 0 max(4%, env(safe-area-inset-left));
+  }
+  /* Com o botão de voltar não sobra lugar para "music.db". */
+  .site-header__lead:has(.back-btn) .brand__sub { display: none; }
+  .back-btn { width: 34px; height: 34px; }
+  .mobile-nav { gap: 8px; }
+  .tom-louvores-link { gap: 6px; }
+  .tom-louvores-link__text { font-size: 8.5px; letter-spacing: 0.08em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer,
+  .mobile-nav-scrim,
+  .header-nav__link::after,
+  .mobile-drawer__item::before {
+    transition-duration: 0.01ms;
+  }
+  .mobile-drawer.is-open :is(.mobile-drawer__item, .mobile-drawer__cta) {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+  }
+}
+
+/* ---------- controles do cabeçalho (computador) ---------- */
 
 .header-spacer { flex: 1; }
 
 .header-tools {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex: 0 0 auto;
   min-width: 0;
 }
+/* Um fio separa os links das ferramentas. */
+.header-nav + .header-tools {
+  padding-left: 24px;
+  border-left: 1px solid rgba(246, 245, 241, 0.12);
+}
 
 /* Depois de .header-tools { display:flex } — senão o flex anula o hide do mobile. */
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .header-tools {
     display: none;
   }
@@ -538,18 +903,8 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   flex: none;
   min-width: 0;
 }
-.header-slot--status { width: auto; min-width: 0; }
-.header-slot--tom-louvores { width: auto; min-width: 0; }
-.header-slot--account { width: auto; min-width: 0; max-width: 160px; }
-.header-slot--leave { width: 52px; }
-.header-slot--download { width: auto; min-width: 34px; }
-.header-slot--theme { width: 34px; }
-
-.header-ctrl--download[data-phase='running'] {
-  opacity: 0.85;
-  cursor: progress;
-  pointer-events: none;
-}
+.header-slot--tom-louvores { margin-right: 6px; }
+.header-slot--account { max-width: 160px; }
 
 .offline-download-bar {
   display: flex;
@@ -572,27 +927,28 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   min-width: 28px;
   height: 6px;
   border-radius: 999px;
-  background: var(--bg-sunk);
+  background: rgba(246, 245, 241, 0.1);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 0;
 }
 .offline-download-bar__fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--gold), var(--gold-hi));
   transition: width 0.2s ease;
 }
 .offline-download-bar__meta {
   flex: 0 1 auto;
   min-width: 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 650;
-  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(246, 245, 241, 0.78);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 .offline-download-bar__meta--ok { color: var(--ok); }
 .offline-download-bar__meta--err { color: var(--danger); }
@@ -629,32 +985,33 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
   .offline-download-bar__meta { font-size: 9.5px; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .site-header__progress:has(.offline-download-bar) {
     flex: 1 1 0;
     min-width: 64px;
   }
 }
 
+/* "Modo admin": pílula verde, discreta, ao lado dos controles. */
 .header-status {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   width: auto;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--bg-soft);
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ok) 9%, transparent);
   color: var(--text-muted);
   box-sizing: border-box;
 }
 .header-status[data-on='true'] { color: var(--ok); }
 .header-status__dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   background: var(--text-faint);
   flex: none;
@@ -666,48 +1023,65 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 .header-status__text {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: .03em;
+  letter-spacing: 1.4px;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
+/* Botões do cabeçalho em pílula, com contorno claro; o de destaque é dourado. */
 .header-ctrl {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
-  height: 34px;
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--bg-soft);
-  color: var(--text);
+  gap: 8px;
+  width: auto;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(246, 245, 241, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--paper);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   text-decoration: none;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 .header-slot--account .header-ctrl {
-  width: auto;
   max-width: 100%;
   min-width: 0;
 }
-.header-ctrl:hover { border-color: var(--border-strong); background: var(--bg-sunk); }
+.header-ctrl:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
 .header-ctrl:active { transform: translateY(1px); }
 .header-ctrl--leave {
-  font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
+  color: rgba(246, 245, 241, 0.78);
 }
-.header-ctrl--leave:hover {
-  color: var(--text);
-  border-color: var(--border-strong);
-  background: var(--bg-soft);
+/* O "Primeira vez?" da INVB, aqui: baixar as cifras para usar sem internet. */
+.header-ctrl--download {
+  padding: 0 18px;
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--ink);
+}
+.header-ctrl--download:hover {
+  border-color: var(--gold-hi);
+  background: var(--gold-hi);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+.header-ctrl--download[data-phase='running'] {
+  opacity: 0.85;
+  cursor: progress;
+  pointer-events: none;
 }
 .header-ctrl--ghost {
   visibility: hidden;
@@ -721,22 +1095,23 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 }
 
 /* ---------------------------------------------------------- botão Voltar */
+/* Círculo com contorno claro, como os ícones de redes no rodapé da INVB. */
 
 .back-btn {
   flex: none;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-soft);
-  color: var(--text-muted);
-  margin-right: 4px;
-  transition: color .15s ease, background .15s ease, border-color .15s ease;
+  border: 1px solid rgba(246, 245, 241, 0.16);
+  background: transparent;
+  color: var(--paper);
+  margin-right: 2px;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.back-btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--bg-sunk); }
+.back-btn:hover { color: var(--gold); border-color: var(--gold); }
 .back-btn:active { transform: translateY(1px); }
 .back-btn svg { display: block; }
 
@@ -744,23 +1119,30 @@ h1, h2, h3 { line-height: 1.25; margin: 0; font-weight: 650; letter-spacing: -0.
 
 .theme-toggle {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--bg-soft);
-  color: var(--text-muted);
+  border: 1px solid rgba(246, 245, 241, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--paper);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: color .15s ease, background .15s ease, border-color .15s ease;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
-.theme-toggle:hover { color: var(--accent); border-color: var(--border-strong); background: var(--bg-sunk); }
 .theme-toggle:active { transform: translateY(1px); }
-.theme-toggle svg { display: block; transition: transform .3s ease; }
-.theme-toggle:hover svg { transform: rotate(18deg); }
+.theme-toggle svg { display: block; transition: transform 0.3s ease; }
+
+@media (hover: hover) {
+  .theme-toggle:hover {
+    color: var(--ink);
+    border-color: var(--gold);
+    background: var(--gold);
+  }
+  .theme-toggle:hover svg { transform: rotate(18deg); }
+}
 
 /* Só o ícone do tema oposto aparece — a troca é feita pelo CSS. */
 .theme-toggle .tt-sun,
@@ -791,78 +1173,81 @@ svg { flex: none; }
 .key-toggle svg { opacity: .75; }
 
 /* ---------------------------------------------------------------- buttons */
+/* Os botões da INVB: pílulas — dourada cheia (principal) ou com contorno. */
 
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 10px 20px; border-radius: 999px; border: 1px solid var(--line-gold);
-  background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--text);
-  font: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 22px; border-radius: 999px; border: 1px solid var(--line-gold);
+  background: transparent; color: var(--text);
+  font: inherit; font-size: 15px; font-weight: 500; line-height: 1.2; cursor: pointer;
+  text-decoration: none; white-space: nowrap;
   transition: background .2s ease, border-color .2s ease, color .2s ease, transform .15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.btn:hover { background: var(--bg-soft); border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+.btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
 .btn:active { transform: translateY(0); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
 .btn--primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); color: var(--on-accent); }
+/* Contorno dourado e texto dourado — o "Baixar PDF" de Estudos na INVB. */
 .btn--tint {
-  font-family: var(--mono);
   font-weight: 600;
-  letter-spacing: 0.01em;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-color: var(--line-gold);
 }
 .btn--tint:hover {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: var(--accent);
   color: var(--accent);
 }
 .btn--tint.btn--sm {
-  padding: 8px 14px;
-  font-size: 12.5px;
+  padding: 9px 16px;
+  font-size: 13.5px;
 }
 .btn--ghost-mono {
-  font-family: var(--mono);
   font-weight: 600;
-  font-size: 12.5px;
-  letter-spacing: 0.01em;
+  font-size: 13.5px;
   color: var(--text-muted);
-  background: var(--surface);
-  border-color: var(--border);
-  border-radius: 6px;
+  background: transparent;
+  border-color: var(--field-border);
 }
 .btn--ghost-mono:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-soft);
-  color: var(--text-muted);
+  border-color: var(--text-muted);
+  background: var(--hover);
+  color: var(--text);
 }
 .btn--danger-tint {
-  font-family: var(--mono);
   font-weight: 600;
-  font-size: 12.5px;
-  letter-spacing: 0.01em;
+  font-size: 13.5px;
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 8%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
-  border-radius: 6px;
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
 }
 .btn--danger-tint:hover {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  border-color: var(--danger);
   color: var(--danger);
 }
 .btn--ghost { border-color: transparent; background: transparent; }
-.btn--ghost:hover { background: var(--bg-soft); }
+.btn--ghost:hover { background: var(--hover); border-color: transparent; }
 .btn--danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); background: transparent; }
-.btn--sm { padding: 6px 14px; font-size: 13.5px; border-radius: 999px; }
+.btn--sm { padding: 8px 16px; font-size: 13.5px; }
 .btn--block { width: 100%; }
 
 /* ---------------------------------------------------------------- forms */
 
-.field { display: block; margin-bottom: 16px; }
-.field__label { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.field { display: block; margin-bottom: 18px; }
+/* Rótulos dos campos: caixa alta pequena e espaçada, como os da INVB. */
+.field__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
 .field__hint { font-size: 12.5px; color: var(--text-faint); margin-top: 6px; line-height: 1.45; }
 
 .key-detect {
@@ -891,10 +1276,12 @@ svg { flex: none; }
 .key-detect__apply:hover { color: var(--text); }
 
 .input, .textarea, .select {
-  width: 100%; padding: 11px 13px; border-radius: 10px;
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  width: 100%; padding: 13px 15px; border-radius: 10px;
+  border: 1px solid var(--field-border); background: var(--field); color: var(--text);
   font: inherit; font-size: 16px; /* 16px evita zoom automático no iOS */
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
+.input::placeholder, .textarea::placeholder { color: var(--text-faint); }
 .input:focus, .textarea:focus, .select:focus {
   outline: none; border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
@@ -908,7 +1295,7 @@ svg { flex: none; }
   appearance: none;
   cursor: pointer;
   padding-right: 2.75rem;
-  background-color: var(--surface);
+  background-color: var(--field);
   background-image: var(--select-chevron);
   background-repeat: no-repeat;
   background-position: right 14px center;
@@ -919,9 +1306,9 @@ svg { flex: none; }
 .textarea--mono { font-family: var(--mono); font-size: 16px; line-height: 1.75; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
 
 .cifra-editor {
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  background: var(--surface);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius);
+  background: var(--panel);
   overflow: hidden;
   margin-bottom: 18px;
 }
@@ -935,9 +1322,9 @@ svg { flex: none; }
   justify-content: space-between;
   gap: 10px 16px;
   flex-wrap: wrap;
-  padding: 8px 10px;
-  background: var(--bg-soft);
-  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  background: var(--hover);
+  border-bottom: 1px solid var(--divider);
 }
 .cifra-editor__meta {
   display: flex;
@@ -954,9 +1341,9 @@ svg { flex: none; }
   min-width: 0;
 }
 .cifra-editor__key-label {
-  font-size: 12.5px;
-  font-weight: 750;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text-muted);
   flex: none;
@@ -965,11 +1352,11 @@ svg { flex: none; }
   width: auto;
   min-width: 196px;
   max-width: min(280px, 100%);
-  padding: 7px 2.75rem 7px 10px;
+  padding: 8px 2.75rem 8px 14px;
   font-size: 16px;
   font-family: var(--mono);
   font-weight: 650;
-  border-radius: 8px;
+  border-radius: 999px;
 }
 .cifra-editor__key-select:focus,
 .cifra-editor__capo:focus {
@@ -977,11 +1364,11 @@ svg { flex: none; }
 }
 .cifra-editor__capo {
   width: 72px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   font-size: 16px;
   font-family: var(--mono);
   font-weight: 650;
-  border-radius: 8px;
+  border-radius: 999px;
   text-align: center;
 }
 .cifra-editor__body {
@@ -989,15 +1376,16 @@ svg { flex: none; }
   border-radius: 0;
   min-height: 280px;
   box-shadow: none;
+  background: transparent;
 }
 .cifra-editor__body:focus {
   box-shadow: none;
   border-color: transparent;
 }
 .cifra-editor__status {
-  padding: 8px 12px 10px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-sunk);
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--divider);
+  background: var(--hover);
 }
 .cifra-editor__status .key-detect,
 .cifra-editor__status .field__hint {
@@ -1011,10 +1399,10 @@ svg { flex: none; }
 
 .search {
   position: relative; display: flex; align-items: center;
-  background: var(--bg-soft); border: 1px solid var(--border);
-  border-radius: 12px; padding: 0 12px;
+  background: var(--field); border: 1px solid var(--field-border);
+  border-radius: 999px; padding: 0 14px;
 }
-.search:focus-within { border-color: var(--accent); background: var(--surface); }
+.search:focus-within { border-color: var(--accent); }
 .search input {
   flex: 1; border: none; background: transparent; color: var(--text);
   font: inherit; font-size: 16px; padding: 13px 8px; outline: none; min-width: 0;
@@ -1024,12 +1412,12 @@ svg { flex: none; }
   -webkit-appearance: none;
   appearance: none;
 }
-.search__icon { color: var(--text-faint); flex: none; display: grid; place-items: center; }
+.search__icon { color: var(--accent); flex: none; display: grid; place-items: center; }
 .search__clear {
   border: none; background: transparent; color: var(--text-faint); cursor: pointer;
-  padding: 8px; display: grid; place-items: center; border-radius: 8px;
+  padding: 8px; display: grid; place-items: center; border-radius: 999px;
 }
-.search__clear:hover { color: var(--text); background: var(--bg-sunk); }
+.search__clear:hover { color: var(--text); background: var(--hover); }
 
 .search-row {
   display: flex; flex-direction: column; align-items: stretch; gap: 10px;
@@ -1042,51 +1430,51 @@ svg { flex: none; }
 }
 .filter {
   display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--text-muted); cursor: pointer;
+  font-size: 14px; color: var(--text-muted); cursor: pointer;
   user-select: none; -webkit-tap-highlight-color: transparent;
 }
-.filter[data-on='true'] { color: var(--text); font-weight: 550; }
+.filter[data-on='true'] { color: var(--text); font-weight: 600; }
 .filter input {
-  width: 15px; height: 15px; margin: 0; flex: none;
+  width: 16px; height: 16px; margin: 0; flex: none;
   accent-color: var(--accent); cursor: pointer;
 }
 
 /* -------------------------------------------------------- query panel (home) */
 
 .db-browse {
-  padding-top: 18px;
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 54px - env(safe-area-inset-top) - 12px - env(safe-area-inset-bottom));
 }
 
+/* Busca e filtros num painel de vidro, como os painéis de Estudos na INVB. */
 .query-panel {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
   overflow: hidden;
 }
+:root[data-theme='light'] .query-panel { box-shadow: var(--shadow); }
 
 .query-search {
   position: relative;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--border);
-  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--divider);
+  padding: 0 12px 0 20px;
   background: transparent;
-  transition: background 0.12s ease, box-shadow 0.12s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 .query-search:focus-within {
-  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 .query-search__icon {
   flex: none;
   display: grid;
   place-items: center;
-  color: var(--text-faint);
-  opacity: 0.85;
+  color: var(--accent);
 }
+.query-search__icon svg { width: 18px; height: 18px; }
 .query-search input {
   flex: 1;
   min-width: 0;
@@ -1095,10 +1483,11 @@ svg { flex: none; }
   outline: none;
   background: transparent;
   color: var(--text);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 16px; /* 16px evita zoom automático no iOS ao focar */
+  font-weight: 500;
   line-height: 1.4;
-  padding: 13px 10px 13px 10px;
+  padding: 19px 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   -webkit-appearance: none;
@@ -1110,32 +1499,31 @@ svg { flex: none; }
   box-shadow: none;
 }
 @media (min-width: 641px) {
-  .query-search input { font-size: 13px; }
+  .query-search input { font-size: 17px; }
 }
 @media (max-width: 640px) {
   .query-search {
-    padding: 0 8px 0 10px;
+    padding: 0 8px 0 14px;
     min-width: 0;
   }
   .query-search__icon {
     width: 18px;
   }
   .query-search input {
-    padding: 12px 6px;
+    padding: 16px 8px;
     /* Evita padding interno extra do type=search no WebKit/iOS que corta o texto */
     -webkit-appearance: none;
     appearance: textfield;
   }
   /* Placeholder menor: texto completo cabe sem reticências; input permanece 16px (sem zoom no iOS) */
   .query-search input::placeholder {
-    font-size: 12px;
-    letter-spacing: -0.02em;
+    font-size: 14px;
   }
   .query-search__clear {
     padding: 6px;
   }
 }
-.query-search input::placeholder { color: var(--text-faint); opacity: 1; }
+.query-search input::placeholder { color: var(--text-faint); opacity: 1; font-weight: 400; }
 .query-search input[type='search']::-webkit-search-cancel-button,
 .query-search input[type='search']::-webkit-search-decoration {
   -webkit-appearance: none;
@@ -1154,26 +1542,27 @@ svg { flex: none; }
   padding: 8px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 999px;
   flex: none;
 }
-.query-search__clear:hover { color: var(--text); background: var(--bg-sunk); }
+.query-search__clear:hover { color: var(--text); background: var(--hover); }
 
 .query-fields {
   display: flex;
   align-items: center;
-  gap: 12px 16px;
+  gap: 10px 20px;
   flex-wrap: wrap;
   margin: 0;
-  padding: 10px 14px;
+  padding: 12px 20px;
   border: none;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-soft);
+  border-bottom: 1px solid var(--divider);
+  background: transparent;
 }
 .query-fields__label {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: var(--text-faint);
   margin-right: 2px;
 }
@@ -1183,12 +1572,12 @@ svg { flex: none; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 14px;
+  padding: 10px 20px;
   min-height: 44px;
 }
 .query-meta--solo {
   margin-top: 14px;
-  padding: 0 2px;
+  padding: 0 4px;
   min-height: 0;
   justify-content: flex-end;
 }
@@ -1197,42 +1586,41 @@ svg { flex: none; }
   min-width: 140px;
   max-width: min(220px, 100%);
   min-height: 0;
-  padding: 7px 2.5rem 7px 10px;
-  border-radius: 6px;
-  border-color: var(--border);
-  background-color: transparent;
-  background-position: right 10px center;
+  padding: 8px 2.5rem 8px 14px;
+  border-radius: 999px;
+  border-color: var(--field-border);
+  background-color: var(--field);
+  background-position: right 12px center;
   background-size: 13px 13px;
-  font-size: 13px;
+  font-size: 14px;
   font-family: var(--sans);
-  font-weight: 400;
+  font-weight: 500;
   color: var(--text-muted);
 }
 .query-meta__select:focus {
-  background-color: var(--bg-soft);
   box-shadow: none;
 }
 
 /* Filtros do catálogo público (home) */
 .catalog-filters {
-  --h-control: 30px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-soft);
+  --h-control: 38px;
+  border-top: 0;
+  background: transparent;
 }
 .catalog-filters__toolbar {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px 18px;
+  gap: 14px 22px;
   flex-wrap: wrap;
-  padding: 12px 14px 10px;
+  padding: 16px 20px 12px;
   min-width: 0;
 }
 .catalog-filters__matrix {
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 12px 18px;
+  gap: 14px 22px;
   margin: 0;
   padding: 0;
   min-width: 0;
@@ -1249,13 +1637,12 @@ svg { flex: none; }
 }
 .catalog-filters__group-label {
   display: block;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   padding: 0;
   border: 0;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text-faint);
   line-height: 1;
@@ -1268,14 +1655,18 @@ svg { flex: none; }
   min-height: var(--h-control);
   height: var(--h-control);
 }
+/* "Todos | Com | Sem" no controle em pílula das abas da INVB (EBD | Capacitação). */
 .catalog-filters__chips {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   margin: 0;
-  padding: 0;
+  padding: 3px;
   height: var(--h-control);
   min-width: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: var(--hover);
 }
 .catalog-filters__review {
   -webkit-appearance: none;
@@ -1283,22 +1674,22 @@ svg { flex: none; }
   box-sizing: border-box;
   display: block;
   width: auto;
-  min-width: 132px;
-  max-width: 180px;
+  min-width: 140px;
+  max-width: 190px;
   height: var(--h-control);
   margin: 0;
-  padding: 0 2.25rem 0 11px;
-  border: 1px solid var(--border);
+  padding: 0 2.25rem 0 14px;
+  border: 1px solid var(--field-border);
   border-radius: 999px;
-  background-color: var(--surface);
+  background-color: var(--field);
   background-image: var(--select-chevron);
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 12px center;
   background-size: 14px 14px;
   color: var(--text-muted);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   box-shadow: none;
@@ -1306,14 +1697,14 @@ svg { flex: none; }
 .catalog-filters__review::-ms-expand { display: none; }
 .catalog-filters__review:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-color: var(--accent);
   color: var(--text);
 }
 .catalog-filters__footer {
   display: flex;
   align-items: center;
   margin: 0;
-  padding: 0 14px 12px;
+  padding: 0 20px 14px;
   min-width: 0;
 }
 .catalog-filters__footer .record-count {
@@ -1334,29 +1725,35 @@ svg { flex: none; }
   justify-content: center;
   box-sizing: border-box;
   margin: 0;
-  height: var(--h-control);
-  padding: 0 11px;
-  border: 1px solid var(--border);
+  height: 100%;
+  min-width: 58px;
+  padding: 0 14px;
+  border: 0;
   border-radius: 999px;
-  background: var(--surface);
+  background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
-}
-.catalog-chip:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .catalog-chip[data-active='true'] {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  font-weight: 650;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+@media (hover: hover) {
+  .catalog-chip:hover {
+    color: var(--text);
+    background: var(--hover);
+  }
+  .catalog-chip[data-active='true']:hover {
+    color: var(--on-accent);
+    background: var(--accent-hi);
+  }
 }
 .catalog-filters__toggle,
 .catalog-filters__clear {
@@ -1364,37 +1761,39 @@ svg { flex: none; }
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  gap: 5px;
+  gap: 6px;
   margin: 0;
   height: var(--h-control);
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 0 16px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 .catalog-filters__toggle {
-  background: var(--surface);
+  background: transparent;
   color: var(--text-muted);
 }
 .catalog-filters__clear {
   background: transparent;
   color: var(--text-muted);
+  border-color: transparent;
 }
 .catalog-filters__toggle:hover,
 .catalog-filters__toggle[data-open='true'],
-.catalog-filters__toggle[data-active='true'],
-.catalog-filters__clear:hover {
-  color: var(--text);
-  border-color: var(--border-strong);
+.catalog-filters__toggle[data-active='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .catalog-filters__clear:hover {
-  background: var(--surface);
+  color: var(--text);
+  background: var(--hover);
 }
 .catalog-filters__toggle svg,
 .catalog-filters__clear svg {
@@ -1418,21 +1817,21 @@ svg { flex: none; }
 .catalog-filters__extra {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 12px;
+  gap: 12px 14px;
   align-items: end;
-  padding: 0 14px 12px;
+  padding: 4px 20px 16px;
   min-width: 0;
 }
 .catalog-filters__field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
   min-width: 0;
 }
 .catalog-filters__label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -1440,17 +1839,17 @@ svg { flex: none; }
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
+  padding: 10px 16px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--field);
   color: var(--text);
   font: inherit;
   font-size: 16px; /* evita zoom no iOS */
   line-height: 1.3;
 }
 @media (min-width: 641px) {
-  .catalog-filters__input { font-size: 13px; }
+  .catalog-filters__input { font-size: 14px; }
 }
 .catalog-filters__input:focus {
   outline: none;
@@ -1477,22 +1876,31 @@ svg { flex: none; }
   .catalog-filters__toolbar {
     flex-direction: column;
     align-items: stretch;
-    padding: 12px 12px 8px;
+    padding: 14px 14px 10px;
   }
   .catalog-filters__matrix {
     flex-direction: column;
     align-items: stretch;
+  }
+  .catalog-filters__chips {
+    width: 100%;
+  }
+  .catalog-chip {
+    flex: 1;
   }
   .catalog-filters__actions {
     width: 100%;
     justify-content: flex-end;
   }
   .catalog-filters__footer {
-    padding: 0 12px 12px;
+    padding: 0 14px 14px;
   }
   .catalog-filters__extra {
     grid-template-columns: 1fr;
-    padding: 0 12px 12px;
+    padding: 4px 14px 14px;
+  }
+  .catalog-filters__toggle {
+    flex: 1;
   }
   .catalog-filters__clear {
     flex: 1;
@@ -1510,21 +1918,21 @@ svg { flex: none; }
   font-weight: 650;
   cursor: pointer;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
 .linkish:hover { color: var(--text); }
 
 .record-count {
   margin: 0;
-  font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--text-faint);
   white-space: nowrap;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .record-count b {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .db-foot {
@@ -1532,10 +1940,9 @@ svg { flex: none; }
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  margin-top: auto;
-  padding: 16px 2px 10px;
-  font-family: var(--mono);
-  font-size: 11px;
+  margin-top: 0;
+  padding: 16px 4px 0;
+  font-size: 12px;
   color: var(--text-faint);
   flex-wrap: nowrap;
   width: 100%;
@@ -1554,78 +1961,87 @@ svg { flex: none; }
 
 /* ---------------------------------------------------------------- lists */
 
+/* Rótulo de seção: o "kicker" dourado da INVB. */
 .section-title {
-  font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--text-faint); margin: 28px 0 10px;
+  font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--accent); margin: 36px 0 14px;
 }
 
-.song-groups { margin-top: 22px; }
+/* A lista inteira num painel de vidro, uma música por linha. */
+.song-groups {
+  margin-top: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  overflow: hidden;
+}
+:root[data-theme='light'] .song-groups { box-shadow: var(--shadow); }
 
 .song-table-head {
   display: grid;
-  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 64px 20px;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 68px 20px;
   gap: 14px;
-  padding: 0 16px 8px;
-  font-family: var(--mono);
+  padding: 14px 20px 12px;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: 2px;
   color: var(--text-faint);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--divider);
   text-transform: uppercase;
 }
 .song-table-head__key { text-align: center; }
 
-.song-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.song-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--divider); }
 .song-list--grouped { border-top: none; }
 .song-list--grouped .song-item { border-bottom: none; }
-.song-groups > section:not(:last-child) {
-  border-bottom: none;
-  padding-bottom: 0;
-}
+.song-list--grouped .song-item + .song-item { border-top: 1px solid var(--divider); }
+.song-groups > section + section { border-top: 1px solid var(--divider); }
 .letter-head {
   display: flex;
   align-items: center;
   margin: 0;
-  padding: 18px 16px 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  padding: 18px 20px 4px;
+  border-bottom: 0;
 }
-.song-groups > section:first-of-type .letter-head { padding-top: 14px; }
 .letter-head__label {
   flex: none;
-  font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 3px;
   color: var(--accent);
 }
 .song-item {
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-bottom: 1px solid var(--divider);
 }
 .song-item__link {
   display: grid;
-  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 64px 20px;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 68px 20px;
   gap: 14px;
   align-items: center;
-  padding: 14px 16px;
-  transition: background 0.12s ease;
+  padding: 15px 20px;
+  transition: background 0.2s ease;
 }
-.song-item__link:hover { background: var(--bg-soft); }
-.song-item__link:active { background: var(--bg-sunk); }
+.song-item__link:hover { background: var(--hover); }
+.song-item__link:active { background: var(--hover); }
 .song-item__title-wrap { min-width: 0; }
 .song-item__title {
-  font-weight: 550;
+  font-weight: 600;
   font-size: 16px;
-  letter-spacing: -.01em;
+  letter-spacing: -.005em;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.2s ease;
 }
+.song-item__link:hover .song-item__title { color: var(--accent-hi); }
+:root[data-theme='light'] .song-item__link:hover .song-item__title { color: var(--accent); }
 /* Biblioteca de Admin apenas: letra revisada. Nunca aplicado na página pública. */
-.song-item__title--reviewed { color: var(--ok); }
+.song-item__title--reviewed,
+.song-item__link:hover .song-item__title--reviewed { color: var(--ok); }
 .song-item__draft { margin-left: 8px; font-size: 11px; vertical-align: 1px; }
 .song-item__artist {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text-muted);
   line-height: 1.3;
   overflow: hidden;
@@ -1636,157 +2052,171 @@ svg { flex: none; }
 .song-item__artist--col { min-width: 0; }
 .song-item__snippet { font-size: 13.5px; color: var(--text-faint); margin-top: 4px; line-height: 1.45; white-space: normal; }
 .song-item__snippet mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border-radius: 3px; padding: 0 2px; }
+/* O tom em pílula dourada translúcida — o selo do "Próximo culto" da INVB. */
 .song-item__key {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  font-family: var(--mono);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   white-space: nowrap;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-  border-radius: 4px;
-  padding: 4px 0;
-  line-height: 1.35;
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid var(--line-gold);
+  border-radius: 999px;
+  padding: 5px 0;
+  line-height: 1.3;
 }
-.song-item__key--empty {
+:root[data-theme='light'] .song-item__key { color: var(--accent); }
+.song-item__key--empty,
+:root[data-theme='light'] .song-item__key--empty {
   color: var(--text-faint);
   background: transparent;
-  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  border-color: var(--divider);
   font-weight: 400;
 }
 .song-item__chevron {
   display: flex;
   justify-content: center;
   color: var(--text-faint);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.song-item__link:hover .song-item__chevron {
+  color: var(--accent);
+  transform: translateX(2px);
 }
 
 @media (max-width: 640px) {
   .song-table-head {
     grid-template-columns: minmax(0, 1fr) 56px 16px;
-    padding: 0 12px 8px;
-    font-size: 11px;
+    padding: 12px 14px 10px;
   }
   .song-table-head__artist { display: none; }
   .song-item__link {
     grid-template-columns: minmax(0, 1fr) 56px 16px;
     gap: 10px;
-    padding: 13px 12px;
+    padding: 14px;
   }
   .song-item__title { font-size: 15.5px; }
   .song-item__artist { font-size: 13px; }
   .song-item__key { font-size: 12.5px; }
   .song-item__artist--col { display: none; }
   .song-item__artist--nested { display: block; }
-  .letter-head { padding: 16px 12px 6px; }
-  .letter-head__label { font-size: 12px; }
+  .letter-head { padding: 16px 14px 4px; }
   .db-foot {
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    font-size: 10px;
-    padding: 14px 0 8px;
+    font-size: 11px;
+    padding: 14px 2px 0;
   }
+  /* No celular "Campos" vai para cima das caixas, como "Cifra" e "Letra"
+     logo abaixo: as três caixas cabem numa linha até em telas de 360px. */
   .query-fields {
-    gap: 8px 10px;
-    padding: 10px 12px;
+    gap: 10px 16px;
+    padding: 14px;
   }
-  .query-fields__label { font-size: 9.5px; }
+  .query-fields__label {
+    flex-basis: 100%;
+    margin: 0;
+  }
   .query-fields .filter {
-    font-size: 12px;
-    gap: 5px;
-  }
-  .query-fields .filter input {
-    width: 14px;
-    height: 14px;
+    font-size: 13.5px;
+    gap: 6px;
   }
 }
 
 .empty {
-  text-align: center; padding: 44px 20px; color: var(--text-muted);
-  border: 1px dashed var(--border-strong); border-radius: var(--radius); margin-top: 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-align: center; padding: 48px 24px; color: var(--text-muted);
+  border: 1px solid var(--panel-border); border-radius: var(--radius);
+  background: var(--panel); margin-top: 18px;
 }
 .query-panel + .empty { margin-top: 18px; }
-.empty strong { display: block; color: var(--text); margin-bottom: 5px; font-size: 16px; }
+.empty strong { display: block; color: var(--text); margin-bottom: 4px; font-size: 18px; font-weight: 600; }
 
 /* ---------------------------------------------------------------- song page */
+/* Abertura da música como a das páginas da INVB: o caminho vira o rótulo
+   dourado, o título vem grande e os dados ficam embaixo, sobre um fio dourado. */
 
-.song-head { padding: 22px 0 8px; }
+.song-head { padding: clamp(32px, 6vw, 60px) 0 4px; }
 .song-crumb {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0;
-  margin: 0 0 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-faint);
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
   line-height: 1.4;
 }
 .song-crumb a {
-  color: var(--text-faint);
+  color: var(--accent);
   text-decoration: none;
+  transition: color 0.2s ease;
 }
-.song-crumb a:hover { color: var(--text-muted); }
+.song-crumb a:hover { color: var(--accent-hi); }
 .song-crumb__sep {
-  margin: 0 6px;
-  color: color-mix(in srgb, var(--text-faint) 55%, transparent);
+  margin: 0 10px;
+  color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
-.song-crumb__current { color: var(--text-muted); }
+.song-crumb__current { color: var(--text-faint); }
 
-.song-head__row { display: flex; align-items: flex-start; gap: 12px; }
+.song-head__row { display: flex; align-items: flex-start; gap: 16px; }
 .song-head__text { min-width: 0; flex: 1; }
-.song-head__row > .icon-btn { flex: none; }
+.song-head__row > .icon-btn { flex: none; margin-top: 6px; }
 .song-head__title {
-  font-family: var(--serif);
-  font-size: 26.5px;
+  font-family: var(--sans);
+  font-size: clamp(2.1rem, 5.4vw, 3.4rem);
   font-weight: 700;
-  letter-spacing: -.02em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.08;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
 }
 
 .song-meta {
   display: flex;
-  gap: 22px;
+  gap: 32px;
   flex-wrap: wrap;
-  margin-top: 14px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  margin-top: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line-gold);
 }
 .song-meta__field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 .song-meta__k {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: var(--text-faint);
 }
 .song-meta__v {
-  font-size: 13.5px;
-  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .song-meta__v--key {
-  font-family: var(--mono);
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 700;
+  color: var(--accent-hi);
 }
+:root[data-theme='light'] .song-meta__v--key { color: var(--accent); }
 
-.song-head__meta { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 12px; }
+.song-head__meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
 .song-youtube {
-  margin-top: 14px;
+  margin-top: 16px;
   max-width: 100%;
 }
 .song-youtube__toolbar {
@@ -1801,6 +2231,7 @@ svg { flex: none; }
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: var(--radius);
+  border: 1px solid var(--panel-border);
   background: #000;
 }
 .song-youtube__frame iframe {
@@ -1812,11 +2243,13 @@ svg { flex: none; }
 }
 
 .chip {
-  font-size: 12.5px; color: var(--text-muted); background: var(--bg-soft);
-  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 10px; white-space: nowrap;
+  font-size: 13px; color: var(--text-muted); background: var(--hover);
+  border: 1px solid var(--panel-border); border-radius: 999px; padding: 4px 12px; white-space: nowrap;
 }
+.chip--link { transition: color 0.2s ease, border-color 0.2s ease; }
+.chip--link:hover { color: var(--accent); border-color: var(--line-gold); }
 button.chip {
-  font: inherit; font-size: 12.5px; line-height: inherit;
+  font: inherit; font-size: 13px; line-height: inherit;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 button.chip[data-active='true'] {
@@ -1826,111 +2259,119 @@ button.chip[data-active='true'] {
 
 .tabs {
   display: flex; gap: 6px; align-items: center;
-  position: sticky; top: calc(54px + env(safe-area-inset-top)); z-index: 20;
+  position: sticky; top: calc(var(--navbar-height) + env(safe-area-inset-top)); z-index: 20;
   background: var(--bg);
   padding: 8px 0 10px;
 }
-.tab {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 88px; padding: 8px 14px;
-  font: inherit; font-size: 14.5px; font-weight: 600;
-  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--text-muted);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.tab[data-active='true'] {
-  background: var(--chord); border-color: var(--chord); color: var(--on-chord);
-}
 
-.seg {
+/* Letra | Cifra e Teclado | Violão: o controle em pílula das abas da INVB,
+   com a aba aberta cheia de dourado. */
+.seg,
+.instrument-tabs {
   display: inline-flex;
   align-items: center;
   flex: none;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 6px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--hover);
+  border: 1px solid var(--panel-border);
 }
-.seg__item {
+.seg__item,
+.tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 64px;
-  padding: 6px 14px;
-  border-radius: 5px;
+  gap: 6px;
+  min-width: 72px;
+  min-height: 36px;
+  padding: 0 18px;
+  border-radius: 999px;
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
   color: var(--text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
-.seg__item[data-active='true'] {
-  background: color-mix(in srgb, var(--accent) 55%, #8a6d3a);
+.seg__item[data-active='true'],
+.tab[data-active='true'] {
+  background: var(--accent);
   color: var(--on-accent);
-  font-weight: 600;
+}
+@media (hover: hover) {
+  .seg__item:hover,
+  .tab:hover {
+    background: var(--hover);
+    color: var(--text);
+  }
+  .seg__item[data-active='true']:hover,
+  .tab[data-active='true']:hover {
+    background: var(--accent-hi);
+    color: var(--on-accent);
+  }
 }
 .seg--3 .seg__item {
-  min-width: 52px;
-  padding: 6px 10px;
+  min-width: 56px;
+  padding: 0 12px;
 }
 
 .instrument-tabs {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 10px 0 2px;
+  margin: 14px 0 2px;
 }
 
+/* Painel de controles da leitura, de vidro como os painéis da INVB. */
 .control-panel {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
   padding: 0;
-  margin: 20px 0 8px;
+  margin: 26px 0 8px;
   /* visible: o seletor de tom abre abaixo do card */
   overflow: visible;
 }
+:root[data-theme='light'] .control-panel { box-shadow: var(--shadow); }
 .control-panel__row {
   display: flex;
   align-items: center;
   min-width: 0;
-  padding: 12px 16px;
+  padding: 12px 18px;
   overflow: visible;
 }
 .control-panel__row--a {
   flex-wrap: nowrap;
   justify-content: space-between;
   gap: 8px;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 .control-panel__row--b {
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--divider);
   margin-top: 0;
   padding-top: 12px;
-  background: var(--bg-soft);
-  border-radius: 0 0 8px 8px;
+  background: transparent;
+  border-radius: 0 0 var(--radius) var(--radius);
   overflow: visible;
 }
 .control-panel__actions {
   display: flex;
   align-items: center;
   flex: none;
-  gap: 6px;
+  gap: 8px;
 }
 .control-block {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 0 1 auto;
   min-width: 0;
   flex-wrap: nowrap;
@@ -1939,10 +2380,9 @@ button.chip[data-active='true'] {
   margin-left: auto;
 }
 .control-label {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text-faint);
   white-space: nowrap;
@@ -1953,53 +2393,65 @@ button.chip[data-active='true'] {
   gap: 6px;
   flex-wrap: nowrap;
 }
+/* Play da rolagem automática: o círculo dourado cheio. */
 .play-btn {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--accent) 14%, var(--bg));
-  color: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   cursor: pointer;
   flex: none;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
+.play-btn:hover { background: var(--accent-hi); }
 .play-btn:active { transform: translateY(1px); }
 .size-btn {
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--bg);
+  min-width: 36px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: transparent;
   color: var(--text-muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
+.size-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .size-btn:active { transform: translateY(1px); }
 .size-btn:disabled { opacity: .35; cursor: default; }
 .size-btn:disabled:active { transform: none; }
 .control-panel .toolbar__size {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  font-weight: 400;
-  color: var(--text-faint);
-  min-width: 32px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 40px;
 }
 
 .keybar { margin: 16px 0 4px; position: relative; }
-.keybar__label { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+/* "Acordes usados neste tom": rótulo dourado de seção. */
+.keybar__label {
+  margin: 26px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 .control-panel .keybar {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
   flex: 0 1 auto;
   /* static: o picker ancora no .control-panel, não no chip */
@@ -2008,7 +2460,7 @@ button.chip[data-active='true'] {
   overflow: visible;
 }
 .control-panel .keybar__label {
-  margin-bottom: 0;
+  margin: 0;
   text-transform: none;
   letter-spacing: 0;
   font-size: 12px;
@@ -2019,7 +2471,7 @@ button.chip[data-active='true'] {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% + 12px);
+  top: calc(100% + 10px);
   z-index: 50;
   width: 100%;
   max-width: none;
@@ -2031,9 +2483,9 @@ button.chip[data-active='true'] {
   box-sizing: border-box;
   width: 2.75rem; min-width: 2.75rem; max-width: 2.75rem; flex: 0 0 2.75rem;
   text-align: center; white-space: nowrap;
-  font-family: var(--mono); font-size: 14.5px; font-weight: 600;
-  padding: 8px 4px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  font-size: 14.5px; font-weight: 700;
+  padding: 8px 4px; border-radius: 999px;
+  border: 1px solid var(--field-border); background: transparent; color: var(--text);
   transition: background-color .16s ease, border-color .16s ease, color .16s ease;
 }
 .key-chip__label {
@@ -2044,26 +2496,29 @@ button.chip[data-active='true'] {
 }
 .key-chip--trigger {
   cursor: pointer;
-  width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem; flex: 0 0 4.25rem;
+  width: 4.75rem; min-width: 4.75rem; max-width: 4.75rem; flex: 0 0 4.75rem;
 }
 .key-chip--trigger svg { transition: transform .16s ease; }
 .key-chip--trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
-.key-chip[data-active='true'] { background: var(--key-badge-bg); border-color: var(--key-badge-bg); color: var(--key-badge-fg); font-weight: 700; }
+.key-chip[data-active='true'] { background: var(--key-badge-bg); border-color: var(--key-badge-bg); color: var(--key-badge-fg); }
+/* O tom atual: pílula dourada translúcida, como o "Próximo culto" da INVB. */
 .key-chip--field,
 .key-chip--field[data-active='true'] {
   width: auto;
   min-width: 0;
   max-width: none;
   flex: none;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid var(--line-gold);
 }
+:root[data-theme='light'] .key-chip--field { color: var(--accent); }
+.key-chip--field:hover { border-color: var(--accent); }
 .key-chip--field .key-chip__label {
   width: auto;
   min-width: 0;
@@ -2071,21 +2526,24 @@ button.chip[data-active='true'] {
 
 .key-picker {
   margin-top: 8px;
-  background: var(--bg-sunk);
-  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border: 1px solid var(--line-gold);
   border-radius: var(--radius);
-  padding: 10px;
-  box-shadow: var(--shadow);
+  padding: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   max-width: 420px;
 }
-.key-picker__bar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+:root[data-theme='light'] .key-picker { box-shadow: var(--shadow); }
+.key-picker__bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .key-picker__step {
   flex: 1; min-width: 0;
-  font: inherit; font-size: 13px; font-weight: 600;
-  padding: 8px 6px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  font: inherit; font-size: 13.5px; font-weight: 600;
+  padding: 9px 8px; border-radius: 999px;
+  border: 1px solid var(--field-border); background: transparent; color: var(--text);
   cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
+.key-picker__step:hover { border-color: var(--accent); color: var(--accent); }
 .key-picker__grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2093,14 +2551,16 @@ button.chip[data-active='true'] {
 }
 .key-picker__cell {
   display: grid; place-items: center;
-  min-height: 40px; padding: 6px 2px;
-  font-family: var(--mono); font-size: 13.5px; font-weight: 600;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
-  border-radius: var(--radius-sm);
+  min-height: 42px; padding: 6px 2px;
+  font-size: 14px; font-weight: 700;
+  border: 1px solid var(--panel-border); background: var(--hover); color: var(--text-muted);
+  border-radius: 10px;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
-button.key-picker__cell { font: inherit; cursor: pointer; }
+button.key-picker__cell { font: inherit; font-weight: 700; cursor: pointer; }
+button.key-picker__cell:hover { border-color: var(--line-gold); color: var(--text); }
 .key-picker__cell[data-active='true'] {
-  background: var(--text); border-color: var(--text); color: var(--bg);
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
 }
 
 /* Etiquetas dos acordes usados — informativas, não clicáveis, mas legíveis. */
@@ -2111,14 +2571,14 @@ button.key-picker__cell { font: inherit; cursor: pointer; }
   color: var(--chord);
   background: var(--chord-soft);
   border: 1px solid color-mix(in srgb, var(--chord) 30%, transparent);
-  border-radius: var(--radius-sm);
-  padding: 4px 10px;
+  border-radius: 999px;
+  padding: 4px 12px;
   white-space: nowrap;
 }
 
 .toolbar {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 6px;
+  padding: 10px 0; border-bottom: 1px solid var(--divider); margin-bottom: 6px;
 }
 .toolbar__group { display: flex; align-items: center; gap: 4px; }
 .toolbar__size {
@@ -2127,23 +2587,38 @@ button.key-picker__cell { font: inherit; cursor: pointer; }
   color: var(--text-muted);
 }
 .toolbar__spacer { flex: 1; }
+/* Botões só de ícone: círculo com contorno, como os ícones do rodapé da INVB. */
 .icon-btn {
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-muted);
-  border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center;
+  border: 1px solid var(--field-border); background: transparent; color: var(--text-muted);
+  border-radius: 999px; width: 38px; height: 38px; display: grid; place-items: center;
   cursor: pointer; font-size: 14px; font-weight: 600; padding: 0;
   -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
-.icon-btn[data-active='true'] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.icon-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.icon-btn[data-active='true'],
+.icon-btn[data-active='true']:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .icon-btn:active { transform: translateY(1px); }
 .icon-btn:disabled { opacity: .35; cursor: default; }
 .icon-btn:disabled:active { transform: none; }
 
-:is(.icon-btn, .play-btn, .size-btn, .seg__item, .tab, .key-chip, .key-picker__step, .key-picker__cell, .theme-toggle, .back-btn, .playlist-fab, .header-ctrl, .playlist-move__btn, .slides-source__link, .slides-source__restore, .slides-publish__btn, .song-item__link, .query-meta__select):focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+:is(.icon-btn, .play-btn, .size-btn, .seg__item, .tab, .key-chip, .key-picker__step, .key-picker__cell, .theme-toggle, .back-btn, .playlist-fab, .header-ctrl, .header-nav__link, .playlist-move__btn, .slides-source__link, .slides-source__restore, .slides-publish__btn, .song-item__link, .query-meta__select, .catalog-chip, .catalog-filters__toggle, .catalog-filters__clear, .btn, .brand, .site-footer a, .site-footer__top, .mobile-drawer__item, .mobile-drawer__cta, .mobile-drawer__close, .mobile-nav__burger):focus-visible {
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 3px;
 }
 
 /* ---------------------------------------------------------------- chord sheet */
+/* A cifra e a letra num painel de vidro: legíveis sobre a foto de fundo. */
+
+.sheet,
+.lyrics {
+  margin: 14px 0 6px;
+  padding: clamp(20px, 3.2vw, 32px) clamp(18px, 3.2vw, 34px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+:root[data-theme='light'] :is(.sheet, .lyrics) { box-shadow: var(--shadow); }
 
 .sheet {
   font-family: var(--mono);
@@ -2151,7 +2626,6 @@ button.key-picker__cell { font: inherit; cursor: pointer; }
   line-height: 1.75;
   white-space: pre;
   overflow-x: auto;
-  padding: 18px 0 26px;
   -webkit-overflow-scrolling: touch;
   tab-size: 4;
   contain: layout;
@@ -2166,39 +2640,56 @@ button.key-picker__cell { font: inherit; cursor: pointer; }
   margin-bottom: 0.35em;
   white-space: normal;
 }
-.sheet__section:first-child { margin-top: 0.6em; }
+.sheet__section:first-child { margin-top: 0.2em; }
+/* Marcadores de seção ([Refrão]) como os rótulos dourados da INVB. */
 .sheet__section-chip {
   display: inline-flex;
   align-items: center;
-  font-family: var(--mono);
-  font-size: 0.78em;
+  font-family: var(--sans);
+  font-size: 0.72em;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 88%, var(--text));
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-  border-radius: 4px;
-  padding: 2px 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid var(--line-gold);
+  border-radius: 999px;
+  padding: 3px 12px;
   line-height: 1.35;
 }
 
+/* Letra em Montserrat, um pouco maior que a cifra: é texto corrido, não
+   precisa alinhar coluna com acorde. O zoom continua valendo. */
 .lyrics {
-  font-family: var(--mono);
-  font-size: var(--sheet-size, 15px);
+  font-family: var(--sans);
+  font-size: calc(var(--sheet-size, 15px) + 2px);
   font-weight: 400;
-  line-height: 1.75;
+  line-height: 1.85;
   letter-spacing: 0;
   white-space: pre-wrap;
-  padding: 18px 0 26px;
+}
+
+/* No celular o painel vai de borda a borda: a cifra não perde largura e não
+   rola de lado mais do que já rolava. */
+@media (max-width: 640px) {
+  .sheet,
+  .lyrics {
+    margin-left: calc(-1 * var(--gutter));
+    margin-right: calc(-1 * var(--gutter));
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
 }
 
 .notice {
-  font-size: 13px; color: var(--text-muted); background: var(--bg-soft);
-  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 14px;
+  font-size: 14px; color: var(--text-muted); background: var(--panel);
+  border: 1px solid var(--panel-border); border-radius: 12px; padding: 12px 16px; margin-top: 14px;
 }
 .hint {
-  font-size: 11px; color: var(--text-muted); margin-top: 14px;
+  font-size: 12.5px; color: var(--text-faint); margin-top: 14px;
 }
 .notice--warn {
   color: var(--chord); background: var(--chord-soft);
@@ -2552,107 +3043,82 @@ html:has(.slides-page) .shell {
   }
 }
 
+
 /* ---------------------------------------------------------------- admin */
 
+/* Faixa do modo admin, logo abaixo do cabeçalho: rótulo dourado. */
 .admin-bar {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  font-family: var(--mono);
+  flex: none;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border-bottom: 1px solid var(--line-gold);
   font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   color: var(--accent);
 }
 .admin-bar__inner {
-  max-width: 780px; margin: 0 auto; padding: 8px 16px;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  max-width: calc(var(--wrap) + 2 * var(--gutter)); margin: 0 auto; padding: 10px var(--gutter);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .admin-bar__dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
   flex: none;
 }
 
+/* Cabeçalho do editor no tamanho dos títulos de página. */
 .song-editor__head {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px 0 10px;
-  margin-bottom: 4px;
+  flex-wrap: wrap;
+  padding: clamp(32px, 6vw, 60px) 0 clamp(20px, 3vw, 28px);
+  margin-bottom: 0;
 }
 .song-editor__title {
-  font-size: 21px;
-  font-weight: 600;
+  font-size: clamp(1.7rem, 4.6vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.08;
   letter-spacing: -0.01em;
   margin: 0;
 }
 .song-editor__panel {
-  border-radius: 8px;
-  padding: 22px;
-  box-shadow: none;
-}
-.song-editor__panel .field__label {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  margin-bottom: 7px;
+  border-radius: var(--radius);
+  padding: clamp(18px, 3vw, 26px);
 }
 .song-editor__panel .input {
-  padding: 10px 12px;
-  border-radius: 6px;
-  border-color: var(--border);
-  background: var(--bg);
   font-size: 16px;
 }
 @media (min-width: 481px) {
-  .song-editor__panel .input { font-size: 13.5px; }
-  .song-editor__panel .input--mono { font-size: 13px; }
-}
-.song-editor__panel .input:focus {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  box-shadow: none;
+  .song-editor__panel .input { font-size: 15px; }
+  .song-editor__panel .input--mono { font-size: 13.5px; }
 }
 .song-editor__panel .field:last-of-type { margin-bottom: 0; }
-.song-editor .field__label {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
 .song-editor__toggle {
-  margin-top: 22px;
-}
-.song-editor__toggle .seg {
-  border-radius: 7px;
-  padding: 3px;
+  margin-top: 24px;
 }
 .song-editor__toggle .seg__item {
-  padding: 7px 18px;
+  padding: 0 20px;
 }
 
 .chk-row {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   margin-top: 20px;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 .chk-row__box {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid #3a3a3a;
-  background: var(--bg);
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--field-border);
+  background: var(--field);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2660,63 +3126,65 @@ html:has(.slides-page) .shell {
   color: var(--on-accent);
 }
 .chk-row[data-on='true'] .chk-row__box {
-  background: color-mix(in srgb, var(--accent) 45%, #6b5428);
+  background: var(--accent);
   border-color: var(--accent);
 }
 .chk-row__box svg { display: block; }
 .chk-row__label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 .chk-row:focus-within .chk-row__box {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-:root[data-theme='light'] .chk-row__box {
-  border-color: var(--border-strong);
-}
-:root[data-theme='light'] .chk-row[data-on='true'] .chk-row__box {
-  background: color-mix(in srgb, var(--accent) 70%, #1e3a8a);
-  border-color: var(--accent);
-  color: #fff;
-}
 
+/* Painel de vidro, cantos de 14px — o cartão padrão da INVB. */
 .card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+  background: var(--panel); border: 1px solid var(--panel-border);
+  border-radius: var(--radius); padding: 20px;
 }
+:root[data-theme='light'] .card { box-shadow: var(--shadow); }
 
 .keys-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
 .key-toggle {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 10px 6px; border-radius: 10px; border: 1px solid var(--border-strong);
-  background: var(--surface); font-family: var(--mono); font-size: 14px; font-weight: 600;
+  padding: 10px 6px; border-radius: 999px; border: 1px solid var(--field-border);
+  background: transparent; font-family: var(--mono); font-size: 14px; font-weight: 600;
   cursor: pointer; user-select: none; color: var(--text);
 }
 .key-toggle[data-on='true'] { border-color: var(--key-badge-bg); background: var(--key-badge-bg); color: var(--key-badge-fg); }
 .key-toggle[data-base='true'] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); cursor: default; }
 
-.alert { border-radius: 10px; padding: 11px 13px; font-size: 14px; margin-bottom: 14px; }
+.alert { border-radius: 12px; padding: 12px 15px; font-size: 14px; margin-bottom: 14px; }
 .alert--error { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
 .alert--ok { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
 
 .dialog-backdrop {
   position: fixed; inset: 0; z-index: 80;
-  background: color-mix(in srgb, #000 45%, transparent);
+  background: rgba(0, 0, 0, 0.55);
   display: grid; place-items: center; padding: 20px;
 }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dialog-backdrop {
+    background: rgba(0, 0, 0, 0.42);
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+  }
+}
 .dialog {
-  width: min(100%, 360px);
+  width: min(100%, 380px);
   background: var(--surface); color: var(--text);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--line-gold);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px 18px 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  padding: 24px 22px 20px;
   text-align: center;
 }
-.dialog strong { display: block; font-size: 17px; margin-bottom: 6px; }
-.dialog p { margin: 0 0 16px; font-size: 14.5px; color: var(--text-muted); }
-.dialog .btn { min-width: 96px; }
+:root[data-theme='light'] .dialog { box-shadow: 0 24px 60px rgba(16, 24, 40, 0.18); }
+.dialog strong { display: block; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.dialog p { margin: 0 0 18px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
+.dialog .btn { min-width: 104px; }
 .dialog--error {
   border-color: color-mix(in srgb, var(--danger) 45%, var(--border-strong));
   border-top: 3px solid var(--danger);
@@ -2745,14 +3213,13 @@ html:has(.slides-page) .shell {
 
 .sticky-actions {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  margin-top: 18px;
+  margin-top: 22px;
   padding: 0 0 calc(8px + env(safe-area-inset-bottom));
 }
 .sticky-actions .btn {
   flex: none;
-  padding: 9px 16px;
-  font-size: 12.5px;
-  border-radius: 6px;
+  padding: 11px 20px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .sticky-actions__end {
@@ -2763,129 +3230,131 @@ html:has(.slides-page) .shell {
 }
 
 .muted { color: var(--text-muted); }
-.small { font-size: 13px; }
+.small { font-size: 13.5px; }
 .center { text-align: center; }
 .stack > * + * { margin-top: 14px; }
 
 .login-wrap { max-width: 380px; margin: 8vh auto 0; padding: 0 16px; }
 
+/* ---------- login: a abertura da INVB sobre um painel de vidro ---------- */
 .auth-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 auto;
-  min-height: calc(100dvh - 54px - env(safe-area-inset-top));
-  padding: 40px 20px calc(40px + env(safe-area-inset-bottom));
+  flex: 1 0 auto;
+  padding: clamp(32px, 7vw, 72px) var(--gutter) calc(clamp(40px, 7vw, 72px) + env(safe-area-inset-bottom));
 }
 .auth-box {
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
 }
 .auth-label {
-  margin: 0 0 10px;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 .auth-title {
-  margin: 0 0 6px;
-  font-family: var(--serif);
-  font-size: 26px;
+  margin: 0 0 10px;
+  font-family: var(--sans);
+  font-size: clamp(2.1rem, 5.4vw, 2.9rem);
   font-weight: 700;
+  line-height: 1.05;
   letter-spacing: -0.01em;
   color: var(--text);
 }
 .auth-subtitle {
-  margin: 0 0 22px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-faint);
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
 }
 .auth-panel {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  padding: 22px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 26px;
 }
+:root[data-theme='light'] .auth-panel { box-shadow: var(--shadow); }
 .auth-field {
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .auth-field:last-of-type { margin-bottom: 0; }
 .auth-field__label {
   display: block;
-  margin-bottom: 7px;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: var(--text-faint);
 }
 .auth-field__input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
+  padding: 13px 15px;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--field);
   color: var(--text);
   font: inherit;
   font-size: 16px; /* evita zoom no iOS */
   outline: none;
-  transition: border-color 0.12s ease;
-}
-@media (min-width: 481px) {
-  .auth-field__input { font-size: 13.5px; }
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .auth-field__input::placeholder { color: var(--text-faint); }
 .auth-field__input:focus {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  box-shadow: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
+/* O botão dourado cheio da INVB. */
 .auth-submit {
   display: block;
   width: 100%;
-  margin-top: 20px;
-  padding: 11px 0;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-  font-family: var(--mono);
-  font-size: 13px;
+  margin-top: 24px;
+  padding: 14px 0;
+  border-radius: 999px;
+  border: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--sans);
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  transition: background 0.2s ease, transform 0.15s ease, opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 .auth-submit:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: var(--accent-hi);
+  transform: translateY(-1px);
 }
 .auth-submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 .auth-submit:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 3px;
 }
 .auth-footnote {
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   text-align: center;
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: var(--text-faint);
 }
-.auth-panel .alert { margin-bottom: 14px; }
+.auth-panel .alert { margin-bottom: 16px; }
 
 @media (max-width: 480px) {
   .auth-wrap {
     align-items: flex-start;
-    min-height: 0;
-    padding: 24px 16px calc(32px + env(safe-area-inset-bottom));
   }
-  .auth-panel { padding: 18px; }
-  .auth-title { font-size: 24px; }
+  .auth-panel { padding: 20px; }
 }
 
 /* ---------------------------------------------------------------- playlist */
@@ -3149,42 +3618,184 @@ html:has(.slides-page) .shell {
   margin-left: auto;
 }
 
-@media (min-width: 640px) {
-  .song-head__title { font-size: 28px; }
-}
-
 @media (max-width: 640px) {
-  .song-meta { gap: 16px; }
-  .song-head__title { font-size: 22px; white-space: normal; }
+  .song-meta { gap: 18px 24px; }
   .control-panel__row { flex-wrap: wrap; gap: 10px; }
 }
 
 @media (max-width: 479px) {
-  .control-panel__row { padding: 10px 12px; }
+  .control-panel__row { padding: 10px 14px; }
   .control-panel__row--a { gap: 6px; }
-  .control-panel__row--b { gap: 6px 10px; }
-  .control-panel__actions { gap: 4px; }
-  .seg__item { min-width: 56px; padding: 5px 10px; font-size: 13px; }
-  .seg--3 .seg__item { min-width: 0; flex: 1; padding: 5px 8px; font-size: 12.5px; }
-  .play-btn { width: 32px; height: 32px; }
-  .icon-btn { width: 32px; height: 32px; }
-  .size-btn { height: 26px; min-width: 26px; }
-  .toolbar__size { min-width: 3.1em; font-size: 11px; }
+  .control-panel__row--b { gap: 8px 10px; }
+  .control-panel__actions { gap: 6px; }
+  .seg__item { min-width: 60px; padding: 0 14px; font-size: 13.5px; }
+  .seg--3 .seg__item { min-width: 0; flex: 1; padding: 0 10px; font-size: 13px; }
+  .play-btn { width: 36px; height: 36px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .size-btn { height: 30px; min-width: 32px; }
+  .toolbar__size { min-width: 3.1em; font-size: 11.5px; }
 }
 
+/* ---------------------------------------------------------------- rodapé */
+/* O rodapé do site da INVB: fundo preto, fio dourado em cima, títulos das
+   colunas em dourado. Igual nos dois temas. */
+
+.site-footer {
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+  background: #000;
+  border-top: 1px solid rgba(230, 178, 62, 0.26);
+  color: var(--paper);
+}
+
+.site-footer__wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-top: clamp(40px, 6vw, 64px);
+}
+
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 40px 48px;
+}
+
+.brand--footer .brand__mark { width: 44px; height: 44px; border-radius: 11px; }
+.brand--footer .brand__name { font-size: 28px; }
+.brand--footer .brand__sub { font-size: 9.5px; margin-top: 5px; }
+.brand--footer { width: fit-content; }
+
+.site-footer__lema {
+  max-width: 280px;
+  margin: 18px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.site-footer__col h2 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: var(--gold);
+}
+
+.site-footer__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer__list a {
+  font-size: 15px;
+  line-height: 1.4;
+  color: rgba(246, 245, 241, 0.74);
+  transition: color 0.2s ease;
+}
+
+.site-footer__base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: clamp(36px, 5vw, 56px);
+  padding: 20px 0 max(20px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.site-footer__base p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.site-footer__top {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: rgba(246, 245, 241, 0.74);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .site-footer__list a:hover,
+  .site-footer__top:hover {
+    color: var(--gold-hi);
+  }
+}
+
+/* Tablet: a marca em cima, as duas listas embaixo. */
+@media (max-width: 980px) {
+  .site-footer__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .site-footer__brand {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Celular: uma coluna, tudo centralizado; cada lista vira uma fileira. */
+@media (max-width: 640px) {
+  .site-footer__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    text-align: center;
+  }
+  .brand--footer { margin: 0 auto; }
+  .site-footer__lema { margin-left: auto; margin-right: auto; }
+  .site-footer__list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px 22px;
+  }
+  .site-footer__base {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-footer__list a,
+  .site-footer__top {
+    transition: none;
+  }
+}
+
+/* A tela de slides ocupa a altura toda (fixa): ali o rodapé não cabe. */
+html:has(.slides-page) .site-footer { display: none; }
+
 @media print {
-  .site-header, .tabs, .toolbar, .keybar, .control-panel, .instrument-tabs, .sticky-actions, .admin-bar, .dialog-backdrop, .slides-toolbar, .no-print { display: none !important; }
+  .site-header, .site-footer, .tabs, .toolbar, .keybar, .control-panel, .instrument-tabs, .sticky-actions, .admin-bar, .dialog-backdrop, .slides-toolbar, .no-print { display: none !important; }
   body { background: #fff; color: #000; }
+  body::before { display: none !important; }
+  .sheet, .lyrics { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #000; }
   .sheet { white-space: pre-wrap; font-size: 12px; }
   .sheet__chord { color: #000; font-weight: 700; }
+  .sheet__section-chip { color: #000; background: none; border-color: #000; }
 }
 
 /* Indicador discreto do salvamento automático (editor do admin). */
 .autosave-status {
   min-height: 18px;
   margin: 0 0 10px;
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 11.5px;
+  font-weight: 500;
   color: var(--text-faint);
   text-align: right;
 }

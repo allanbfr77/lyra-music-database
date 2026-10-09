@@ -1,9 +1,17 @@
 import Link from 'next/link';
+import Brand from '@/components/Brand';
+import HeaderNav from '@/components/HeaderNav';
 import HeaderTools from '@/components/HeaderTools';
 import MobileNav from '@/components/MobileNav';
+import ScrollProgress from '@/components/ScrollProgress';
 import { ChevronLeftIcon } from '@/components/icons';
 import { accountLabelFromEmail, getAuthSession } from '@/lib/auth';
 
+/**
+ * Cabeçalho no padrão do site da INVB: barra escura com fio dourado, a marca à
+ * esquerda, os links em caixa alta e os controles à direita. Abaixo de 1024px
+ * os links e os controles vão para a gaveta (MobileNav).
+ */
 export default async function SiteHeader({
   left,
   backHref,
@@ -32,28 +40,10 @@ export default async function SiteHeader({
           ) : (
             left ?? null
           )}
-          <Link href={homeHref} className="brand">
-            <span className="brand__mark">
-              <img
-                className="brand__logo brand__logo--dark"
-                src="/icons/lyra-db-favicon-dark.png"
-                alt=""
-                width={26}
-                height={26}
-              />
-              <img
-                className="brand__logo brand__logo--light"
-                src="/icons/lyra-db-favicon-light.png"
-                alt=""
-                width={26}
-                height={26}
-              />
-            </span>
-            <span className="brand__name">Lyra</span>
-            <span className="brand__sub">music.db</span>
-          </Link>
+          <Brand href={homeHref} />
         </div>
         <div className="site-header__progress" id="lyra-header-progress" />
+        <HeaderNav homeHref={homeHref} />
         <HeaderTools
           signedIn={signedIn}
           isAdmin={isAdmin}
@@ -64,8 +54,10 @@ export default async function SiteHeader({
           isAdmin={isAdmin}
           accountLabel={accountLabel}
           showOfflineDownload={!onAdminArea}
+          homeHref={homeHref}
         />
       </div>
+      <ScrollProgress />
     </header>
   );
 }
