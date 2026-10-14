@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/public';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
+import { accentInsensitiveOr, foldAccents } from '@/lib/text-fold';
 import type { Instrumento, KeyOverride, SearchHit, Song } from '@/lib/types';
 
 export { availableInstruments, chartForKey, cifraPath } from '@/lib/chords';
@@ -109,11 +110,6 @@ export const getSongById = cache(async function getSongById(id: string): Promise
   return normalizeSongRow(data as unknown as Song & { song_key_overrides: KeyOverride[] });
 });
 
-/** Evita que %, _ ou , no termo quebrem o filtro ilike do PostgREST. */
-function escapeIlike(value: string) {
-  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_').replace(/,/g, ' ');
-}
-
 /** `weights`: A = título, B = artista, C = letra. "ABC" procura em tudo. */
 export async function searchSongs(
   q: string,
@@ -129,7 +125,7 @@ export async function searchSongs(
   // Com letra (ou catálogo vazio): RPC full-text. Título/artista usam substring abaixo.
   if (!query || wantsLyrics) {
     const { data, error } = await supabase.rpc('search_songs', {
-      q: query,
+      q: foldAccents(query),
       lim: limit,
       off: offset,
       fields,
@@ -138,17 +134,17 @@ export async function searchSongs(
     return (data ?? []) as SearchHit[];
   }
 
-  const needle = escapeIlike(query);
-  const parts: string[] = [];
-  if (fields.includes('A')) parts.push(`title.ilike.%${needle}%`);
-  if (fields.includes('B')) parts.push(`artist.ilike.%${needle}%`);
-  if (!parts.length) return [];
+  const columns: string[] = [];
+  if (fields.includes('A')) columns.push('title');
+  if (fields.includes('B')) columns.push('artist');
+  const filter = accentInsensitiveOr(columns, query);
+  if (!filter) return [];
 
   const { data, error } = await supabase
     .from('songs')
     .select('id, slug, title, artist, base_key, available_keys, chords, lyrics, updated_at')
     .eq('published', true)
-    .or(parts.join(','))
+    .or(filter)
     .order('title', { ascending: true })
     .range(offset, offset + Math.max(limit, 0) - 1);
 
@@ -210,13 +206,13 @@ export async function searchAdminSongs(
     let request = supabase.from('songs').select(columns);
 
     if (query) {
-      const needle = escapeIlike(query);
-      const parts: string[] = [];
-      if (fields.includes('A')) parts.push(`title.ilike.%${needle}%`);
-      if (fields.includes('B')) parts.push(`artist.ilike.%${needle}%`);
-      if (fields.includes('C')) parts.push(`lyrics.ilike.%${needle}%`);
-      if (!parts.length) return [];
-      request = request.or(parts.join(','));
+      const searchColumns: string[] = [];
+      if (fields.includes('A')) searchColumns.push('title');
+      if (fields.includes('B')) searchColumns.push('artist');
+      if (fields.includes('C')) searchColumns.push('lyrics');
+      const filter = accentInsensitiveOr(searchColumns, query);
+      if (!filter) return [];
+      request = request.or(filter);
     }
 
     const { data, error } = await request
