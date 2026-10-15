@@ -7,6 +7,7 @@ import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
 import {
   allKeysFor,
   cifraPath,
+  defaultKeySpelling,
   detectSongKey,
   keyDisplayName,
   normalizeKey,
@@ -23,7 +24,6 @@ import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/comp
 // só o rótulo exibido muda entre sustenidos e bemóis.
 const MAJOR_KEYS = SHARP_NOTES.map((n) => normalizeKey(n));
 const MINOR_KEYS = SHARP_NOTES.map((n) => normalizeKey(`${n}m`));
-const KEY_SPELLING_STORAGE = 'lyra:key-spelling';
 
 export type EditorInitial = {
   id: string | null;
@@ -44,6 +44,8 @@ export type EditorInitial = {
   published: boolean;
   chords_reviewed: boolean;
   lyrics_reviewed: boolean;
+  /** Grafia salva da música. null = ainda não escolhida (usa a da armadura). */
+  key_spelling?: KeySpelling | null;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -66,6 +68,7 @@ const EMPTY: EditorInitial = {
   published: true,
   chords_reviewed: false,
   lyrics_reviewed: false,
+  key_spelling: null,
   overrides: [],
 };
 
@@ -117,6 +120,7 @@ type DraftFields = {
   published: boolean;
   chordsReviewed: boolean;
   lyricsReviewed: boolean;
+  keySpelling?: KeySpelling;
   overridesByInst: Record<Instrumento, Record<string, string>>;
 };
 
@@ -137,25 +141,16 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.slug));
   // '' = tom ainda não definido (exibido como "A detectar").
   const [baseKey, setBaseKey] = useState(() => initialBaseKey(initial));
-  const [keySpelling, setKeySpelling] = useState<KeySpelling>('sharp');
-
-  // Lembra a preferência ♯/♭ neste navegador.
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(KEY_SPELLING_STORAGE);
-      if (saved === 'sharp' || saved === 'flat') setKeySpelling(saved);
-    } catch {
-      /* sem armazenamento: fica em sustenidos */
-    }
-  }, []);
-
+  // Grafia ♯/♭ da música — salva no banco e seguida pelo Tom Louvores.
+  // Música sem grafia salva abre na da armadura (Db, Eb, Ab, Bb em bemol; o resto em sustenido).
+  const [keySpelling, setKeySpelling] = useState<KeySpelling>(
+    () => initial.key_spelling ?? defaultKeySpelling(initialBaseKey(initial) || initial.base_key)
+  );
+  // Enquanto ninguém escolheu, a grafia acompanha o tom (ex.: detectou Bb → bemóis).
+  const [spellingTouched, setSpellingTouched] = useState(Boolean(initial.key_spelling));
   const changeKeySpelling = (next: KeySpelling) => {
+    setSpellingTouched(true);
     setKeySpelling(next);
-    try {
-      localStorage.setItem(KEY_SPELLING_STORAGE, next);
-    } catch {
-      /* ignora */
-    }
   };
   // Música nova: a cifra preenche o tom sozinha. Música já salva: só respeitamos o tom
   // salvo como escolha do admin quando ele de fato diverge da cifra e não é o padrão (G).
@@ -203,7 +198,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const draft: DraftFields = {
     title, artist, slug, slugTouched, baseKey, keyTouched, lyrics, chords, chordsGuitar,
     capo, bpm, timeSignature, sourceUrl, youtubeUrl, notes, published, chordsReviewed,
-    lyricsReviewed, overridesByInst,
+    lyricsReviewed, keySpelling, overridesByInst,
   };
   const draftJson = JSON.stringify(draft);
   const initialDraftJson = useRef(draftJson);
@@ -214,6 +209,11 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     () => detectSongKey(chords, chordsGuitar),
     [chords, chordsGuitar]
   );
+
+  useEffect(() => {
+    if (spellingTouched || !baseKeyNorm) return;
+    setKeySpelling(defaultKeySpelling(baseKeyNorm));
+  }, [baseKeyNorm, spellingTouched]);
 
   useEffect(() => {
     if (!detectedKey || keyTouched) return;
@@ -247,6 +247,10 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           setPublished(d.published ?? true);
           setChordsReviewed(Boolean(d.chordsReviewed));
           setLyricsReviewed(Boolean(d.lyricsReviewed));
+          if (d.keySpelling === 'sharp' || d.keySpelling === 'flat') {
+            setKeySpelling(d.keySpelling);
+            setSpellingTouched(true);
+          }
           setOverridesByInst(d.overridesByInst ?? { teclado: {}, violao: {} });
           setDraftRestored(true);
         }
@@ -323,6 +327,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       published,
       chords_reviewed: chordsReviewed,
       lyrics_reviewed: lyricsReviewed,
+      key_spelling: keySpelling,
       overrides: (['teclado', 'violao'] as Instrumento[]).flatMap((inst) =>
         Object.entries(overridesByInst[inst]).map(([key, value]) => ({ key, chords: value, instrumento: inst }))
       ),
@@ -571,13 +576,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                   </optgroup>
                 </select>
               </label>
-              <nav className="seg" aria-label="Exibir tons com sustenidos ou bemóis">
+              <nav className="seg" aria-label="Grafia dos tons: sustenidos ou bemóis">
                 <button
                   type="button"
                   className="seg__item"
                   data-active={keySpelling === 'sharp'}
                   aria-pressed={keySpelling === 'sharp'}
-                  title="Mostrar com sustenidos (C#, D#…)"
+                  title="Sustenidos (C#, D#…) — o Tom Louvores abre a cifra assim"
                   onClick={() => changeKeySpelling('sharp')}
                 >
                   ♯ Sustenidos
@@ -587,7 +592,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                   className="seg__item"
                   data-active={keySpelling === 'flat'}
                   aria-pressed={keySpelling === 'flat'}
-                  title="Mostrar com bemóis (Db, Eb…)"
+                  title="Bemóis (Db, Eb…) — o Tom Louvores abre a cifra assim"
                   onClick={() => changeKeySpelling('flat')}
                 >
                   ♭ Bemóis

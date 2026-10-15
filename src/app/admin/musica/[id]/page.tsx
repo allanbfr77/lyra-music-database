@@ -43,6 +43,10 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
       columns = columns.replace(', lyrics_reviewed', '');
       continue;
     }
+    if (error.message.includes('key_spelling') && columns.includes('key_spelling')) {
+      columns = columns.replace(', key_spelling', '');
+      continue;
+    }
     if (error.message.includes('instrumento') && extra.includes('instrumento')) {
       extra = OVERRIDE_LEGACY;
       continue;
@@ -73,6 +77,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     published: song.published,
     chords_reviewed: Boolean(song.chords_reviewed),
     lyrics_reviewed: Boolean(song.lyrics_reviewed),
+    key_spelling: song.key_spelling === 'flat' || song.key_spelling === 'sharp' ? song.key_spelling : null,
     overrides: (song.song_key_overrides ?? []).map((o) => ({
       key: o.key,
       chords: o.chords,

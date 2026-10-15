@@ -94,6 +94,16 @@ function canonicalKeyName(pc: number, minor: boolean): string {
 /** Preferência de exibição dos acidentes: sustenidos (C#, D#…) ou bemóis (Db, Eb…). */
 export type KeySpelling = 'sharp' | 'flat';
 
+/** Grafia padrão de um tom: bemóis só nos tons com bemol na armadura. */
+export function defaultKeySpelling(key: string | null | undefined): KeySpelling {
+  return key && prefersFlats(key) ? 'flat' : 'sharp';
+}
+
+/** Valor salvo no banco → grafia válida (ou null = automático). */
+export function parseKeySpelling(value: unknown): KeySpelling | null {
+  return value === 'sharp' || value === 'flat' ? value : null;
+}
+
 /**
  * Grafia de EXIBIÇÃO de um tom: "Db" → "C#" (sharp) | "C#m" → "Dbm" (flat).
  * Não muda o valor salvo nem o link — esses continuam na grafia oficial.
