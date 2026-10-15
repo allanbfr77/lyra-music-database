@@ -10,15 +10,20 @@ import {
   detectSongKey,
   keyDisplayName,
   normalizeKey,
+  SHARP_NOTES,
   type KeyDetection,
+  type KeySpelling,
 } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
 import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
 
-// Uma grafia por altura, para que cada tom tenha um único link permanente.
-const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-const MINOR_KEYS = ['Am', 'A#m', 'Bm', 'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m'];
+// Ordem cromática de C a B. O VALOR de cada opção continua na grafia oficial
+// (Db, Eb, Ab, Bb…), para que cada tom tenha um único link permanente;
+// só o rótulo exibido muda entre sustenidos e bemóis.
+const MAJOR_KEYS = SHARP_NOTES.map((n) => normalizeKey(n));
+const MINOR_KEYS = SHARP_NOTES.map((n) => normalizeKey(`${n}m`));
+const KEY_SPELLING_STORAGE = 'lyra:key-spelling';
 
 export type EditorInitial = {
   id: string | null;
@@ -132,6 +137,26 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.slug));
   // '' = tom ainda não definido (exibido como "A detectar").
   const [baseKey, setBaseKey] = useState(() => initialBaseKey(initial));
+  const [keySpelling, setKeySpelling] = useState<KeySpelling>('sharp');
+
+  // Lembra a preferência ♯/♭ neste navegador.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(KEY_SPELLING_STORAGE);
+      if (saved === 'sharp' || saved === 'flat') setKeySpelling(saved);
+    } catch {
+      /* sem armazenamento: fica em sustenidos */
+    }
+  }, []);
+
+  const changeKeySpelling = (next: KeySpelling) => {
+    setKeySpelling(next);
+    try {
+      localStorage.setItem(KEY_SPELLING_STORAGE, next);
+    } catch {
+      /* ignora */
+    }
+  };
   // Música nova: a cifra preenche o tom sozinha. Música já salva: só respeitamos o tom
   // salvo como escolha do admin quando ele de fato diverge da cifra e não é o padrão (G).
   const [keyTouched, setKeyTouched] = useState(() => isSavedKeyConfirmed(initial));
@@ -530,22 +555,44 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                   <option value="" disabled>
                     A detectar
                   </option>
-                  <optgroup label="Maior">
+                  <optgroup label="Maiores">
                     {MAJOR_KEYS.map((k) => (
                       <option key={k} value={k}>
-                        {keyDisplayName(k)}
+                        {keyDisplayName(k, keySpelling)}
                       </option>
                     ))}
                   </optgroup>
-                  <optgroup label="Menor">
+                  <optgroup label="Menores">
                     {MINOR_KEYS.map((k) => (
                       <option key={k} value={k}>
-                        {keyDisplayName(k)}
+                        {keyDisplayName(k, keySpelling)}
                       </option>
                     ))}
                   </optgroup>
                 </select>
               </label>
+              <nav className="seg" aria-label="Exibir tons com sustenidos ou bemóis">
+                <button
+                  type="button"
+                  className="seg__item"
+                  data-active={keySpelling === 'sharp'}
+                  aria-pressed={keySpelling === 'sharp'}
+                  title="Mostrar com sustenidos (C#, D#…)"
+                  onClick={() => changeKeySpelling('sharp')}
+                >
+                  ♯ Sustenidos
+                </button>
+                <button
+                  type="button"
+                  className="seg__item"
+                  data-active={keySpelling === 'flat'}
+                  aria-pressed={keySpelling === 'flat'}
+                  title="Mostrar com bemóis (Db, Eb…)"
+                  onClick={() => changeKeySpelling('flat')}
+                >
+                  ♭ Bemóis
+                </button>
+              </nav>
               <label className="cifra-editor__key">
                 <span className="cifra-editor__key-label">Capotraste</span>
                 <input
@@ -574,6 +621,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               <KeyDetectionHint
                 detection={detectedKey}
                 currentKey={baseKeyNorm}
+                spelling={keySpelling}
                 onApply={(key) => {
                   setKeyTouched(true);
                   setBaseKey(key);
@@ -679,10 +727,12 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 function KeyDetectionHint({
   detection,
   currentKey,
+  spelling,
   onApply,
 }: {
   detection: KeyDetection | null;
   currentKey: string;
+  spelling: KeySpelling;
   onApply: (key: string) => void;
 }) {
   if (!detection) {
@@ -694,11 +744,11 @@ function KeyDetectionHint({
   const matches = detected === current;
   const possible = detection.confidence !== 'high';
   const label = possible
-    ? `Possível tom: ${keyDisplayName(detected)}`
-    : `Tom detectado: ${keyDisplayName(detected)}`;
+    ? `Possível tom: ${keyDisplayName(detected, spelling)}`
+    : `Tom detectado: ${keyDisplayName(detected, spelling)}`;
   const alt =
     detection.alternatives.length > 0
-      ? ` Também combina com ${detection.alternatives.map((k) => keyDisplayName(k)).join(', ')}.`
+      ? ` Também combina com ${detection.alternatives.map((k) => keyDisplayName(k, spelling)).join(', ')}.`
       : '';
 
   return (
