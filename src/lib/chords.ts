@@ -91,13 +91,31 @@ function canonicalKeyName(pc: number, minor: boolean): string {
   return (minor ? MINOR_KEYS : MAJOR_KEYS)[pc];
 }
 
-/** Nome completo em português: "Am (Lá menor)", "F# (Fá sustenido maior)". */
-export function keyDisplayName(key: string): string {
+/** Preferência de exibição dos acidentes: sustenidos (C#, D#…) ou bemóis (Db, Eb…). */
+export type KeySpelling = 'sharp' | 'flat';
+
+/**
+ * Grafia de EXIBIÇÃO de um tom: "Db" → "C#" (sharp) | "C#m" → "Dbm" (flat).
+ * Não muda o valor salvo nem o link — esses continuam na grafia oficial.
+ */
+export function spellKey(key: string, spelling: KeySpelling): string {
   const p = parseKey(key);
   if (!p) return key;
-  const letter = NOTE_PT[p.name[0]] ?? p.name[0];
-  const accidental = p.name.includes('#') ? ' sustenido' : p.name.includes('b') ? ' bemol' : '';
-  return `${p.name} (${letter}${accidental} ${p.minor ? 'menor' : 'maior'})`;
+  const note = (spelling === 'flat' ? FLAT_NOTES : SHARP_NOTES)[p.pc];
+  return `${note}${p.minor ? 'm' : ''}`;
+}
+
+/**
+ * Nome completo em português: "Am (Lá menor)", "F# (Fá sustenido maior)".
+ * Com `spelling`, força sustenidos ou bemóis só no texto exibido.
+ */
+export function keyDisplayName(key: string, spelling?: KeySpelling): string {
+  const p = parseKey(key);
+  if (!p) return key;
+  const name = spelling ? spellKey(key, spelling) : p.name;
+  const letter = NOTE_PT[name[0]] ?? name[0];
+  const accidental = name.includes('#') ? ' sustenido' : name.includes('b') ? ' bemol' : '';
+  return `${name} (${letter}${accidental} ${p.minor ? 'menor' : 'maior'})`;
 }
 
 /** "C#" → "cs" | "Bb" → "bb" | "F#m" → "fsm" — seguro para URL e permanente. */
