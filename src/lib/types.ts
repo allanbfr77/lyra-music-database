@@ -29,6 +29,8 @@ export type Song = {
   chords_reviewed?: boolean;
   /** false/ausente = Revisar; true = Revisada. Independente de chords_reviewed. */
   lyrics_reviewed?: boolean;
+  /** Grafia dos acidentes: sharp = C#, flat = Db. null/ausente = automático. */
+  key_spelling?: 'sharp' | 'flat' | null;
   created_at: string;
   updated_at: string;
 };

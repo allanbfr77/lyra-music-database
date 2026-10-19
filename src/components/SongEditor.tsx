@@ -7,18 +7,23 @@ import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
 import {
   allKeysFor,
   cifraPath,
+  defaultKeySpelling,
   detectSongKey,
   keyDisplayName,
   normalizeKey,
+  SHARP_NOTES,
   type KeyDetection,
+  type KeySpelling,
 } from '@/lib/chords';
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
 import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
 
-// Uma grafia por altura, para que cada tom tenha um único link permanente.
-const MAJOR_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-const MINOR_KEYS = ['Am', 'A#m', 'Bm', 'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m'];
+// Ordem cromática de C a B. O VALOR de cada opção continua na grafia oficial
+// (Db, Eb, Ab, Bb…), para que cada tom tenha um único link permanente;
+// só o rótulo exibido muda entre sustenidos e bemóis.
+const MAJOR_KEYS = SHARP_NOTES.map((n) => normalizeKey(n));
+const MINOR_KEYS = SHARP_NOTES.map((n) => normalizeKey(`${n}m`));
 
 export type EditorInitial = {
   id: string | null;
@@ -39,6 +44,8 @@ export type EditorInitial = {
   published: boolean;
   chords_reviewed: boolean;
   lyrics_reviewed: boolean;
+  /** Grafia salva da música. null = ainda não escolhida (usa a da armadura). */
+  key_spelling?: KeySpelling | null;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -61,6 +68,7 @@ const EMPTY: EditorInitial = {
   published: true,
   chords_reviewed: false,
   lyrics_reviewed: false,
+  key_spelling: null,
   overrides: [],
 };
 
@@ -112,6 +120,7 @@ type DraftFields = {
   published: boolean;
   chordsReviewed: boolean;
   lyricsReviewed: boolean;
+  keySpelling?: KeySpelling;
   overridesByInst: Record<Instrumento, Record<string, string>>;
 };
 
@@ -132,6 +141,17 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.slug));
   // '' = tom ainda não definido (exibido como "A detectar").
   const [baseKey, setBaseKey] = useState(() => initialBaseKey(initial));
+  // Grafia ♯/♭ da música — salva no banco e seguida pelo Tom Louvores.
+  // Música sem grafia salva abre na da armadura (Db, Eb, Ab, Bb em bemol; o resto em sustenido).
+  const [keySpelling, setKeySpelling] = useState<KeySpelling>(
+    () => initial.key_spelling ?? defaultKeySpelling(initialBaseKey(initial) || initial.base_key)
+  );
+  // Enquanto ninguém escolheu, a grafia acompanha o tom (ex.: detectou Bb → bemóis).
+  const [spellingTouched, setSpellingTouched] = useState(Boolean(initial.key_spelling));
+  const changeKeySpelling = (next: KeySpelling) => {
+    setSpellingTouched(true);
+    setKeySpelling(next);
+  };
   // Música nova: a cifra preenche o tom sozinha. Música já salva: só respeitamos o tom
   // salvo como escolha do admin quando ele de fato diverge da cifra e não é o padrão (G).
   const [keyTouched, setKeyTouched] = useState(() => isSavedKeyConfirmed(initial));
@@ -178,7 +198,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
   const draft: DraftFields = {
     title, artist, slug, slugTouched, baseKey, keyTouched, lyrics, chords, chordsGuitar,
     capo, bpm, timeSignature, sourceUrl, youtubeUrl, notes, published, chordsReviewed,
-    lyricsReviewed, overridesByInst,
+    lyricsReviewed, keySpelling, overridesByInst,
   };
   const draftJson = JSON.stringify(draft);
   const initialDraftJson = useRef(draftJson);
@@ -189,6 +209,11 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     () => detectSongKey(chords, chordsGuitar),
     [chords, chordsGuitar]
   );
+
+  useEffect(() => {
+    if (spellingTouched || !baseKeyNorm) return;
+    setKeySpelling(defaultKeySpelling(baseKeyNorm));
+  }, [baseKeyNorm, spellingTouched]);
 
   useEffect(() => {
     if (!detectedKey || keyTouched) return;
@@ -222,6 +247,10 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
           setPublished(d.published ?? true);
           setChordsReviewed(Boolean(d.chordsReviewed));
           setLyricsReviewed(Boolean(d.lyricsReviewed));
+          if (d.keySpelling === 'sharp' || d.keySpelling === 'flat') {
+            setKeySpelling(d.keySpelling);
+            setSpellingTouched(true);
+          }
           setOverridesByInst(d.overridesByInst ?? { teclado: {}, violao: {} });
           setDraftRestored(true);
         }
@@ -298,6 +327,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       published,
       chords_reviewed: chordsReviewed,
       lyrics_reviewed: lyricsReviewed,
+      key_spelling: keySpelling,
       overrides: (['teclado', 'violao'] as Instrumento[]).flatMap((inst) =>
         Object.entries(overridesByInst[inst]).map(([key, value]) => ({ key, chords: value, instrumento: inst }))
       ),
@@ -530,22 +560,44 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
                   <option value="" disabled>
                     A detectar
                   </option>
-                  <optgroup label="Maior">
+                  <optgroup label="Maiores">
                     {MAJOR_KEYS.map((k) => (
                       <option key={k} value={k}>
-                        {keyDisplayName(k)}
+                        {keyDisplayName(k, keySpelling)}
                       </option>
                     ))}
                   </optgroup>
-                  <optgroup label="Menor">
+                  <optgroup label="Menores">
                     {MINOR_KEYS.map((k) => (
                       <option key={k} value={k}>
-                        {keyDisplayName(k)}
+                        {keyDisplayName(k, keySpelling)}
                       </option>
                     ))}
                   </optgroup>
                 </select>
               </label>
+              <nav className="seg" aria-label="Grafia dos tons: sustenidos ou bemóis">
+                <button
+                  type="button"
+                  className="seg__item"
+                  data-active={keySpelling === 'sharp'}
+                  aria-pressed={keySpelling === 'sharp'}
+                  title="Sustenidos (C#, D#…) — o Tom Louvores abre a cifra assim"
+                  onClick={() => changeKeySpelling('sharp')}
+                >
+                  ♯ Sustenidos
+                </button>
+                <button
+                  type="button"
+                  className="seg__item"
+                  data-active={keySpelling === 'flat'}
+                  aria-pressed={keySpelling === 'flat'}
+                  title="Bemóis (Db, Eb…) — o Tom Louvores abre a cifra assim"
+                  onClick={() => changeKeySpelling('flat')}
+                >
+                  ♭ Bemóis
+                </button>
+              </nav>
               <label className="cifra-editor__key">
                 <span className="cifra-editor__key-label">Capotraste</span>
                 <input
@@ -574,6 +626,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
               <KeyDetectionHint
                 detection={detectedKey}
                 currentKey={baseKeyNorm}
+                spelling={keySpelling}
                 onApply={(key) => {
                   setKeyTouched(true);
                   setBaseKey(key);
@@ -679,10 +732,12 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
 function KeyDetectionHint({
   detection,
   currentKey,
+  spelling,
   onApply,
 }: {
   detection: KeyDetection | null;
   currentKey: string;
+  spelling: KeySpelling;
   onApply: (key: string) => void;
 }) {
   if (!detection) {
@@ -694,11 +749,11 @@ function KeyDetectionHint({
   const matches = detected === current;
   const possible = detection.confidence !== 'high';
   const label = possible
-    ? `Possível tom: ${keyDisplayName(detected)}`
-    : `Tom detectado: ${keyDisplayName(detected)}`;
+    ? `Possível tom: ${keyDisplayName(detected, spelling)}`
+    : `Tom detectado: ${keyDisplayName(detected, spelling)}`;
   const alt =
     detection.alternatives.length > 0
-      ? ` Também combina com ${detection.alternatives.map((k) => keyDisplayName(k)).join(', ')}.`
+      ? ` Também combina com ${detection.alternatives.map((k) => keyDisplayName(k, spelling)).join(', ')}.`
       : '';
 
   return (

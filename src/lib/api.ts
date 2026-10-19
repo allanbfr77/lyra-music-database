@@ -99,6 +99,8 @@ export function mapSong(
     artist: song.artist,
     language: song.language,
     base_key: baseKey,
+    // Grafia escolhida no admin: 'sharp' (C#) ou 'flat' (Db). null = automático.
+    key_spelling: song.key_spelling === 'sharp' || song.key_spelling === 'flat' ? song.key_spelling : null,
     capo: song.capo,
     tempo_bpm: song.tempo_bpm,
     time_signature: song.time_signature,

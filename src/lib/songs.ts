@@ -7,7 +7,7 @@ import type { Instrumento, KeyOverride, SearchHit, Song } from '@/lib/types';
 export { availableInstruments, chartForKey, cifraPath } from '@/lib/chords';
 
 export const SONG_COLUMNS =
-  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, chords_reviewed, lyrics_reviewed, created_at, updated_at';
+  'id, slug, title, artist, lyrics, slides, chords, chords_guitar, base_key, available_keys, capo, tempo_bpm, time_signature, language, source_url, youtube_url, notes, published, chords_reviewed, lyrics_reviewed, key_spelling, created_at, updated_at';
 
 const OVERRIDE_COLUMNS = 'id, song_id, key, chords, instrumento, created_at, updated_at';
 const OVERRIDE_COLUMNS_LEGACY = 'id, song_id, key, chords, created_at, updated_at';
@@ -64,6 +64,9 @@ function dropMissingColumn(
   }
   if (message.includes('lyrics_reviewed') && columns.includes('lyrics_reviewed')) {
     return { columns: columns.replace(', lyrics_reviewed', ''), extra, changed: true };
+  }
+  if (message.includes('key_spelling') && columns.includes('key_spelling')) {
+    return { columns: columns.replace(', key_spelling', ''), extra, changed: true };
   }
   if (message.includes('instrumento') && extra.includes('instrumento')) {
     return { columns, extra: extra.replace(OVERRIDE_COLUMNS, OVERRIDE_COLUMNS_LEGACY), changed: true };

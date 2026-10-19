@@ -26,6 +26,8 @@ export type SongPayload = {
   published: boolean;
   chords_reviewed: boolean;
   lyrics_reviewed: boolean;
+  /** Grafia dos acidentes (sustenidos ou bemóis), lida pelo Tom Louvores. */
+  key_spelling: 'sharp' | 'flat' | null;
   overrides: { key: string; chords: string; instrumento?: Instrumento }[];
 };
 
@@ -97,6 +99,8 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
       published: payload.published,
       chords_reviewed: Boolean(payload.chords_reviewed),
       lyrics_reviewed: Boolean(payload.lyrics_reviewed),
+      key_spelling:
+        payload.key_spelling === 'sharp' || payload.key_spelling === 'flat' ? payload.key_spelling : null,
     };
 
     let songId = payload.id ?? null;
@@ -210,6 +214,9 @@ function translate(message: string): string {
   }
   if (message.includes('chords_reviewed')) {
     return 'O banco ainda não tem o status de revisão da cifra. Execute supabase/migrations/013_chords_reviewed.sql no SQL Editor do Supabase.';
+  }
+  if (message.includes('key_spelling')) {
+    return 'O banco ainda não tem a grafia sustenido/bemol. Execute supabase/migrations/016_key_spelling.sql no SQL Editor do Supabase.';
   }
   if (message.includes('lyrics_reviewed')) {
     return 'O banco ainda não tem o status de revisão da letra. Execute supabase/migrations/015_lyrics_reviewed.sql no SQL Editor do Supabase.';
