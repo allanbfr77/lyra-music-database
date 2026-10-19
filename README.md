@@ -1,12 +1,13 @@
 # Banco de Músicas do Lyra
 
-Site público de letras e cifras, com área administrativa protegida, transposição
-automática de tons, links permanentes por tom, instalação como aplicativo (PWA) e
-uma API pronta para o programa Lyra consumir.
+Site privado de letras e cifras. Quem não está logado cai no login. Quem entra vê o
+catálogo; só administradores cadastram e editam. Há transposição automática de
+tons, links permanentes por tom, instalação como aplicativo (PWA) e uma API de
+leitura para o programa Lyra, autenticada por chave.
 
 - **Next.js 15** (App Router) — hospedagem na Vercel
 - **Supabase** — banco de dados e autenticação
-- **Sem chave de API para leitura** — o banco é público para consulta
+- **API com chave** — header `Authorization: Bearer`, variável `LYRA_API_KEY`
 
 ---
 
@@ -45,10 +46,11 @@ on conflict (user_id) do nothing;
 - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
 - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-> A chave `anon` pode ficar exposta no navegador: quem manda são as políticas de
-> RLS do banco, que liberam **leitura** das músicas publicadas para todo mundo e
-> **escrita** apenas para quem está na tabela `admins`. Nunca coloque a chave
-> `service_role` neste projeto.
+> A chave `anon` fica no navegador. O site agora exige login, mas as políticas de
+> RLS ainda liberam **leitura** das músicas publicadas para a chave anon (e a
+> função `search_songs` é `security definer`). Quem conhecer a URL do Supabase
+> consegue ler as letras por fora do site. Fechar isso é uma mudança de política,
+> não rodei no banco. Nunca coloque a chave `service_role` no navegador.
 
 ---
 
@@ -60,7 +62,8 @@ cp .env.example .env.local     # preencha com os dados do passo 1
 npm run dev
 ```
 
-Abra <http://localhost:3000>. A área administrativa fica em `/admin`.
+Abra <http://localhost:3000>. Sem sessão, o site manda para `/login`. Só entra
+quem está na tabela `admins`, e o login abre direto em `/admin`.
 
 ---
 
@@ -149,7 +152,18 @@ seção e repetições. Linhas de letra nunca são alteradas.
 
 ## 6. API para o Lyra
 
-Somente leitura, sem autenticação, CORS liberado. Configure no Lyra apenas:
+Somente leitura. Sem sessão de navegador, cada chamada precisa do header:
+
+```
+Authorization: Bearer SUA_CHAVE
+```
+
+A chave é a variável `LYRA_API_KEY` deste site (servidor, sem `NEXT_PUBLIC`).
+Configure o mesmo valor no Lyra e no Tom Louvores, se ele consultar esta API.
+Quem está logado no navegador usa o cookie de sessão — o botão "Baixar cifras"
+não precisa da chave.
+
+URL base:
 
 ```
 https://SEU-SITE/api/v1
@@ -228,8 +242,8 @@ GET /api/v1/sync?since=2026-01-01T00:00:00Z
 - **Android (Chrome):** menu ⋮ → *Instalar aplicativo*.
 - **iPhone (Safari):** botão Compartilhar → *Adicionar à Tela de Início*.
 
-As páginas já visitadas continuam abrindo sem internet. A área administrativa e a
-API nunca ficam em cache, para não mostrar dado velho.
+As páginas já visitadas por quem está logado continuam abrindo sem internet. Ao sair,
+esse cache é apagado. A área administrativa e a API nunca ficam em cache.
 
 ---
 
@@ -249,9 +263,9 @@ supabase/schema.sql            SQL completo: tabelas, busca, RLS
 src/lib/chords.ts              Motor de cifras: parser, transposição, tons
 src/lib/songs.ts               Leitura pública e resolução de cifra por tom
 src/lib/api.ts                 Formato das respostas da API
-src/app/musica/[slug]/         Páginas públicas (letra e cifra por tom)
+src/app/musica/[slug]/         Letra e cifra por tom (exige login)
 src/app/admin/                 Área administrativa
 src/app/api/v1/                API do Lyra
 src/components/Reader.tsx      Leitor: fonte, quebra, rolagem automática
-src/middleware.ts              Sessão e bloqueio de /admin
+src/middleware.ts              Sessão obrigatória; /admin só para administradores
 ```

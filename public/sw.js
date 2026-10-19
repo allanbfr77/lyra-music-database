@@ -1,22 +1,14 @@
 /* Service worker do Banco de Músicas do Lyra.
-   Estratégia:
-   - navegações: rede primeiro, cache como rede reserva (offline mostra a última versão vista)
-   - estáticos do Next: cache primeiro
-   - API: sempre rede (dados precisam estar atuais)
+   Navegação: rede primeiro. HTML só entra no cache se a resposta for 200 e
+   não for a tela de login — assim um visitante sem sessão não reaproveita letra.
+   O logout apaga estes caches. Estáticos: cache primeiro. API: sempre rede.
 */
-const VERSION = 'lyra-v2';
+const VERSION = 'lyra-v3';
 const SHELL = `${VERSION}-shell`;
 const PAGES = `${VERSION}-pages`;
 
-const PRECACHE = ['/', '/offline'];
-
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(SHELL)
-      .then((cache) => cache.addAll(PRECACHE).catch(() => undefined))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -40,20 +32,39 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .then((response) => {
+        .then(async (response) => {
+          const finalUrl = new URL(response.url);
+          const isLogin = finalUrl.pathname === '/login' || finalUrl.pathname.startsWith('/login/');
+          if (response.redirected || !response.ok || response.type !== 'basic' || isLogin) {
+            const cache = await caches.open(PAGES);
+            await cache.delete(request);
+            return response;
+          }
           const copy = response.clone();
-          caches.open(PAGES).then((cache) => cache.put(request, copy)).catch(() => {});
+          const cache = await caches.open(PAGES);
+          await cache.put(request, copy);
           return response;
         })
         .catch(async () => {
           const cached = await caches.match(request);
-          return cached || (await caches.match('/offline')) || Response.error();
+          if (cached) return cached;
+          return new Response('Sem conexão. Entre novamente quando a internet voltar.', {
+            status: 503,
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'Cache-Control': 'no-store',
+            },
+          });
         })
     );
     return;
   }
 
-  if (url.pathname.startsWith('/_next/static') || url.pathname.startsWith('/icons/')) {
+  if (
+    url.pathname.startsWith('/_next/static') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname === '/logo.png'
+  ) {
     event.respondWith(
       caches.match(request).then(
         (cached) =>

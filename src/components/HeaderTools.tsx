@@ -3,7 +3,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SignOutButton from '@/components/SignOutButton';
 import OfflineSongsDownload from '@/components/OfflineSongsDownload';
 import TomLouvoresLink from '@/components/TomLouvoresLink';
-import { LockIcon } from '@/components/icons';
 
 /**
  * Controles do cabeçalho no computador. A ordem segue o site da INVB: o botão
@@ -33,25 +32,16 @@ export default function HeaderTools({
 
       {isAdmin ? (
         <div className="header-slot header-slot--status">
-          <span className="header-status" data-on="true" title="Modo admin" aria-label="Modo admin">
+          <Link href="/admin" className="header-status" data-on="true" title="Abrir o painel admin">
             <span className="header-status__dot" aria-hidden="true" />
             <span className="header-status__text">Modo admin</span>
-          </span>
+          </Link>
         </div>
       ) : null}
 
       <div className="header-slot header-slot--theme">
         <ThemeToggle />
       </div>
-
-      {!signedIn ? (
-        <div className="header-slot header-slot--account">
-          <Link href="/login" className="header-ctrl" title="Entrar">
-            <LockIcon size={14} />
-            <span className="header-ctrl__text">Login</span>
-          </Link>
-        </div>
-      ) : null}
 
       {signedIn ? (
         <div className="header-slot header-slot--leave">

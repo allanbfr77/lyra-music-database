@@ -13,6 +13,8 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
 
   if (!password) return { error: 'Informe o nome e a senha.' };
 
+  let isAdmin = false;
+
   try {
     const supabase = await createClient();
     const resolved = await resolveLoginEmail(supabase, login);
@@ -29,7 +31,6 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
       };
     }
 
-    let isAdmin = false;
     try {
       const { data } = await supabase.rpc('is_admin');
       isAdmin = Boolean(data);
@@ -46,4 +47,10 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   }
 
   redirect(destinationForRole(true, requestedNext));
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/login');
 }

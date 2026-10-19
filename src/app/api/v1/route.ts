@@ -19,7 +19,8 @@ export async function GET() {
     provider: 'lyra-songbank',
     api_version: API_VERSION,
     format: 'lyra.song.v1',
-    auth: 'none',
+    auth: 'bearer',
+    auth_header: 'Authorization: Bearer <LYRA_API_KEY>',
     site_url: siteUrl(),
     song_count: songs,
     endpoints: {

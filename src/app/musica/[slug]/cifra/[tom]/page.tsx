@@ -23,14 +23,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!song) return { title: 'Música não encontrada' };
 
   const title = `${song.title} — Cifra em ${key}`;
-  const description = `Cifra de ${song.title}${song.artist ? ` (${song.artist})` : ''} no tom de ${key}.`;
   const url = cifraPath(song.slug, key, 'teclado');
 
   return {
     title,
-    description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, type: 'article' },
   };
 }
 

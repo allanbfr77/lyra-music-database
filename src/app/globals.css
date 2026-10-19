@@ -3248,6 +3248,16 @@ html:has(.slides-page) .shell {
   width: 100%;
   max-width: 420px;
 }
+.auth-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 0 18px;
+}
+.auth-logo--on-light { display: none; }
+:root[data-theme='light'] .auth-logo--on-dark { display: none; }
+:root[data-theme='light'] .auth-logo--on-light { display: block; }
+.auth-box > .auth-title { margin-bottom: 22px; }
 .auth-label {
   margin: 0 0 12px;
   font-size: 12px;

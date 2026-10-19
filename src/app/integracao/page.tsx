@@ -49,14 +49,18 @@ export default function IntegrationPage() {
             <p className="page-kicker">Sobre o Lyra</p>
             <h1 className="page-title">Integração com o Lyra</h1>
           </div>
-          <p className="page-lead">API pública, somente leitura, sem chave de acesso.</p>
+          <p className="page-lead">API somente leitura. Cada chamada precisa de uma chave.</p>
         </header>
 
         <p className="muted" style={{ fontSize: 15 }}>
-          Configure no Lyra apenas a URL base abaixo. O primeiro endereço descreve todos os outros, então o
-          programa consegue se orientar sozinho.
+          Configure no Lyra a URL base abaixo e o header{' '}
+          <code>Authorization: Bearer &lt;chave&gt;</code>. A chave é a variável{' '}
+          <code>LYRA_API_KEY</code> deste site (não use o prefixo <code>NEXT_PUBLIC</code>). A mesma chave
+          precisa ser enviada pelo Tom Louvores, se ele consultar esta API. Quem está logado no navegador usa
+          a sessão — é assim que o botão &quot;Baixar cifras&quot; continua funcionando, sem a chave.
         </p>
-        <pre style={box}>{`${base}/api/v1`}</pre>
+        <pre style={box}>{`Authorization: Bearer SUA_CHAVE
+${base}/api/v1`}</pre>
 
         <div className="section-title">Endpoints</div>
 
@@ -100,7 +104,8 @@ ${base}/api/v1/songs/galileu/chords/a?instrumento=violao`}</pre>
 
         <div className="section-title">Endereços das páginas</div>
         <p className="muted small">
-          Todo conteúdo também tem página pública e permanente — dá para favoritar e compartilhar sem login.
+          As páginas também exigem login. Um link direto de tom continua válido: a pessoa entra e volta para
+          esse endereço.
         </p>
         <pre style={box}>{`${base}/musica/galileu            → letra
 ${base}/musica/galileu/cifra      → cifra de teclado no tom original

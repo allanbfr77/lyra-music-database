@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { user, isAdmin } = await getAuthSession();
 
   if (!user) redirect(`/login?next=${encodeURIComponent(ADMIN_HOME)}`);
-  if (!isAdmin) redirect('/');
+  if (!isAdmin) redirect('/login');
 
   return (
     <>

@@ -11,7 +11,8 @@ export function json(body: unknown, init?: { status?: number; cache?: string }) 
     status: init?.status ?? 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': init?.cache ?? 'public, max-age=0, s-maxage=60, stale-while-revalidate=600',
+      'Cache-Control': init?.cache ?? 'private, no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   });
 }
@@ -26,8 +27,10 @@ export function preflight() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   });
 }

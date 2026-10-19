@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, Montserrat } from 'next/font/google';
+import { headers } from 'next/headers';
 import './globals.css';
 import { siteUrl } from '@/lib/env';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
@@ -43,6 +44,7 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
   },
   formatDetection: { telephone: false },
+  robots: { index: false, follow: false },
   icons: {
     icon: [
       {
@@ -88,13 +90,9 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
-  openGraph: {
-    type: 'website',
-    siteName: 'Banco de Músicas do Lyra',
-    locale: 'pt_BR',
-    images: [{ url: '/icons/lyra-db-lockup-512.png', width: 512, height: 512, alt: 'Lyra.db' }],
-  },
 };
+
+export const dynamic = 'force-dynamic';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -105,7 +103,9 @@ export const viewport: Viewport = {
   themeColor: THEME_COLOR.dark,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = (await headers()).get('x-lyra-pathname') ?? '';
+
   return (
     <html lang="pt-BR" data-theme="dark" className={`${slidesSans.variable} ${sansBody.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
@@ -113,7 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <SiteFooter />
+        {pathname === '/login' ? null : <SiteFooter />}
         <ServiceWorkerRegistrar />
       </body>
     </html>

@@ -17,17 +17,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) return { title: 'Música não encontrada' };
 
-  const description = song.lyrics.replace(/\s+/g, ' ').trim().slice(0, 160) || `Letra de ${song.title}.`;
   return {
     title: `${song.title} — Letra`,
-    description,
     alternates: { canonical: `/musica/${song.slug}` },
-    openGraph: {
-      title: `${song.title} — ${song.artist}`,
-      description,
-      url: `/musica/${song.slug}`,
-      type: 'article',
-    },
   };
 }
 

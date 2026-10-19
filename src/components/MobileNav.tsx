@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   CloseIcon,
   DownloadIcon,
@@ -12,8 +12,8 @@ import {
   ShieldIcon,
   SunIcon,
 } from '@/components/icons';
-import { createClient } from '@/lib/supabase/browser';
 import { ADMIN_HOME } from '@/lib/auth-routes';
+import { signOutAndClear } from '@/lib/client-sign-out';
 import { siteNav } from '@/lib/nav';
 import { DEFAULT_THEME, THEME_COLOR, THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
 import { requestOfflineSongsDownload } from '@/components/OfflineSongsDownload';
@@ -46,7 +46,6 @@ export default function MobileNav({
   const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const router = useRouter();
   const pathname = usePathname() ?? '/';
   const titleId = useId();
   const drawerId = useId();
@@ -181,9 +180,7 @@ export default function MobileNav({
 
   async function signOut() {
     close();
-    await createClient().auth.signOut();
-    router.replace('/');
-    router.refresh();
+    await signOutAndClear();
   }
 
   let stagger = 0;
@@ -307,21 +304,6 @@ export default function MobileNav({
                   <span className="mobile-drawer__txt">
                     <span className="mobile-drawer__main">Admin</span>
                     <span className="mobile-drawer__sub">{isAdmin ? 'Modo admin' : accountLabel || 'Conta'}</span>
-                  </span>
-                </Link>
-              ) : null}
-
-              {!signedIn ? (
-                <Link
-                  href="/login"
-                  className="mobile-drawer__item"
-                  style={{ ['--stagger' as string]: nextStagger() }}
-                  onClick={close}
-                  tabIndex={tab}
-                >
-                  <span className="mobile-drawer__txt">
-                    <span className="mobile-drawer__main">Login</span>
-                    <span className="mobile-drawer__sub">Entrar como administrador</span>
                   </span>
                 </Link>
               ) : null}

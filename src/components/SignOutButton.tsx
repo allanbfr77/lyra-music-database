@@ -1,22 +1,21 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/browser';
+import { signOut } from '@/app/login/actions';
+import { signOutAndClear } from '@/lib/client-sign-out';
 
 export default function SignOutButton({ className = 'btn btn--ghost btn--sm' }: { className?: string }) {
-  const router = useRouter();
-
   return (
-    <button
-      type="button"
-      className={className}
-      onClick={async () => {
-        await createClient().auth.signOut();
-        router.replace('/');
-        router.refresh();
+    <form
+      action={signOut}
+      style={{ display: 'contents' }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void signOutAndClear();
       }}
     >
-      Sair
-    </button>
+      <button type="submit" className={className}>
+        Sair
+      </button>
+    </form>
   );
 }

@@ -114,7 +114,6 @@ export async function putCachedSong(payload: CachedSongPayload): Promise<void> {
   }
 }
 
-/** Grava só se ainda não existir ou se o servidor tiver `updated_at` mais novo. */
 export async function putCachedSongIfNewer(payload: CachedSongPayload): Promise<boolean> {
   const existing = await getCachedSong(payload.slug);
   if (existing && Date.parse(existing.updated_at) >= Date.parse(payload.updated_at)) {
@@ -126,6 +125,36 @@ export async function putCachedSongIfNewer(payload: CachedSongPayload): Promise<
 
 export function isCacheStale(cached: CachedSongPayload, serverUpdatedAt: string): boolean {
   return Date.parse(cached.updated_at) < Date.parse(serverUpdatedAt);
+}
+
+/** Drops downloaded lyrics. Called on logout and when the login screen opens. */
+export async function clearSongCache(): Promise<void> {
+  if (typeof indexedDB === 'undefined') return;
+  try {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(SONG_CACHE_STORE, 'readwrite');
+      await idbRequest(tx.objectStore(SONG_CACHE_STORE).clear());
+    } finally {
+      db.close();
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function clearPrivateBrowserData(): Promise<void> {
+  await Promise.all([clearSongCache(), clearPageCaches()]);
+}
+
+async function clearPageCaches(): Promise<void> {
+  if (typeof caches === 'undefined') return;
+  try {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function payloadFromServerSong(
@@ -197,7 +226,10 @@ export function payloadFromApiSongs(teclado: ApiSong, violao: ApiSong | null): C
 async function fetchApiSong(slug: string, instrumento: Instrumento): Promise<ApiSong> {
   const params = new URLSearchParams({ include: 'all_keys' });
   if (instrumento === 'violao') params.set('instrumento', 'violao');
-  const res = await fetch(`/api/v1/songs/${encodeURIComponent(slug)}?${params}`);
+  const res = await fetch(`/api/v1/songs/${encodeURIComponent(slug)}?${params}`, {
+    credentials: 'same-origin',
+    cache: 'no-store',
+  });
   if (!res.ok) throw new Error(`Falha ao baixar ${slug} (${res.status})`);
   return (await res.json()) as ApiSong;
 }
@@ -211,7 +243,10 @@ async function listAllSyncSongs(): Promise<SyncSong[]> {
     guard += 1;
     const params = new URLSearchParams({ limit: '500' });
     if (since) params.set('since', since);
-    const res = await fetch(`/api/v1/sync?${params}`);
+    const res = await fetch(`/api/v1/sync?${params}`, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
     if (!res.ok) throw new Error('Falha ao listar músicas para download.');
     const data = (await res.json()) as {
       songs: SyncSong[];

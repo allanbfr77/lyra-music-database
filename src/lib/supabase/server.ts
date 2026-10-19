@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { supabaseAnonKey, supabaseUrl } from '@/lib/env';
+import { sessionCookieDefaults, sessionCookieOptions } from '@/lib/session-cookie';
 
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
@@ -9,6 +10,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(supabaseUrl(), supabaseAnonKey(), {
+    cookieOptions: sessionCookieDefaults(),
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -16,7 +18,7 @@ export async function createClient() {
       setAll(cookiesToSet: CookieToSet[]) {
         try {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            cookieStore.set(name, value, sessionCookieOptions(options));
           }
         } catch {
           // Chamado de um Server Component: o middleware já cuida da renovação.
