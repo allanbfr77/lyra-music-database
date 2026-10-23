@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
 import {
+  CHORDS_ENABLED,
   allKeysFor,
   cifraPath,
   defaultKeySpelling,
@@ -18,6 +19,7 @@ import {
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
 import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
+import LyricsField from '@/components/LyricsField';
 
 // Ordem cromática de C a B. O VALOR de cada opção continua na grafia oficial
 // (Db, Eb, Ab, Bb…), para que cada tom tenha um único link permanente;
@@ -493,28 +495,24 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
         </label>
       </div>
 
-      <div className="song-editor__toggle">
-        <nav className="seg" aria-label="Letra ou cifra">
-          <button className="seg__item" data-active={tab === 'letra'} onClick={() => setTab('letra')} type="button">
-            Letra
-          </button>
-          <button className="seg__item" data-active={tab === 'cifra'} onClick={() => setTab('cifra')} type="button">
-            Cifra
-          </button>
-        </nav>
-      </div>
+      {CHORDS_ENABLED ? (
+        <div className="song-editor__toggle">
+          <nav className="seg" aria-label="Letra ou cifra">
+            <button className="seg__item" data-active={tab === 'letra'} onClick={() => setTab('letra')} type="button">
+              Letra
+            </button>
+            <button className="seg__item" data-active={tab === 'cifra'} onClick={() => setTab('cifra')} type="button">
+              Cifra
+            </button>
+          </nav>
+        </div>
+      ) : null}
 
-      {tab === 'letra' ? (
+      {!CHORDS_ENABLED || tab === 'letra' ? (
         <div style={{ paddingTop: 12 }}>
-          <label className="field">
-            <textarea
-              className="textarea"
-              value={lyrics}
-              onChange={(e) => setLyrics(e.target.value)}
-              rows={18}
-              aria-label="Letra"
-            />
-          </label>
+          <div className="field">
+            <LyricsField value={lyrics} onChange={setLyrics} />
+          </div>
 
           <div className="field">
             <span className="field__label">REVISÃO</span>
@@ -671,7 +669,7 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
             <Link
               className="btn btn--ghost-mono"
               href={
-                chords.trim()
+                CHORDS_ENABLED && chords.trim()
                   ? cifraPath(effectiveSlug, normalizeKey(baseKey || initial.base_key, EMPTY.base_key), 'teclado')
                   : `/musica/${effectiveSlug}`
               }

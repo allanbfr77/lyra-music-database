@@ -7,7 +7,8 @@ import TomLouvoresLink from '@/components/TomLouvoresLink';
 /**
  * Controles do cabeçalho no computador. A ordem segue o site da INVB: o botão
  * de destaque dourado fica por último, na ponta direita — aqui, "Baixar
- * cifras", o que mais serve a quem usa o banco no culto.
+ * letras", o que mais serve a quem usa o banco no culto.
+ * Texto anterior do botão: "Baixar cifras".
  */
 export default function HeaderTools({
   isAdmin = false,

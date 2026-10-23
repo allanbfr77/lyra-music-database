@@ -1,4 +1,5 @@
 import { API_VERSION, json, preflight } from '@/lib/api';
+import { CHORDS_ENABLED } from '@/lib/chords';
 import { siteUrl } from '@/lib/env';
 import { countSongs } from '@/lib/songs';
 
@@ -26,15 +27,23 @@ export async function GET() {
     endpoints: {
       search: `${base}/songs?q={termo}&fields={title,artist,lyrics}&limit={1-100}&offset={n}`,
       song: `${base}/songs/{slug}`,
-      song_with_all_keys: `${base}/songs/{slug}?include=all_keys`,
-      chords_in_key: `${base}/songs/{slug}/chords/{key_slug}`,
-      guitar_chords: `${base}/songs/{slug}/chords/{key_slug}?instrumento=violao`,
+      ...(CHORDS_ENABLED
+        ? {
+            song_with_all_keys: `${base}/songs/{slug}?include=all_keys`,
+            chords_in_key: `${base}/songs/{slug}/chords/{key_slug}`,
+            guitar_chords: `${base}/songs/{slug}/chords/{key_slug}?instrumento=violao`,
+          }
+        : {}),
       sync: `${base}/sync?since={iso8601}&limit={1-500}`,
     },
-    key_slugs: {
-      description: 'Tom em minúsculo; # vira "s", bemol vira "b", menor recebe "m" no fim.',
-      examples: { A: 'a', 'C#': 'cs', Bb: 'bb', 'F#m': 'fsm' },
-    },
+    ...(CHORDS_ENABLED
+      ? {
+          key_slugs: {
+            description: 'Tom em minúsculo; # vira "s", bemol vira "b", menor recebe "m" no fim.',
+            examples: { A: 'a', 'C#': 'cs', Bb: 'bb', 'F#m': 'fsm' },
+          },
+        }
+      : {}),
     search_fields: {
       available: ['title', 'artist', 'lyrics'],
       default: ['title', 'artist', 'lyrics'],

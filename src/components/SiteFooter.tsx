@@ -22,7 +22,8 @@ export default function SiteFooter() {
         <div className="site-footer__grid">
           <div className="site-footer__brand">
             <Brand className="brand brand--footer" />
-            <p className="site-footer__lema">Letras e cifras em todos os tons, com link direto para cada tom.</p>
+            <p className="site-footer__lema">Letras das músicas do Lyra.</p>
+            {/* lema anterior: Letras e cifras em todos os tons, com link direto para cada tom. */}
           </div>
 
           <nav className="site-footer__col" aria-labelledby="rodape-banco">

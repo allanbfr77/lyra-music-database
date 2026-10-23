@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import ChordView from '@/components/ChordView';
 import SongCacheFallback from '@/components/SongCacheFallback';
-import { availableInstruments, cifraPath, slugToKey } from '@/lib/chords';
+import { CHORDS_ENABLED, availableInstruments, cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from './resolve';
 
@@ -65,6 +65,7 @@ async function ChordSongContent({
 
 export default async function ChordPage({ params, searchParams }: Params) {
   const { slug, tom } = await params;
+  if (!CHORDS_ENABLED) redirect(`/musica/${slug}`);
   const askedTom = (await searchParams).tom;
   const key = slugToKey(tom);
 

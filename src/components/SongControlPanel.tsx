@@ -193,10 +193,12 @@ export default function SongControlPanel({
     <ReaderSettingsContext.Provider value={{ sizePx, wrap }}>
       <div className="control-panel no-print">
         <div className="control-panel__row control-panel__row--a">
-          <div className="control-block">
-            <span className="control-label">EXIBIÇÃO</span>
-            {tabs}
-          </div>
+          {tabs ? (
+            <div className="control-block">
+              <span className="control-label">EXIBIÇÃO</span>
+              {tabs}
+            </div>
+          ) : null}
           <div className="control-panel__actions">
             <button
               type="button"

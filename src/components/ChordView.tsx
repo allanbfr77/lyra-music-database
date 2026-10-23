@@ -7,6 +7,7 @@ import SongTabs, { InstrumentTabs, type SongTab } from '@/components/SongTabs';
 import KeyBar from '@/components/KeyBar';
 import Reader from '@/components/Reader';
 import {
+  CHORDS_ENABLED,
   availableInstruments,
   chartForKey,
   cifraPath,
@@ -27,6 +28,7 @@ function fullKeys(baseKey: string) {
 }
 
 function pathFromLocation(pathname: string): { tab: SongTab; key: string | null; instrumento: Instrumento } {
+  if (!CHORDS_ENABLED) return { tab: 'letra', key: null, instrumento: 'teclado' };
   const match = pathname.match(/\/cifra\/([^/]+)(?:\/(violao))?/);
   if (!match) return { tab: 'letra', key: null, instrumento: 'teclado' };
   return {
@@ -53,7 +55,7 @@ export default function ChordView({
   initialTab?: SongTab;
   notice?: ReactNode;
 }) {
-  const [tab, setTab] = useState<SongTab>(initialTab);
+  const [tab, setTab] = useState<SongTab>(CHORDS_ENABLED ? initialTab : 'letra');
   const [viewKey, setViewKey] = useState(initialKey);
   const [instrumento, setInstrumento] = useState<Instrumento>(initialInstrumento);
   const [activeSong, setActiveSong] = useState(song);
@@ -144,7 +146,7 @@ export default function ChordView({
   }, []);
 
   useEffect(() => {
-    if (tab === 'letra') {
+    if (!CHORDS_ENABLED || tab === 'letra') {
       document.title = `${activeSong.title} — Letra · Banco de Músicas do Lyra`;
       return;
     }
@@ -173,11 +175,11 @@ export default function ChordView({
 
   const chordKeySlug = keyToSlug(viewKey);
   const shareTitle =
-    tab === 'letra'
+    !CHORDS_ENABLED || tab === 'letra'
       ? `${activeSong.title} — ${activeSong.artist}`
       : `${activeSong.title} — cifra em ${viewKey}${instrumento === 'violao' ? ' (violão)' : ''}`;
 
-  const tabs = (
+  const tabs = CHORDS_ENABLED ? (
     <SongTabs
       slug={activeSong.slug}
       active={tab}
@@ -186,17 +188,17 @@ export default function ChordView({
       instrumento={instrumento}
       onSelect={selectTab}
     />
-  );
+  ) : null;
 
   return (
     <>
       <SongHeader song={activeSong} currentKey={viewKey} />
       <SongControlPanel
         shareTitle={shareTitle}
-        showWrap={tab === 'cifra'}
+        showWrap={CHORDS_ENABLED && tab === 'cifra'}
         tabs={tabs}
         keyControl={
-          tab === 'cifra' ? (
+          CHORDS_ENABLED && tab === 'cifra' ? (
             <KeyBar
               slug={activeSong.slug}
               keys={activeKeys}
@@ -209,7 +211,7 @@ export default function ChordView({
           ) : null
         }
       >
-        {tab === 'cifra' ? (
+        {CHORDS_ENABLED && tab === 'cifra' ? (
           <InstrumentTabs
             slug={activeSong.slug}
             chordKeySlug={chordKeySlug}
@@ -218,8 +220,8 @@ export default function ChordView({
             onSelect={selectInstrumento}
           />
         ) : null}
-        {tab === 'cifra' ? notice : null}
-        {tab === 'letra' ? (
+        {CHORDS_ENABLED && tab === 'cifra' ? notice : null}
+        {!CHORDS_ENABLED || tab === 'letra' ? (
           lyrics ? (
             <Reader mode="lyrics" text={lyrics} />
           ) : (
@@ -236,7 +238,7 @@ export default function ChordView({
             <span className="small">A letra continua disponível na outra aba.</span>
           </div>
         )}
-        {tab === 'cifra' && chordsUsed.length > 0 && (
+        {CHORDS_ENABLED && tab === 'cifra' && chordsUsed.length > 0 && (
           <div className="no-print">
             <div className="keybar__label">Acordes usados neste tom</div>
             <div className="song-head__meta">
@@ -248,7 +250,7 @@ export default function ChordView({
             </div>
           </div>
         )}
-        {tab === 'cifra' && chart.trim() ? (
+        {CHORDS_ENABLED && tab === 'cifra' && chart.trim() ? (
           <p className="hint no-print">
             {source === 'manual'
               ? `Cifra revisada manualmente para o tom de ${viewKey}.`

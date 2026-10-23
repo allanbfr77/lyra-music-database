@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
+import { CHORDS_ENABLED } from '@/lib/chords';
 import { siteUrl } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +58,8 @@ export default function IntegrationPage() {
           <code>Authorization: Bearer &lt;chave&gt;</code>. A chave é a variável{' '}
           <code>LYRA_API_KEY</code> deste site (não use o prefixo <code>NEXT_PUBLIC</code>). A mesma chave
           precisa ser enviada pelo Tom Louvores, se ele consultar esta API. Quem está logado no navegador usa
-          a sessão — é assim que o botão &quot;Baixar cifras&quot; continua funcionando, sem a chave.
+          a sessão — é assim que o botão &quot;Baixar letras&quot; continua funcionando, sem a chave.
+          {/* texto anterior: botão "Baixar cifras" */}
         </p>
         <pre style={box}>{`Authorization: Bearer SUA_CHAVE
 ${base}/api/v1`}</pre>
@@ -70,7 +72,8 @@ ${base}/api/v1`}</pre>
 
         <Endpoint method="GET" path="/api/v1/songs?q=termo&fields=&limit=20&offset=0">
           Busca em <b>título</b>, <b>artista</b> e <b>trecho da letra</b>, com acento ignorado e busca por
-          prefixo. Cada resultado traz <code>slug</code>, tons disponíveis e o link direto.
+          prefixo. Cada resultado traz <code>slug</code>
+          {CHORDS_ENABLED ? ', tons disponíveis e o link direto.' : ' e o link da letra.'}
           <pre style={box}>{`${base}/api/v1/songs?q=deus%20de%20toda%20a%20terra`}</pre>
           O parâmetro opcional <code>fields</code> restringe onde procurar — valores{' '}
           <code>title</code>, <code>artist</code> e <code>lyrics</code>, separados por vírgula. Sem ele, procura
@@ -79,22 +82,33 @@ ${base}/api/v1`}</pre>
         </Endpoint>
 
         <Endpoint method="GET" path="/api/v1/songs/{slug}">
-          Música completa: letra, cifra base, tom original, capotraste e a lista de tons com o link de cada um.
-          Acrescente <code>?include=all_keys</code> para receber a cifra já transposta em todos os tons — uma
-          requisição só, pronta para gravar na biblioteca local. O padrão é a cifra de teclado; use{' '}
-          <code>?instrumento=violao</code> para a de violão. A resposta traz <code>instrumentos</code> com as
-          versões cadastradas.
-          <pre style={box}>{`${base}/api/v1/songs/galileu?include=all_keys
+          {CHORDS_ENABLED ? (
+            <>
+              Música completa: letra, cifra base, tom original, capotraste e a lista de tons com o link de cada um.
+              Acrescente <code>?include=all_keys</code> para receber a cifra já transposta em todos os tons — uma
+              requisição só, pronta para gravar na biblioteca local. O padrão é a cifra de teclado; use{' '}
+              <code>?instrumento=violao</code> para a de violão. A resposta traz <code>instrumentos</code> com as
+              versões cadastradas.
+              <pre style={box}>{`${base}/api/v1/songs/galileu?include=all_keys
 ${base}/api/v1/songs/galileu?instrumento=violao`}</pre>
+            </>
+          ) : (
+            <>
+              Música completa: letra, artista e os dados de cadastro.
+              <pre style={box}>{`${base}/api/v1/songs/galileu`}</pre>
+            </>
+          )}
         </Endpoint>
 
-        <Endpoint method="GET" path="/api/v1/songs/{slug}/chords/{tom}">
-          Cifra num tom específico. O tom vai em minúsculo: <code>a</code>, <code>bb</code>, <code>cs</code>,{' '}
-          <code>fsm</code>. Sem parâmetro, devolve teclado; <code>?instrumento=violao</code> pede a cifra de
-          violão.
-          <pre style={box}>{`${base}/api/v1/songs/galileu/chords/a
+        {CHORDS_ENABLED ? (
+          <Endpoint method="GET" path="/api/v1/songs/{slug}/chords/{tom}">
+            Cifra num tom específico. O tom vai em minúsculo: <code>a</code>, <code>bb</code>, <code>cs</code>,{' '}
+            <code>fsm</code>. Sem parâmetro, devolve teclado; <code>?instrumento=violao</code> pede a cifra de
+            violão.
+            <pre style={box}>{`${base}/api/v1/songs/galileu/chords/a
 ${base}/api/v1/songs/galileu/chords/a?instrumento=violao`}</pre>
-        </Endpoint>
+          </Endpoint>
+        ) : null}
 
         <Endpoint method="GET" path="/api/v1/sync?since={data}">
           Sincronização incremental: devolve só o que mudou desde a data informada e um <code>next_since</code>{' '}
@@ -104,25 +118,34 @@ ${base}/api/v1/songs/galileu/chords/a?instrumento=violao`}</pre>
 
         <div className="section-title">Endereços das páginas</div>
         <p className="muted small">
-          As páginas também exigem login. Um link direto de tom continua válido: a pessoa entra e volta para
-          esse endereço.
+          {CHORDS_ENABLED
+            ? 'As páginas também exigem login. Um link direto de tom continua válido: a pessoa entra e volta para esse endereço.'
+            : 'As páginas também exigem login.'}
         </p>
-        <pre style={box}>{`${base}/musica/galileu            → letra
+        <pre style={box}>{
+          CHORDS_ENABLED
+            ? `${base}/musica/galileu            → letra
 ${base}/musica/galileu/cifra      → cifra de teclado no tom original
 ${base}/musica/galileu/cifra/a    → cifra de teclado em A
 ${base}/musica/galileu/cifra/a/violao → cifra de violão em A
 ${base}/musica/galileu/cifra/bb   → cifra de teclado em Bb
-${base}/musica/galileu/cifra/fsm  → cifra de teclado em F#m`}</pre>
+${base}/musica/galileu/cifra/fsm  → cifra de teclado em F#m`
+            : `${base}/musica/galileu            → letra`
+        }</pre>
 
-        <div className="section-title">Formato da cifra</div>
-        <p className="muted small">
-          Texto puro, acordes em linhas próprias acima da letra — o mesmo formato usado nos sites de cifra. O
-          alinhamento das colunas é preservado na transposição.
-        </p>
-        <pre style={box}>{`[Intro] G  D  Em  C
+        {CHORDS_ENABLED ? (
+          <>
+            <div className="section-title">Formato da cifra</div>
+            <p className="muted small">
+              Texto puro, acordes em linhas próprias acima da letra — o mesmo formato usado nos sites de cifra. O
+              alinhamento das colunas é preservado na transposição.
+            </p>
+            <pre style={box}>{`[Intro] G  D  Em  C
 
 G            D/F#      Em
 Tu és o Deus de toda a terra`}</pre>
+          </>
+        ) : null}
       </main>
     </>
   );

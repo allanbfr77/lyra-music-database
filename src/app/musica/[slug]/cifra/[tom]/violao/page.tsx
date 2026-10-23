@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import ChordView from '@/components/ChordView';
 import SongCacheFallback from '@/components/SongCacheFallback';
-import { cifraPath, slugToKey } from '@/lib/chords';
+import { CHORDS_ENABLED, cifraPath, slugToKey } from '@/lib/chords';
 import { getSongBySlug } from '@/lib/songs';
 import { resolveChordPage } from '../resolve';
 
@@ -62,6 +63,7 @@ async function GuitarChordSongContent({
 
 export default async function GuitarChordPage({ params, searchParams }: Params) {
   const { slug, tom } = await params;
+  if (!CHORDS_ENABLED) redirect(`/musica/${slug}`);
   const askedTom = (await searchParams).tom;
   const key = slugToKey(tom);
 

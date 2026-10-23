@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { siteUrl } from '@/lib/env';
-import { availableInstruments, cifraPath, keyToSlug, normalizeKey } from '@/lib/chords';
+import { CHORDS_ENABLED, availableInstruments, cifraPath, keyToSlug, normalizeKey } from '@/lib/chords';
 import { chartForKey, publishedKeys, type SongWithOverrides } from '@/lib/songs';
 import type { Instrumento, SearchHit } from '@/lib/types';
 
@@ -64,13 +64,13 @@ export function mapSearchHit(hit: SearchHit) {
     slug: hit.slug,
     title: hit.title,
     artist: hit.artist,
-    base_key: baseKey,
-    keys,
-    has_chords: hit.has_chords,
+    base_key: CHORDS_ENABLED ? baseKey : null,
+    keys: CHORDS_ENABLED ? keys : [],
+    has_chords: CHORDS_ENABLED ? hit.has_chords : false,
     snippet: hit.snippet ? hit.snippet.replace(/\[\[|\]\]/g, '') : null,
     highlighted_snippet: hit.snippet,
     updated_at: hit.updated_at,
-    url: hit.has_chords ? chordUrl(hit.slug, baseKey) : songUrl(hit.slug),
+    url: CHORDS_ENABLED && hit.has_chords ? chordUrl(hit.slug, baseKey) : songUrl(hit.slug),
     api_url: `${siteUrl()}/api/${API_VERSION}/songs/${hit.slug}`,
   };
 }
@@ -80,6 +80,26 @@ export function mapSong(
   song: SongWithOverrides,
   options: { includeAllKeys: boolean; instrumento?: Instrumento }
 ) {
+  if (!CHORDS_ENABLED) {
+    return {
+      format: 'lyra.song.v1',
+      id: song.id,
+      slug: song.slug,
+      title: song.title,
+      artist: song.artist,
+      language: song.language,
+      tempo_bpm: song.tempo_bpm,
+      time_signature: song.time_signature,
+      source_url: song.source_url,
+      youtube_url: song.youtube_url,
+      notes: song.notes,
+      lyrics: song.lyrics,
+      url: songUrl(song.slug),
+      created_at: song.created_at,
+      updated_at: song.updated_at,
+    };
+  }
+
   const instrumento = options.instrumento ?? 'teclado';
   const instrumentos = availableInstruments(song, song.overrides);
   const baseKey = normalizeKey(song.base_key);

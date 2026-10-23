@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { SearchHit } from '@/lib/types';
-import { normalizeKey } from '@/lib/chords';
+import { CHORDS_ENABLED, normalizeKey } from '@/lib/chords';
 import { ChevronRightIcon } from '@/components/icons';
 
 export type CatalogSong = SearchHit & {
@@ -89,13 +89,13 @@ function SongRow({
           ) : null}
         </div>
         <div className="song-item__artist song-item__artist--col">{artist}</div>
-        {song.has_chords ? (
+        {CHORDS_ENABLED && song.has_chords ? (
           <span className="song-item__key">{key}</span>
-        ) : (
+        ) : CHORDS_ENABLED ? (
           <span className="song-item__key song-item__key--empty" aria-hidden="true">
             —
           </span>
-        )}
+        ) : null}
         <span className="song-item__chevron">
           <ChevronRightIcon size={14} />
         </span>
@@ -117,11 +117,11 @@ export default function SongList({
   const groups = groupSongs(songs);
 
   return (
-    <div className="song-groups">
+    <div className={CHORDS_ENABLED ? 'song-groups' : 'song-groups song-groups--lyrics'}>
       <div className="song-table-head" aria-hidden="true">
         <div>TÍTULO</div>
         <div className="song-table-head__artist">ARTISTA</div>
-        <div className="song-table-head__key">TOM</div>
+        {CHORDS_ENABLED ? <div className="song-table-head__key">TOM</div> : null}
         <div />
       </div>
       {groups.map((group) => (

@@ -6,7 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Banco de Músicas do Lyra',
     short_name: 'Lyra db',
-    description: 'Letras e cifras em todos os tons, com link direto para cada tom.',
+    description: 'Letras das músicas do Lyra.',
+    // description anterior: 'Letras e cifras em todos os tons, com link direto para cada tom.',
     lang: 'pt-BR',
     dir: 'ltr',
     start_url: '/',

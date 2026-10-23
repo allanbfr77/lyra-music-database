@@ -5,7 +5,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SongBackButton from '@/components/SongBackButton';
 import ChordView from '@/components/ChordView';
 import SongCacheFallback from '@/components/SongCacheFallback';
-import { getSongBySlug, publishedKeys } from '@/lib/songs';
+import { getViewerSongBySlug, publishedKeys } from '@/lib/songs';
 import { availableInstruments, normalizeKey } from '@/lib/chords';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ type Params = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const song = await getSongBySlug(slug).catch(() => null);
+  const song = await getViewerSongBySlug(slug).catch(() => null);
   if (!song) return { title: 'Música não encontrada' };
 
   return {
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 async function LyricsSongContent({ slug }: { slug: string }) {
-  const song = await getSongBySlug(slug).catch(() => null);
+  const song = await getViewerSongBySlug(slug).catch(() => null);
   if (!song) notFound();
 
   const instruments = availableInstruments(song, song.overrides);

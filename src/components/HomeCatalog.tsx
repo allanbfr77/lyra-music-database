@@ -4,7 +4,7 @@ import { useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import SongList, { type CatalogSong } from '@/components/SongList';
 import { ChevronDownIcon, CloseIcon } from '@/components/icons';
-import { allKeysFor, normalizeKey } from '@/lib/chords';
+import { CHORDS_ENABLED, allKeysFor, normalizeKey } from '@/lib/chords';
 
 /** Filtro tri-estado independente (cifra ou letra). */
 type TriFilter = 'all' | 'yes' | 'no';
@@ -189,15 +189,15 @@ export default function HomeCatalog({
 
   const visible = useMemo(() => {
     return songs.filter((song) => {
-      if (chordsFilter === 'yes' && !song.has_chords) return false;
-      if (chordsFilter === 'no' && song.has_chords) return false;
+      if (CHORDS_ENABLED && chordsFilter === 'yes' && !song.has_chords) return false;
+      if (CHORDS_ENABLED && chordsFilter === 'no' && song.has_chords) return false;
       if (lyricsFilter === 'yes' && !songHasLyrics(song)) return false;
       if (lyricsFilter === 'no' && songHasLyrics(song)) return false;
       if (lyricsReviewFilter === 'pending' && song.lyrics_reviewed) return false;
       if (lyricsReviewFilter === 'done' && !song.lyrics_reviewed) return false;
-      if (chordsReviewFilter === 'pending' && song.chords_reviewed) return false;
-      if (chordsReviewFilter === 'done' && !song.chords_reviewed) return false;
-      if (activeKey && normalizeKey(song.base_key) !== activeKey) return false;
+      if (CHORDS_ENABLED && chordsReviewFilter === 'pending' && song.chords_reviewed) return false;
+      if (CHORDS_ENABLED && chordsReviewFilter === 'done' && !song.chords_reviewed) return false;
+      if (CHORDS_ENABLED && activeKey && normalizeKey(song.base_key) !== activeKey) return false;
       if (activeArtist && song.artist.trim() !== activeArtist) return false;
       if (artistNeedle && !foldText(song.artist).includes(artistNeedle)) return false;
       return true;
@@ -244,12 +244,14 @@ export default function HomeCatalog({
 
   const matrix = (
     <div className="catalog-filters__matrix">
-      <TriGroup label="Cifra" value={chordsFilter} onChange={setChordsFilter} />
+      {CHORDS_ENABLED ? <TriGroup label="Cifra" value={chordsFilter} onChange={setChordsFilter} /> : null}
       <TriGroup label="Letra" value={lyricsFilter} onChange={setLyricsFilter} />
       {showReviewFilter ? (
         <>
           <ReviewSelect label="Revisor de letra" value={lyricsReviewFilter} onChange={setLyricsReviewFilter} />
-          <ReviewSelect label="Revisor de cifra" value={chordsReviewFilter} onChange={setChordsReviewFilter} />
+          {CHORDS_ENABLED ? (
+            <ReviewSelect label="Revisor de cifra" value={chordsReviewFilter} onChange={setChordsReviewFilter} />
+          ) : null}
         </>
       ) : null}
     </div>
@@ -321,22 +323,24 @@ export default function HomeCatalog({
               </datalist>
             </label>
 
-            <label className="catalog-filters__field">
-              <span className="catalog-filters__label">Tom</span>
-              <select
-                className="select query-meta__select catalog-filters__select"
-                value={activeKey ?? ''}
-                aria-label="Filtrar por tom"
-                onChange={(event) => setSelectedKey(event.target.value || null)}
-              >
-                <option value="">Todos os tons</option>
-                {keys.map((key) => (
-                  <option key={key} value={key}>
-                    {key}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {CHORDS_ENABLED ? (
+              <label className="catalog-filters__field">
+                <span className="catalog-filters__label">Tom</span>
+                <select
+                  className="select query-meta__select catalog-filters__select"
+                  value={activeKey ?? ''}
+                  aria-label="Filtrar por tom"
+                  onChange={(event) => setSelectedKey(event.target.value || null)}
+                >
+                  <option value="">Todos os tons</option>
+                  {keys.map((key) => (
+                    <option key={key} value={key}>
+                      {key}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
           </div>
         ) : null}
       </div>

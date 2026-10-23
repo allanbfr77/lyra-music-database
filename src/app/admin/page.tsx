@@ -33,7 +33,6 @@ export default async function AdminHome({
       snippet: song.snippet,
       updated_at: song.updated_at,
       rank: song.rank,
-      href: `/admin/musica/${song.id}`,
       draft: !song.published,
       chords_reviewed: song.chords_reviewed,
       lyrics_reviewed: song.lyrics_reviewed,

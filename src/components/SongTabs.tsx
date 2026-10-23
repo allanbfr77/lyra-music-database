@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react';
 import Link from 'next/link';
-import { cifraPath, slugToKey } from '@/lib/chords';
+import { CHORDS_ENABLED, cifraPath, slugToKey } from '@/lib/chords';
 import type { Instrumento } from '@/lib/types';
 
 export type SongTab = 'letra' | 'cifra';
@@ -31,6 +31,8 @@ export default function SongTabs({
   hasGuitar?: boolean;
   onSelect?: (tab: SongTab) => void;
 }) {
+  if (!CHORDS_ENABLED) return null;
+
   const key = slugToKey(chordKeySlug) ?? chordKeySlug;
   const cifraHref = hasChords ? cifraPath(slug, key, instrumento) : null;
 
@@ -75,7 +77,7 @@ export function InstrumentTabs({
   hasGuitar?: boolean;
   onSelect?: (instrumento: Instrumento) => void;
 }) {
-  if (!hasGuitar) return null;
+  if (!CHORDS_ENABLED || !hasGuitar) return null;
   const key = slugToKey(chordKeySlug) ?? chordKeySlug;
 
   return (

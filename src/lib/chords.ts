@@ -1,4 +1,12 @@
 /**
+ * Cifras desativadas: o banco fica só com letras.
+ * Para restaurar letra + cifra, troque para `true`.
+ * O tipo é `boolean` de propósito, para o restante do código continuar
+ * compilando os dois caminhos.
+ */
+export const CHORDS_ENABLED: boolean = false;
+
+/**
  * Motor de cifras: análise de texto, reconhecimento de tom, transposição
  * e nomes de tons.
  *

@@ -2087,6 +2087,12 @@ svg { flex: none; }
   transform: translateX(2px);
 }
 
+/* Cifras desativadas: a lista não reserva coluna de tom. */
+.song-groups--lyrics .song-table-head,
+.song-groups--lyrics .song-item__link {
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 20px;
+}
+
 @media (max-width: 640px) {
   .song-table-head {
     grid-template-columns: minmax(0, 1fr) 56px 16px;
@@ -2103,6 +2109,10 @@ svg { flex: none; }
   .song-item__key { font-size: 12.5px; }
   .song-item__artist--col { display: none; }
   .song-item__artist--nested { display: block; }
+  .song-groups--lyrics .song-table-head,
+  .song-groups--lyrics .song-item__link {
+    grid-template-columns: minmax(0, 1fr) 16px;
+  }
   .letter-head { padding: 16px 14px 4px; }
   .db-foot {
     flex-direction: row;
@@ -2169,6 +2179,7 @@ svg { flex: none; }
 .song-head__row { display: flex; align-items: flex-start; gap: 16px; }
 .song-head__text { min-width: 0; flex: 1; }
 .song-head__row > .icon-btn { flex: none; margin-top: 6px; }
+.song-head__edit { flex: none; margin-top: 10px; }
 .song-head__title {
   font-family: var(--sans);
   font-size: clamp(2.1rem, 5.4vw, 3.4rem);
@@ -2668,6 +2679,48 @@ button.key-picker__cell:hover { border-color: var(--line-gold); color: var(--tex
   letter-spacing: 0;
   white-space: pre-wrap;
 }
+.lyrics__stanza { margin: 0; white-space: pre-wrap; }
+.lyrics__rule,
+.lyrics-field__rule {
+  display: block;
+  height: 0;
+  border: 0;
+  background: none;
+  border-top: 1px solid color-mix(in srgb, var(--text) 32%, transparent);
+  margin: 0.85em 0 0.7em;
+}
+
+/* Campo da letra no editor: um bloco só, com fio fino entre os trechos. */
+.lyrics-field {
+  width: 100%;
+  min-height: 160px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--field-border);
+  background: var(--field);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.lyrics-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.lyrics-field__part {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  min-height: 1.6em;
+}
+.lyrics-field__part:focus { outline: none; }
 
 /* No celular o painel vai de borda a borda: a cifra não perde largura e não
    rola de lado mais do que já rolava. */
@@ -3798,6 +3851,7 @@ html:has(.slides-page) .site-footer { display: none; }
   .sheet { white-space: pre-wrap; font-size: 12px; }
   .sheet__chord { color: #000; font-weight: 700; }
   .sheet__section-chip { color: #000; background: none; border-color: #000; }
+  .lyrics__rule, .lyrics-field__rule { border-top-color: #000; }
 }
 
 /* Indicador discreto do salvamento automático (editor do admin). */

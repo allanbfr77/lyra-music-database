@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Song } from '@/lib/types';
-import { normalizeKey } from '@/lib/chords';
+import { CHORDS_ENABLED, normalizeKey } from '@/lib/chords';
 import { parseYoutubeUrl, youtubeEmbedUrl } from '@/lib/youtube';
-import { CloseIcon, ExternalLinkIcon, YouTubeIcon } from '@/components/icons';
+import { CloseIcon, ExternalLinkIcon, PencilIcon, YouTubeIcon } from '@/components/icons';
 
 export default function SongHeader({ song }: { song: Song; currentKey?: string }) {
   const youtubeUrl = parseYoutubeUrl(song.youtube_url);
@@ -13,7 +13,9 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
   // Sem cifra, o tom gravado é só o padrão do cadastro — não exibimos como tom original.
   const hasChords = Boolean((song.chords ?? '').trim() || (song.chords_guitar ?? '').trim());
   const originalKey = hasChords ? normalizeKey(song.base_key) : 'A detectar';
-  const extraChips = Boolean(song.capo > 0 || song.tempo_bpm || song.time_signature || song.source_url);
+  const extraChips = Boolean(
+    (CHORDS_ENABLED && song.capo > 0) || song.tempo_bpm || song.time_signature || song.source_url
+  );
   const [showPlayer, setShowPlayer] = useState(false);
 
   useEffect(() => {
@@ -34,6 +36,10 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
         <div className="song-head__text">
           <h1 className="song-head__title">{song.title}</h1>
         </div>
+        <Link href={`/admin/musica/${song.id}`} className="btn btn--tint btn--sm no-print song-head__edit">
+          <PencilIcon size={14} />
+          Editar música
+        </Link>
         {youtubeUrl && embedUrl ? (
           <button
             type="button"
@@ -54,15 +60,17 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
           <span className="song-meta__k">ARTISTA</span>
           <span className="song-meta__v">{song.artist || 'Artista não informado'}</span>
         </div>
-        <div className="song-meta__field">
-          <span className="song-meta__k">TOM ORIGINAL</span>
-          <span className="song-meta__v song-meta__v--key">{originalKey}</span>
-        </div>
+        {CHORDS_ENABLED ? (
+          <div className="song-meta__field">
+            <span className="song-meta__k">TOM ORIGINAL</span>
+            <span className="song-meta__v song-meta__v--key">{originalKey}</span>
+          </div>
+        ) : null}
       </div>
 
       {extraChips ? (
         <div className="song-head__meta">
-          {song.capo > 0 ? <span className="chip">Capotraste {song.capo}ª casa</span> : null}
+          {CHORDS_ENABLED && song.capo > 0 ? <span className="chip">Capotraste {song.capo}ª casa</span> : null}
           {song.tempo_bpm ? <span className="chip">{song.tempo_bpm} BPM</span> : null}
           {song.time_signature ? <span className="chip">{song.time_signature}</span> : null}
           {song.source_url ? (

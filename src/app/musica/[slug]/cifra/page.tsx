@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getSongBySlug } from '@/lib/songs';
-import { keyToSlug, normalizeKey } from '@/lib/chords';
+import { CHORDS_ENABLED, keyToSlug, normalizeKey } from '@/lib/chords';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,5 +9,6 @@ export default async function ChordIndexPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) notFound();
+  if (!CHORDS_ENABLED) redirect(`/musica/${song.slug}`);
   redirect(`/musica/${song.slug}/cifra/${keyToSlug(normalizeKey(song.base_key))}`);
 }

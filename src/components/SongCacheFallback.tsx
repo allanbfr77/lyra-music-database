@@ -13,7 +13,7 @@ import type { SongTab } from '@/components/SongTabs';
  */
 export default function SongCacheFallback({
   slug,
-  initialTab = 'cifra',
+  initialTab = 'letra',
   initialKey,
   instrumento = 'teclado',
 }: {
@@ -38,7 +38,7 @@ export default function SongCacheFallback({
     return (
       <div className="empty song-cache-loading" aria-busy="true">
         <strong>Carregando…</strong>
-        <span className="small">Buscando letra e cifra</span>
+        <span className="small">Buscando a letra</span>
       </div>
     );
   }
@@ -47,7 +47,7 @@ export default function SongCacheFallback({
     return (
       <div className="empty song-cache-loading" aria-busy="true">
         <strong>Carregando…</strong>
-        <span className="small">Buscando letra e cifra</span>
+        <span className="small">Buscando a letra</span>
       </div>
     );
   }

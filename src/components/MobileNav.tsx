@@ -251,7 +251,8 @@ export default function MobileNav({
                   tabIndex={tab}
                 >
                   <DownloadIcon size={17} />
-                  Baixar letras e cifras
+                  Baixar letras
+                  {/* texto anterior: Baixar letras e cifras */}
                 </button>
                 <p className="mobile-drawer__cta-note">Para abertura rápida no aparelho</p>
               </>

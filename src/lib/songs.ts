@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createPublicClient } from '@/lib/supabase/public';
 import { allKeysFor, normalizeKey } from '@/lib/chords';
 import { accentInsensitiveOr, foldAccents } from '@/lib/text-fold';
@@ -74,8 +75,7 @@ function dropMissingColumn(
   return { columns, extra, changed: false };
 }
 
-export const getSongBySlug = cache(async function getSongBySlug(slug: string): Promise<SongWithOverrides | null> {
-  const supabase = createPublicClient();
+async function loadSongBySlug(supabase: SupabaseClient, slug: string): Promise<SongWithOverrides | null> {
   let columns = SONG_COLUMNS;
   let extra = OVERRIDE_COLUMNS;
 
@@ -98,6 +98,19 @@ export const getSongBySlug = cache(async function getSongBySlug(slug: string): P
   }
 
   return null;
+}
+
+export const getSongBySlug = cache(async function getSongBySlug(slug: string): Promise<SongWithOverrides | null> {
+  return loadSongBySlug(createPublicClient(), slug);
+});
+
+/** Página da letra para quem está logado: inclui rascunho, que o cliente público não vê. */
+export const getViewerSongBySlug = cache(async function getViewerSongBySlug(
+  slug: string
+): Promise<SongWithOverrides | null> {
+  const { createClient } = await import('@/lib/supabase/server');
+  const supabase = await createClient();
+  return loadSongBySlug(supabase, slug);
 });
 
 export const getSongById = cache(async function getSongById(id: string): Promise<SongWithOverrides | null> {

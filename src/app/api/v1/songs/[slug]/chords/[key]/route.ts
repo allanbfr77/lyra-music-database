@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { apiError, chordUrl, json, preflight } from '@/lib/api';
-import { availableInstruments, chartForKey, keyToSlug, normalizeKey, slugToKey, uniqueChords } from '@/lib/chords';
+import { CHORDS_ENABLED, availableInstruments, chartForKey, keyToSlug, normalizeKey, slugToKey, uniqueChords } from '@/lib/chords';
 import { getSongBySlug, publishedKeys } from '@/lib/songs';
 import { parseInstrumento } from '@/lib/types';
 
@@ -8,6 +8,10 @@ export const dynamic = 'force-dynamic';
 
 /** Cifra de uma música num tom específico: /api/v1/songs/galileu/chords/a */
 export async function GET(request: NextRequest, context: { params: Promise<{ slug: string; key: string }> }) {
+  if (!CHORDS_ENABLED) {
+    return apiError('Cifras desativadas. Este banco disponibiliza apenas letras.', 404);
+  }
+
   const { slug, key: keyParam } = await context.params;
   const instrumento = parseInstrumento(request.nextUrl.searchParams.get('instrumento'));
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { parseChart, type ChartLine } from '@/lib/chords';
+import { splitLyricStanzas } from '@/lib/lyric-sections';
 import { useReaderSettings } from '@/components/SongControlPanel';
 
 type Props = {
@@ -23,9 +24,16 @@ export default function Reader({ mode, text }: Props) {
     );
   }
 
+  const stanzas = splitLyricStanzas(text);
+
   return (
     <div className="lyrics" style={{ ['--sheet-size' as string]: `${sizePx}px` }}>
-      {text}
+      {stanzas.map((stanza, index) => (
+        <Fragment key={index}>
+          {index > 0 ? <hr className="lyrics__rule" /> : null}
+          <div className="lyrics__stanza">{stanza}</div>
+        </Fragment>
+      ))}
     </div>
   );
 }

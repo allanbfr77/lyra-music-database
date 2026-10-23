@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { apiError, chordUrl, clampInt, json, preflight, songUrl } from '@/lib/api';
 import { createPublicClient } from '@/lib/supabase/public';
 import { publishedKeys } from '@/lib/songs';
-import { normalizeKey } from '@/lib/chords';
+import { CHORDS_ENABLED, normalizeKey } from '@/lib/chords';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +42,13 @@ export async function GET(request: NextRequest) {
         slug: song.slug,
         title: song.title,
         artist: song.artist,
-        base_key: baseKey,
-        keys: publishedKeys({ base_key: baseKey, available_keys: song.available_keys ?? [] }),
-        has_chords: Boolean((song.chords ?? '').trim()),
-        url: (song.chords ?? '').trim() ? chordUrl(song.slug, baseKey) : songUrl(song.slug),
+        base_key: CHORDS_ENABLED ? baseKey : null,
+        keys: CHORDS_ENABLED
+          ? publishedKeys({ base_key: baseKey, available_keys: song.available_keys ?? [] })
+          : [],
+        has_chords: CHORDS_ENABLED && Boolean((song.chords ?? '').trim()),
+        url:
+          CHORDS_ENABLED && (song.chords ?? '').trim() ? chordUrl(song.slug, baseKey) : songUrl(song.slug),
         updated_at: song.updated_at,
       };
     });
