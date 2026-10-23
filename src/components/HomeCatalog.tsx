@@ -75,10 +75,11 @@ function artistsInResults(songs: CatalogSong[]): string[] {
   return [...names].sort((a, b) => foldText(a).localeCompare(foldText(b), 'pt-BR'));
 }
 
-/** O RPC devolve preview da letra em `snippet`; string vazia ≈ sem letra cadastrada. */
-function songHasLyrics(song: CatalogSong) {
-  return Boolean(song.snippet?.trim());
-}
+// Filtro "Letra: Todos / Com / Sem" desativado: o catálogo é só música.
+// /** O RPC devolve preview da letra em `snippet`; string vazia ≈ sem letra cadastrada. */
+// function songHasLyrics(song: CatalogSong) {
+//   return Boolean(song.snippet?.trim());
+// }
 
 function recordLabel(total: number, visible: number, query: string, filtered: boolean) {
   const n = filtered ? visible : total;
@@ -163,7 +164,7 @@ export default function HomeCatalog({
   emptyNoResults?: { title: string; hint: string };
 }) {
   const [chordsFilter, setChordsFilter] = useState<TriFilter>('all');
-  const [lyricsFilter, setLyricsFilter] = useState<TriFilter>('all');
+  // const [lyricsFilter, setLyricsFilter] = useState<TriFilter>('all');
   // Revisão da letra e da cifra são independentes: cada filtro considera só o seu campo.
   const [lyricsReviewFilter, setLyricsReviewFilter] = useState<ReviewFilter>('all');
   const [chordsReviewFilter, setChordsReviewFilter] = useState<ReviewFilter>('all');
@@ -191,8 +192,8 @@ export default function HomeCatalog({
     return songs.filter((song) => {
       if (CHORDS_ENABLED && chordsFilter === 'yes' && !song.has_chords) return false;
       if (CHORDS_ENABLED && chordsFilter === 'no' && song.has_chords) return false;
-      if (lyricsFilter === 'yes' && !songHasLyrics(song)) return false;
-      if (lyricsFilter === 'no' && songHasLyrics(song)) return false;
+      // if (lyricsFilter === 'yes' && !songHasLyrics(song)) return false;
+      // if (lyricsFilter === 'no' && songHasLyrics(song)) return false;
       if (lyricsReviewFilter === 'pending' && song.lyrics_reviewed) return false;
       if (lyricsReviewFilter === 'done' && !song.lyrics_reviewed) return false;
       if (CHORDS_ENABLED && chordsReviewFilter === 'pending' && song.chords_reviewed) return false;
@@ -205,7 +206,7 @@ export default function HomeCatalog({
   }, [
     songs,
     chordsFilter,
-    lyricsFilter,
+    // lyricsFilter,
     lyricsReviewFilter,
     chordsReviewFilter,
     activeKey,
@@ -216,7 +217,7 @@ export default function HomeCatalog({
   const hasExtraFilters = Boolean(activeKey || activeArtist || artistQuery.trim());
   const hasTriFilters =
     chordsFilter !== 'all' ||
-    lyricsFilter !== 'all' ||
+    // lyricsFilter !== 'all' ||
     lyricsReviewFilter !== 'all' ||
     chordsReviewFilter !== 'all';
   const hasAnyFilter = hasTriFilters || hasExtraFilters;
@@ -224,7 +225,7 @@ export default function HomeCatalog({
 
   function clearFilters() {
     setChordsFilter('all');
-    setLyricsFilter('all');
+    // setLyricsFilter('all');
     setLyricsReviewFilter('all');
     setChordsReviewFilter('all');
     setSelectedKey(null);
@@ -245,7 +246,7 @@ export default function HomeCatalog({
   const matrix = (
     <div className="catalog-filters__matrix">
       {CHORDS_ENABLED ? <TriGroup label="Cifra" value={chordsFilter} onChange={setChordsFilter} /> : null}
-      <TriGroup label="Letra" value={lyricsFilter} onChange={setLyricsFilter} />
+      {/* <TriGroup label="Letra" value={lyricsFilter} onChange={setLyricsFilter} /> */}
       {showReviewFilter ? (
         <>
           <ReviewSelect label="Revisor de letra" value={lyricsReviewFilter} onChange={setLyricsReviewFilter} />

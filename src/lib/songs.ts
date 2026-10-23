@@ -184,6 +184,8 @@ export type AdminSearchHit = SearchHit & {
   published: boolean;
   chords_reviewed: boolean;
   lyrics_reviewed: boolean;
+  /** Full lyrics so the admin library can match text without another request. */
+  lyrics: string;
 };
 
 /**
@@ -262,6 +264,7 @@ export async function searchAdminSongs(
       // Sem coluna / null → Revisar (nunca assume Revisada por omissão).
       chords_reviewed: Boolean(row.chords_reviewed),
       lyrics_reviewed: Boolean(row.lyrics_reviewed),
+      lyrics: row.lyrics ?? '',
     }));
   }
 

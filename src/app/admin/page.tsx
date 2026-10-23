@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import HomeCatalog from '@/components/HomeCatalog';
+import AdminCatalog, { type LibrarySong } from '@/components/AdminCatalog';
 import SearchBox from '@/components/SearchBox';
 import { PlusIcon } from '@/components/icons';
 import { searchAdminSongs } from '@/lib/songs';
-import { SEARCH_FIELDS, fieldIdsToWeights, parseFieldIds } from '@/lib/search-fields';
-import type { CatalogSong } from '@/components/SongList';
+import { parseFieldIds } from '@/lib/search-fields';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +16,11 @@ export default async function AdminHome({
   const query = q.trim();
   const fieldIds = parseFieldIds(c);
 
-  let songs: CatalogSong[] = [];
+  let songs: LibrarySong[] = [];
   let failure: string | null = null;
 
   try {
-    const hits = await searchAdminSongs(query, query ? 50 : 200, 0, fieldIdsToWeights(fieldIds));
+    const hits = await searchAdminSongs('', 1000);
     songs = hits.map((song) => ({
       id: song.id,
       slug: song.slug,
@@ -36,14 +35,11 @@ export default async function AdminHome({
       draft: !song.published,
       chords_reviewed: song.chords_reviewed,
       lyrics_reviewed: song.lyrics_reviewed,
+      lyrics: song.lyrics,
     }));
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Erro ao consultar o banco.';
   }
-
-  const activeLabels = SEARCH_FIELDS.filter((f) => fieldIds.includes(f.id))
-    .map((f) => f.label.toLowerCase())
-    .join(', ');
 
   const search = <SearchBox initialQuery={query} initialFields={fieldIds} />;
 
@@ -69,23 +65,7 @@ export default async function AdminHome({
             </div>
           </>
         ) : (
-          <HomeCatalog
-            search={search}
-            songs={songs}
-            query={query}
-            fieldLabels={activeLabels}
-            showSnippet={Boolean(query) && fieldIds.includes('l')}
-            showReviewFilter
-            admin
-            emptyNoQuery={{
-              title: 'Nenhuma música cadastrada',
-              hint: 'Comece cadastrando a primeira.',
-            }}
-            emptyNoResults={{
-              title: 'Nada encontrado',
-              hint: '',
-            }}
-          />
+          <AdminCatalog songs={songs} initialQuery={query} initialFields={fieldIds} />
         )}
       </div>
     </main>
