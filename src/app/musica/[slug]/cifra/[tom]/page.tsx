@@ -22,11 +22,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const song = await getSongBySlug(slug).catch(() => null);
   if (!song) return { title: 'Música não encontrada' };
 
-  const title = `${song.title} — Cifra em ${key}`;
   const url = cifraPath(song.slug, key, 'teclado');
 
   return {
-    title,
+    title: { absolute: `${song.title} - Lyra` },
     alternates: { canonical: url },
   };
 }

@@ -76,24 +76,26 @@ export default async function PlaylistPage({
 
         <form className="setlist-date" action="/playlist">
           <p className="setlist-date__when">{formatPlaylistDate(date)}</p>
-          <Link className="btn" href={`/playlist?data=${shiftIsoDate(date, -1)}`}>
+          <Link className="btn setlist-date__prev" href={`/playlist?data=${shiftIsoDate(date, -1)}`}>
             Anterior
           </Link>
-          <label className="visually-hidden" htmlFor="playlist-data">
-            Data do culto
-          </label>
-          <input
-            key={date}
-            id="playlist-data"
-            className="input setlist-date__input"
-            type="date"
-            name="data"
-            defaultValue={date}
-          />
-          <button className="btn btn--primary" type="submit">
-            Ir
-          </button>
-          <Link className="btn" href={`/playlist?data=${shiftIsoDate(date, 1)}`}>
+          <div className="setlist-date__pick">
+            <label className="visually-hidden" htmlFor="playlist-data">
+              Data do culto
+            </label>
+            <input
+              key={date}
+              id="playlist-data"
+              className="input setlist-date__input"
+              type="date"
+              name="data"
+              defaultValue={date}
+            />
+            <button className="btn btn--primary" type="submit">
+              Ir
+            </button>
+          </div>
+          <Link className="btn setlist-date__next" href={`/playlist?data=${shiftIsoDate(date, 1)}`}>
             Próximo
           </Link>
         </form>

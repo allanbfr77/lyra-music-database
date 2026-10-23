@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import HomeCatalog from '@/components/HomeCatalog';
 import SearchBox from '@/components/SearchBox';
 import type { CatalogSong } from '@/components/SongList';
@@ -20,6 +20,10 @@ export default function AdminCatalog({
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [fields, setFields] = useState(() => parseFieldIds(initialFields));
+
+  useEffect(() => {
+    document.title = 'Lyra Database';
+  }, []);
 
   const indexed = useMemo(() => prepareLibrary(songs), [songs]);
   const visible = useMemo(() => filterLibrary(indexed, query, fields), [indexed, query, fields]);

@@ -137,6 +137,10 @@ function draftStorageKey(id: string | null) {
 export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitial }) {
   const router = useRouter();
 
+  useEffect(() => {
+    document.title = 'Editor - Lyra';
+  }, []);
+
   const [title, setTitle] = useState(initial.title);
   const [artist, setArtist] = useState(initial.artist);
   const [slug, setSlug] = useState(initial.slug);

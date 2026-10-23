@@ -1,8 +1,9 @@
 'use client';
 
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import SongList, { type CatalogSong } from '@/components/SongList';
+import SongList, { type CatalogSong, type SongSort } from '@/components/SongList';
 import { ChevronDownIcon, CloseIcon } from '@/components/icons';
 import { CHORDS_ENABLED, allKeysFor, normalizeKey } from '@/lib/chords';
 
@@ -131,6 +132,190 @@ function TriGroup({
   );
 }
 
+function ArtistField({
+  artists,
+  query,
+  selected,
+  onChange,
+}: {
+  artists: string[];
+  query: string;
+  selected: string | null;
+  onChange: (value: string, exact: string | null) => void;
+}) {
+  const listId = useId();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const [box, setBox] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
+
+  const options = useMemo(() => {
+    const q = foldText(query);
+    if (!q) return artists;
+    return artists.filter((name) => foldText(name).includes(q));
+  }, [artists, query]);
+
+  const activeIndex = options.length ? Math.min(highlight, options.length - 1) : -1;
+
+  function commit(value: string) {
+    const exact = artists.find((name) => name === value) ?? null;
+    onChange(value, exact);
+  }
+
+  function choose(name: string) {
+    onChange(name, name);
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    setHighlight(0);
+  }, [query]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    function place() {
+      const el = inputRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const gap = 6;
+      const below = window.innerHeight - rect.bottom - gap - 8;
+      const above = rect.top - gap - 8;
+      const openUp = below < 160 && above > below;
+      const maxHeight = Math.max(120, Math.min(280, openUp ? above : below));
+      const top = openUp ? Math.max(8, rect.top - gap - maxHeight) : rect.bottom + gap;
+      const width = rect.width;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+      setBox((prev) => {
+        if (prev && prev.top === top && prev.left === left && prev.width === width && prev.maxHeight === maxHeight) {
+          return prev;
+        }
+        return { top, left, width, maxHeight };
+      });
+    }
+
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, options.length]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: PointerEvent) {
+      const target = event.target as Node;
+      if (wrapRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointer);
+    return () => document.removeEventListener('pointerdown', onPointer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    menuRef.current?.querySelector('[data-highlight="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [open, activeIndex, options]);
+
+  const menu =
+    open && box
+      ? createPortal(
+          <ul
+            ref={menuRef}
+            id={listId}
+            className="catalog-filters__menu"
+            role="listbox"
+            aria-label="Artistas"
+            style={{ top: box.top, left: box.left, width: box.width, maxHeight: box.maxHeight }}
+          >
+            {options.length === 0 ? (
+              <li className="catalog-filters__option catalog-filters__option--empty">Nenhum artista</li>
+            ) : (
+              options.map((name, index) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    role="option"
+                    id={`${listId}-${index}`}
+                    className="catalog-filters__option"
+                    data-highlight={index === activeIndex}
+                    aria-selected={name === selected}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onMouseEnter={() => setHighlight(index)}
+                    onClick={() => choose(name)}
+                  >
+                    {name}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>,
+          document.body
+        )
+      : null;
+
+  return (
+    <div className="catalog-filters__combo" ref={wrapRef}>
+      <input
+        ref={inputRef}
+        type="text"
+        className="catalog-filters__input"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={activeIndex >= 0 && open ? `${listId}-${activeIndex}` : undefined}
+        value={query}
+        placeholder="Buscar ou selecionar artista…"
+        aria-label="Buscar artista"
+        autoComplete="off"
+        spellCheck={false}
+        onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
+        onChange={(event) => {
+          commit(event.target.value);
+          setOpen(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setOpen(false);
+            return;
+          }
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            if (!open) {
+              setOpen(true);
+              setHighlight(0);
+              return;
+            }
+            setHighlight((index) => Math.min(Math.max(options.length - 1, 0), index + 1));
+            return;
+          }
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (!open) {
+              setOpen(true);
+              setHighlight(0);
+              return;
+            }
+            setHighlight((index) => Math.max(0, index - 1));
+            return;
+          }
+          if (event.key === 'Enter' && open && options[activeIndex]) {
+            event.preventDefault();
+            choose(options[activeIndex]);
+          }
+        }}
+      />
+      {menu}
+    </div>
+  );
+}
+
 export default function HomeCatalog({
   songs,
   query,
@@ -171,9 +356,9 @@ export default function HomeCatalog({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [artistQuery, setArtistQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SongSort>('title');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterId = useId();
-  const artistListId = useId();
 
   const keys = useMemo(() => keysInResults(songs), [songs]);
   const artists = useMemo(() => artistsInResults(songs), [songs]);
@@ -181,12 +366,6 @@ export default function HomeCatalog({
   const activeKey = selectedKey && keys.includes(selectedKey) ? selectedKey : null;
   const activeArtist = selectedArtist && artists.includes(selectedArtist) ? selectedArtist : null;
   const artistNeedle = activeArtist ? '' : foldText(artistQuery);
-
-  const artistOptions = useMemo(() => {
-    const q = foldText(artistQuery);
-    if (!q) return artists;
-    return artists.filter((name) => foldText(name).includes(q));
-  }, [artists, artistQuery]);
 
   const visible = useMemo(() => {
     return songs.filter((song) => {
@@ -302,26 +481,15 @@ export default function HomeCatalog({
           <div className="catalog-filters__extra" id={`${filterId}-extra`}>
             <label className="catalog-filters__field">
               <span className="catalog-filters__label">Artista</span>
-              <input
-                type="search"
-                className="catalog-filters__input"
-                list={artistListId}
-                value={artistQuery}
-                placeholder="Buscar ou selecionar artista…"
-                aria-label="Buscar artista"
-                autoComplete="off"
-                onChange={(event) => {
-                  const next = event.target.value;
+              <ArtistField
+                artists={artists}
+                query={artistQuery}
+                selected={activeArtist}
+                onChange={(next, exact) => {
                   setArtistQuery(next);
-                  const exact = artists.find((name) => name === next);
-                  setSelectedArtist(exact ?? null);
+                  setSelectedArtist(exact);
                 }}
               />
-              <datalist id={artistListId}>
-                {artistOptions.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
             </label>
 
             {CHORDS_ENABLED ? (
@@ -414,10 +582,16 @@ export default function HomeCatalog({
   return (
     <>
       {panel}
-      <SongList songs={visible} showSnippet={showSnippet} admin={admin} />
+      <SongList
+        songs={visible}
+        showSnippet={showSnippet}
+        admin={admin}
+        sortBy={sortBy}
+        onSort={setSortBy}
+      />
       <footer className="db-foot">
         <span>lyra.music.db — v1</span>
-        <span>ordenado por título</span>
+        <span>{sortBy === 'artist' ? 'ordenado por artista' : 'ordenado por título'}</span>
       </footer>
     </>
   );

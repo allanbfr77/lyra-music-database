@@ -226,6 +226,15 @@ export function ExternalLinkIcon(props: IconProps) {
   );
 }
 
+export function EyeIcon(props: IconProps) {
+  return (
+    <Line {...props}>
+      <path d="M2.5 12S6 6.6 12 6.6 21.5 12 21.5 12 18 17.4 12 17.4 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </Line>
+  );
+}
+
 export function YouTubeIcon(props: IconProps) {
   return (
     <svg

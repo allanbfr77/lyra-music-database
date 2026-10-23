@@ -4,7 +4,7 @@ import LoginSessionCleanup from '@/components/LoginSessionCleanup';
 import { ADMIN_HOME, safeNextPath } from '@/lib/auth';
 
 export const metadata: Metadata = {
-  title: 'Entrar',
+  title: { absolute: 'Login' },
   description: 'Banco de Músicas do Lyra. Acesso restrito.',
   robots: { index: false, follow: false },
   openGraph: {

@@ -1,9 +1,11 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import SongEditor, { type EditorInitial } from '@/components/SongEditor';
 import { createClient } from '@/lib/supabase/server';
 import { SONG_COLUMNS } from '@/lib/songs';
 import type { KeyOverride, Song } from '@/lib/types';
 
+export const metadata: Metadata = { title: { absolute: 'Editor - Lyra' } };
 export const dynamic = 'force-dynamic';
 
 const OVERRIDE_FULL = 'song_key_overrides(key, chords, instrumento)';

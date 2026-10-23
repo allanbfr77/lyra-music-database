@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!song) return { title: 'Música não encontrada' };
 
   return {
-    title: `${song.title} — Letra`,
+    title: { absolute: `${song.title} - Lyra` },
     alternates: { canonical: `/musica/${song.slug}` },
   };
 }

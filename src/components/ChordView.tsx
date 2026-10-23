@@ -146,13 +146,8 @@ export default function ChordView({
   }, []);
 
   useEffect(() => {
-    if (!CHORDS_ENABLED || tab === 'letra') {
-      document.title = `${activeSong.title} — Letra · Banco de Músicas do Lyra`;
-      return;
-    }
-    const kind = instrumento === 'violao' ? 'Cifra de violão' : 'Cifra';
-    document.title = `${activeSong.title} — ${kind} em ${viewKey} · Banco de Músicas do Lyra`;
-  }, [activeSong.title, viewKey, instrumento, tab]);
+    document.title = `${activeSong.title} - Lyra`;
+  }, [activeSong.title]);
 
   const { chart, source } = useMemo(
     () => chartForKey(activeSong, activeOverrides, viewKey, instrumento),

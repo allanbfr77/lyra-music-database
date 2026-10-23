@@ -1,12 +1,16 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { signIn, type SignInState } from '@/app/login/actions';
 
 const INITIAL: SignInState = { error: null };
 
 export default function LoginForm({ next }: { next: string }) {
   const [state, action, busy] = useActionState(signIn, INITIAL);
+
+  useEffect(() => {
+    document.title = 'Login';
+  }, []);
 
   return (
     <form action={action} className="auth-panel">

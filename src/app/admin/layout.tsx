@@ -4,7 +4,10 @@ import SiteHeader from '@/components/SiteHeader';
 import AdminBackButton from '@/components/AdminBackButton';
 import { ADMIN_HOME, getAuthSession } from '@/lib/auth';
 
-export const metadata: Metadata = { title: 'Administração', robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  title: { absolute: 'Lyra Database' },
+  robots: { index: false, follow: false },
+};
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
