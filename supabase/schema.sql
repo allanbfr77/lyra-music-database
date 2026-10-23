@@ -99,6 +99,28 @@ create table if not exists public.song_key_overrides (
 );
 
 -- ---------------------------------------------------------------------------
+-- Tabela: playlist_items
+-- Músicas incluídas à mão num culto. A lista do Tom Louvores é lida ao vivo.
+-- ---------------------------------------------------------------------------
+create table if not exists public.playlist_items (
+  id         uuid primary key default gen_random_uuid(),
+  culto_key  text not null,
+  title      text not null,
+  song_id    uuid references public.songs (id) on delete set null,
+  tom        text not null default '',
+  section    text not null default 'principal'
+    check (section in ('principal', 'ofertorio', 'pos', 'ceia')),
+  position   integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists playlist_items_culto_idx
+  on public.playlist_items (culto_key, section, position, created_at);
+
+comment on table public.playlist_items is
+  'Músicas adicionadas manualmente a um culto. A playlist do Tom Louvores é lida ao vivo e não fica nesta tabela.';
+
+-- ---------------------------------------------------------------------------
 -- updated_at automático
 -- ---------------------------------------------------------------------------
 create or replace function public.touch_updated_at()
@@ -268,6 +290,7 @@ $$;
 -- ---------------------------------------------------------------------------
 alter table public.songs               enable row level security;
 alter table public.song_key_overrides  enable row level security;
+alter table public.playlist_items      enable row level security;
 alter table public.admins              enable row level security;
 
 drop policy if exists songs_public_read on public.songs;
@@ -290,6 +313,12 @@ create policy overrides_public_read on public.song_key_overrides
 drop policy if exists overrides_admin_write on public.song_key_overrides;
 create policy overrides_admin_write on public.song_key_overrides
   for all using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists playlist_items_admin_all on public.playlist_items;
+create policy playlist_items_admin_all on public.playlist_items
+  for all using (public.is_admin()) with check (public.is_admin());
+
+grant select, insert, update, delete on table public.playlist_items to authenticated;
 
 drop policy if exists admins_self_read on public.admins;
 create policy admins_self_read on public.admins

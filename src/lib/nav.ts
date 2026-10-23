@@ -24,6 +24,12 @@ export function siteNav(homeHref = '/'): NavItem[] {
         (inAdmin ? pathname.startsWith(`${homeHref}/`) : pathname.startsWith('/musica/')),
     },
     {
+      href: '/playlist',
+      label: 'Playlist',
+      sub: 'Louvores dos cultos',
+      match: (pathname) => pathname === '/playlist' || pathname.startsWith('/playlist/'),
+    },
+    {
       href: '/integracao',
       label: 'Sobre o Lyra',
       sub: 'Versão e informações',
