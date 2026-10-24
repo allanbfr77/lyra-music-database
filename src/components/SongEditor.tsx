@@ -19,6 +19,7 @@ import {
 import { slugify } from '@/lib/slug';
 import type { Instrumento } from '@/lib/types';
 import { ExternalLinkIcon, CheckIcon, PlusIcon, AlertTriangleIcon } from '@/components/icons';
+import CopyLyricsButton from '@/components/CopyLyricsButton';
 import LyricsField from '@/components/LyricsField';
 
 // Ordem cromática de C a B. O VALOR de cada opção continua na grafia oficial
@@ -515,6 +516,9 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       {!CHORDS_ENABLED || tab === 'letra' ? (
         <div style={{ paddingTop: 12 }}>
           <div className="field">
+            <div className="lyrics-copybar">
+              <CopyLyricsButton text={lyrics} />
+            </div>
             <LyricsField value={lyrics} onChange={setLyrics} />
           </div>
 

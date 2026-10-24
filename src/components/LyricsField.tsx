@@ -1,7 +1,7 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
-import { caretInLyricSpans, splitLyricSpans } from '@/lib/lyric-sections';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { caretInLyricSpans, lyricsAsCopyText, splitLyricSpans } from '@/lib/lyric-sections';
 
 /**
  * Campo da letra. Cada intervalo em branco entre trechos vira uma linha fina,
@@ -16,6 +16,7 @@ export default function LyricsField({
 }) {
   const refs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const pendingCaret = useRef<{ index: number; pos: number } | null>(null);
+  const [allSelected, setAllSelected] = useState(false);
   const sections = splitLyricSpans(value).map((part) => part.text);
 
   useLayoutEffect(() => {
@@ -39,15 +40,57 @@ export default function LyricsField({
     el.setSelectionRange(pos, pos);
   }, [value]);
 
+  useLayoutEffect(() => {
+    if (!allSelected) return;
+    const active = document.activeElement;
+    if (!(active instanceof HTMLTextAreaElement) || !refs.current.includes(active)) return;
+    active.setSelectionRange(0, active.value.length);
+  }, [allSelected]);
+
   function commit(nextSections: string[], caret?: { index: number; pos: number }) {
     pendingCaret.current = caret ?? null;
     onChange(nextSections.join('\n\n'));
   }
 
+  function replaceAll(next: string, caret: { index: number; pos: number }) {
+    setAllSelected(false);
+    const pieces = splitLyricSpans(next).map((part) => part.text);
+    commit(pieces.length ? pieces : [''], caret);
+  }
+
   return (
-    <div className="lyrics-field">
+    <div
+      className={`lyrics-field${allSelected ? ' lyrics-field--all' : ''}`}
+      onMouseDown={() => {
+        if (allSelected) setAllSelected(false);
+      }}
+      onCopy={(event) => {
+        if (!allSelected) return;
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', lyricsAsCopyText(value));
+      }}
+      onCut={(event) => {
+        if (!allSelected) return;
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', lyricsAsCopyText(value));
+        setAllSelected(false);
+        commit([''], { index: 0, pos: 0 });
+      }}
+      onPaste={(event) => {
+        if (!allSelected) return;
+        event.preventDefault();
+        const text = event.clipboardData.getData('text/plain').replace(/\r\n/g, '\n');
+        if (!text) {
+          setAllSelected(false);
+          commit([''], { index: 0, pos: 0 });
+          return;
+        }
+        const pieces = splitLyricSpans(text).map((part) => part.text);
+        replaceAll(text, { index: pieces.length - 1, pos: pieces[pieces.length - 1].length });
+      }}
+    >
       {sections.map((section, index) => (
-        <div key={index}>
+        <div key={index} className="lyrics-field__block">
           {index > 0 ? <hr className="lyrics-field__rule" /> : null}
           <textarea
             ref={(el) => {
@@ -60,6 +103,16 @@ export default function LyricsField({
             onChange={(event) => {
               const next = event.target.value.replace(/\r\n/g, '\n');
               const cursor = event.target.selectionStart ?? next.length;
+              if (allSelected) {
+                const pieces = splitLyricSpans(next);
+                const local = caretInLyricSpans(next, cursor);
+                setAllSelected(false);
+                commit(
+                  pieces.map((part) => part.text),
+                  { index: local.index, pos: local.pos }
+                );
+                return;
+              }
               if (/\n(?:[ \t]*\n)+/.test(next)) {
                 const pieces = splitLyricSpans(next);
                 const local = caretInLyricSpans(next, cursor);
@@ -76,6 +129,31 @@ export default function LyricsField({
               commit(copy);
             }}
             onKeyDown={(event) => {
+              const shortcut = event.ctrlKey || event.metaKey;
+              if (shortcut && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
+                event.preventDefault();
+                setAllSelected(true);
+                event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
+                return;
+              }
+              if (allSelected && (event.key === 'Backspace' || event.key === 'Delete') && !shortcut && !event.altKey) {
+                event.preventDefault();
+                setAllSelected(false);
+                commit([''], { index: 0, pos: 0 });
+                return;
+              }
+              if (
+                allSelected &&
+                (event.key === 'ArrowLeft' ||
+                  event.key === 'ArrowRight' ||
+                  event.key === 'ArrowUp' ||
+                  event.key === 'ArrowDown' ||
+                  event.key === 'Home' ||
+                  event.key === 'End' ||
+                  event.key === 'Escape')
+              ) {
+                setAllSelected(false);
+              }
               if (
                 event.key !== 'Backspace' ||
                 index === 0 ||

@@ -25,6 +25,16 @@ export function splitLyricStanzas(text: string): string[] {
     .filter((part) => part.trim().length > 0);
 }
 
+/**
+ * Clipboard text: each verse stays on its own line, and each divider
+ * between blocks becomes one blank line.
+ */
+export function lyricsAsCopyText(text: string): string {
+  return splitLyricStanzas(text)
+    .map((stanza) => stanza.trim())
+    .join('\n\n');
+}
+
 /** Em qual trecho o cursor cai, depois de uma edição que criou um intervalo em branco. */
 export function caretInLyricSpans(text: string, cursor: number): { index: number; pos: number } {
   const parts = splitLyricSpans(text);

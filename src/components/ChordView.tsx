@@ -5,6 +5,7 @@ import SongHeader from '@/components/SongHeader';
 import SongControlPanel from '@/components/SongControlPanel';
 import SongTabs, { InstrumentTabs, type SongTab } from '@/components/SongTabs';
 import KeyBar from '@/components/KeyBar';
+import CopyLyricsButton from '@/components/CopyLyricsButton';
 import Reader from '@/components/Reader';
 import {
   CHORDS_ENABLED,
@@ -192,6 +193,7 @@ export default function ChordView({
         shareTitle={shareTitle}
         showWrap={CHORDS_ENABLED && tab === 'cifra'}
         tabs={tabs}
+        leading={(!CHORDS_ENABLED || tab === 'letra') && lyrics ? <CopyLyricsButton text={lyrics} /> : null}
         keyControl={
           CHORDS_ENABLED && tab === 'cifra' ? (
             <KeyBar

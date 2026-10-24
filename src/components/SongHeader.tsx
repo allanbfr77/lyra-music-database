@@ -24,26 +24,18 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
 
   return (
     <div className="song-head">
-      <nav className="song-crumb" aria-label="Navegação">
-        <Link href="/">músicas</Link>
-        <span className="song-crumb__sep" aria-hidden="true">
-          /
-        </span>
-        <span className="song-crumb__current">{song.slug}</span>
-      </nav>
-
-      <div className="song-head__row">
-        <div className="song-head__text">
-          <h1 className="song-head__title">{song.title}</h1>
-        </div>
-        <Link href={`/admin/musica/${song.id}`} className="btn btn--tint btn--sm no-print song-head__edit">
-          <PencilIcon size={14} />
-          Editar música
-        </Link>
+      <div className="song-head__top">
+        <nav className="song-crumb" aria-label="Navegação">
+          <Link href="/">músicas</Link>
+          <span className="song-crumb__sep" aria-hidden="true">
+            /
+          </span>
+          <span className="song-crumb__current">{song.slug}</span>
+        </nav>
         {youtubeUrl && embedUrl ? (
           <button
             type="button"
-            className="icon-btn no-print"
+            className="icon-btn no-print song-head__youtube"
             data-active={showPlayer ? 'true' : undefined}
             aria-pressed={showPlayer}
             aria-label={showPlayer ? 'Fechar vídeo do YouTube' : 'Reproduzir vídeo do YouTube'}
@@ -53,6 +45,12 @@ export default function SongHeader({ song }: { song: Song; currentKey?: string }
             <YouTubeIcon size={18} />
           </button>
         ) : null}
+
+        <h1 className="song-head__title">{song.title}</h1>
+        <Link href={`/admin/musica/${song.id}`} className="btn btn--tint btn--sm no-print song-head__edit">
+          <PencilIcon size={14} />
+          Editar música
+        </Link>
       </div>
 
       <div className="song-meta">

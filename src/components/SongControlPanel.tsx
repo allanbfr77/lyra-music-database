@@ -77,12 +77,14 @@ function readStoredWrap() {
 export default function SongControlPanel({
   tabs,
   keyControl,
+  leading,
   shareTitle,
   showWrap = false,
   children,
 }: {
   tabs: ReactNode;
   keyControl?: ReactNode;
+  leading?: ReactNode;
   shareTitle: string;
   showWrap?: boolean;
   children: ReactNode;
@@ -248,6 +250,7 @@ export default function SongControlPanel({
         </div>
 
         <div className="control-panel__row control-panel__row--b">
+          {leading}
           {keyControl}
           <div className="control-block control-block--size">
             {showWrap ? (

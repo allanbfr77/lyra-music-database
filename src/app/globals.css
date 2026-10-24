@@ -2314,12 +2314,23 @@ svg { flex: none; }
    dourado, o título vem grande e os dados ficam embaixo, sobre um fio dourado. */
 
 .song-head { padding: clamp(32px, 6vw, 60px) 0 4px; }
+.song-head__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "crumb youtube"
+    "title edit";
+  column-gap: 16px;
+  row-gap: 10px;
+  align-items: center;
+}
 .song-crumb {
+  grid-area: crumb;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0;
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 3px;
@@ -2339,11 +2350,10 @@ svg { flex: none; }
 }
 .song-crumb__current { color: var(--text-faint); }
 
-.song-head__row { display: flex; align-items: flex-start; gap: 16px; }
-.song-head__text { min-width: 0; flex: 1; }
-.song-head__row > .icon-btn { flex: none; margin-top: 6px; }
-.song-head__edit { flex: none; margin-top: 10px; }
+.song-head__youtube { grid-area: youtube; justify-self: end; }
+.song-head__edit { grid-area: edit; justify-self: end; margin-top: 0; }
 .song-head__title {
+  grid-area: title;
   font-family: var(--sans);
   font-size: clamp(2.1rem, 5.4vw, 3.4rem);
   font-weight: 700;
@@ -2776,7 +2786,7 @@ button.key-picker__cell:hover { border-color: var(--line-gold); color: var(--tex
 .icon-btn:disabled { opacity: .35; cursor: default; }
 .icon-btn:disabled:active { transform: none; }
 
-:is(.icon-btn, .play-btn, .size-btn, .seg__item, .tab, .key-chip, .key-picker__step, .key-picker__cell, .theme-toggle, .back-btn, .playlist-fab, .header-ctrl, .header-nav__link, .playlist-move__btn, .slides-source__link, .slides-source__restore, .slides-publish__btn, .song-item__action, .song-table-head__sort, .alpha-index__letter, .catalog-filters__input, .catalog-filters__option, .query-meta__select, .catalog-chip, .catalog-filters__toggle, .catalog-filters__clear, .btn, .brand, .site-footer a, .site-footer__top, .mobile-drawer__item, .mobile-drawer__cta, .mobile-drawer__close, .mobile-nav__burger):focus-visible {
+:is(.icon-btn, .play-btn, .size-btn, .lyrics-copy, .seg__item, .tab, .key-chip, .key-picker__step, .key-picker__cell, .theme-toggle, .back-btn, .playlist-fab, .header-ctrl, .header-nav__link, .playlist-move__btn, .slides-source__link, .slides-source__restore, .slides-publish__btn, .song-item__action, .song-table-head__sort, .alpha-index__letter, .catalog-filters__input, .catalog-filters__option, .query-meta__select, .catalog-chip, .catalog-filters__toggle, .catalog-filters__clear, .btn, .brand, .site-footer a, .site-footer__top, .mobile-drawer__item, .mobile-drawer__cta, .mobile-drawer__close, .mobile-nav__burger):focus-visible {
   outline: 2px solid var(--gold-hi);
   outline-offset: 3px;
 }
@@ -2884,6 +2894,43 @@ button.key-picker__cell:hover { border-color: var(--line-gold); color: var(--tex
   min-height: 1.6em;
 }
 .lyrics-field__part:focus { outline: none; }
+.lyrics-field--all .lyrics-field__block {
+  background: Highlight;
+  color: HighlightText;
+  overflow: hidden;
+}
+.lyrics-field--all .lyrics-field__part::selection {
+  background: Highlight;
+  color: HighlightText;
+}
+.lyrics-field--all .lyrics-field__rule { border-top-color: transparent; }
+
+.lyrics-copybar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.lyrics-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.lyrics-copy:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.lyrics-copy:disabled { opacity: .4; cursor: default; }
 
 /* No celular o painel vai de borda a borda: a cifra não perde largura e não
    rola de lado mais do que já rolava. */
