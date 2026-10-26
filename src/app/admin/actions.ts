@@ -32,7 +32,7 @@ export type SongPayload = {
 };
 
 type Result =
-  | { ok: true; id: string; slug: string }
+  | { ok: true; id: string; slug: string; updated_at: string }
   | { ok: false; error: string; code?: 'duplicate_title' };
 
 const DUPLICATE_SONG_ERROR =
@@ -122,16 +122,24 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
     );
     if (clash) return { ok: false, error: DUPLICATE_SONG_ERROR, code: 'duplicate_title' };
 
+    let updatedAt = new Date().toISOString();
+
     if (songId) {
-      const { error } = await supabase.from('songs').update(record).eq('id', songId);
+      const { data, error } = await supabase
+        .from('songs')
+        .update(record)
+        .eq('id', songId)
+        .select('id, updated_at')
+        .single();
       if (error) {
         if (isDuplicateSong(error.message)) {
           return { ok: false, error: DUPLICATE_SONG_ERROR, code: 'duplicate_title' };
         }
         return { ok: false, error: translate(error.message) };
       }
+      updatedAt = data.updated_at as string;
     } else {
-      const { data, error } = await supabase.from('songs').insert(record).select('id').single();
+      const { data, error } = await supabase.from('songs').insert(record).select('id, updated_at').single();
       if (error) {
         if (isDuplicateSong(error.message)) {
           return { ok: false, error: DUPLICATE_SONG_ERROR, code: 'duplicate_title' };
@@ -139,6 +147,7 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
         return { ok: false, error: translate(error.message) };
       }
       songId = data.id as string;
+      updatedAt = data.updated_at as string;
     }
 
     // Ajustes manuais de tom (modo híbrido), independentes por instrumento
@@ -177,7 +186,7 @@ export async function saveSong(payload: SongPayload): Promise<Result> {
     revalidatePath('/admin');
     revalidatePath(`/musica/${slug}`, 'layout');
 
-    return { ok: true, id: songId!, slug };
+    return { ok: true, id: songId!, slug, updated_at: updatedAt };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Erro inesperado ao salvar.' };
   }

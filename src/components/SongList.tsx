@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { SearchHit } from '@/lib/types';
 import { CHORDS_ENABLED, normalizeKey } from '@/lib/chords';
@@ -77,7 +77,7 @@ function songHref(song: CatalogSong) {
   return `/musica/${song.slug}`;
 }
 
-function SongRow({
+const SongRow = memo(function SongRow({
   song,
   showSnippet,
   admin,
@@ -133,9 +133,9 @@ function SongRow({
       </div>
     </li>
   );
-}
+});
 
-export default function SongList({
+function SongList({
   songs,
   showSnippet = false,
   admin = false,
@@ -149,7 +149,7 @@ export default function SongList({
   sortBy: SongSort;
   onSort: (next: SongSort) => void;
 }) {
-  const groups = groupSongs(songs, sortBy);
+  const groups = useMemo(() => groupSongs(songs, sortBy), [songs, sortBy]);
   const present = new Set(groups.map((group) => group.letter));
   const sectionRefs = useRef(new Map<string, HTMLElement>());
   const groupsRef = useRef(groups);
@@ -318,3 +318,5 @@ export default function SongList({
     </div>
   );
 }
+
+export default memo(SongList);

@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteSong, saveSong, type SongPayload } from '@/app/admin/actions';
+import { lyricSnippet } from '@/lib/catalog';
+import { forgetCatalogSong, rememberCatalogSong } from '@/lib/catalog-cache';
+import { deleteCachedSong } from '@/lib/song-cache';
 import {
   CHORDS_ENABLED,
   allKeysFor,
@@ -350,6 +353,26 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
     }
 
     clearDraft();
+    try {
+      await rememberCatalogSong({
+        id: result.id,
+        slug: result.slug,
+        title: title.trim(),
+        artist: artist.trim(),
+        lyrics,
+        base_key: resolvedBase,
+        available_keys: payload.available_keys,
+        has_chords: Boolean(chords.trim() || chordsGuitar.trim()),
+        snippet: lyricSnippet(lyrics),
+        updated_at: result.updated_at,
+        rank: 0,
+        draft: !published,
+        chords_reviewed: chordsReviewed,
+        lyrics_reviewed: lyricsReviewed,
+      });
+    } catch {
+      /* The next library open refetches if the local copy could not be updated. */
+    }
     setSavedOpen(true);
   }
 
@@ -419,6 +442,13 @@ export default function SongEditor({ initial = EMPTY }: { initial?: EditorInitia
       return;
     }
     clearDraft();
+    try {
+      await forgetCatalogSong(initial.id);
+      await deleteCachedSong(initial.slug);
+      if (effectiveSlug !== initial.slug) await deleteCachedSong(effectiveSlug);
+    } catch {
+      /* The library refetches when its revision no longer matches. */
+    }
     router.replace('/admin');
     router.refresh();
   }

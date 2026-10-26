@@ -1,8 +1,15 @@
 import Link from 'next/link';
-import AdminCatalog, { type LibrarySong } from '@/components/AdminCatalog';
-import SearchBox from '@/components/SearchBox';
+import { cookies } from 'next/headers';
+import AdminCatalog from '@/components/AdminCatalog';
 import { PlusIcon } from '@/components/icons';
-import { searchAdminSongs } from '@/lib/songs';
+import { getAdminCatalogRevision, listAdminCatalog } from '@/lib/admin-catalog';
+import {
+  CATALOG_REV_COOKIE,
+  catalogRevisionToken,
+  revisionFromSongs,
+  type CatalogRevision,
+  type LibrarySong,
+} from '@/lib/catalog';
 import { parseFieldIds } from '@/lib/search-fields';
 
 export const dynamic = 'force-dynamic';
@@ -16,32 +23,27 @@ export default async function AdminHome({
   const query = q.trim();
   const fieldIds = parseFieldIds(c);
 
-  let songs: LibrarySong[] = [];
+  let songs: LibrarySong[] | null = null;
+  let revision: CatalogRevision | null = null;
   let failure: string | null = null;
 
   try {
-    const hits = await searchAdminSongs('', 1000);
-    songs = hits.map((song) => ({
-      id: song.id,
-      slug: song.slug,
-      title: song.title,
-      artist: song.artist,
-      base_key: song.base_key,
-      available_keys: song.available_keys ?? [],
-      has_chords: song.has_chords,
-      snippet: song.snippet,
-      updated_at: song.updated_at,
-      rank: song.rank,
-      draft: !song.published,
-      chords_reviewed: song.chords_reviewed,
-      lyrics_reviewed: song.lyrics_reviewed,
-      lyrics: song.lyrics,
-    }));
+    const known = (await cookies()).get(CATALOG_REV_COOKIE)?.value;
+    if (!known) {
+      // First visit has nothing to compare. One query, then the browser keeps it.
+      songs = await listAdminCatalog();
+      revision = revisionFromSongs(songs);
+    } else {
+      // Later visits: a count + newest timestamp. Lyrics stay in IndexedDB when it matches.
+      revision = await getAdminCatalogRevision();
+      if (known !== catalogRevisionToken(revision)) {
+        songs = await listAdminCatalog();
+        revision = revisionFromSongs(songs);
+      }
+    }
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Erro ao consultar o banco.';
   }
-
-  const search = <SearchBox initialQuery={query} initialFields={fieldIds} />;
 
   return (
     <main className="shell">
@@ -57,16 +59,13 @@ export default async function AdminHome({
       </header>
 
       <div className="db-browse">
-        {failure ? (
-          <>
-            <div className="query-panel">{search}</div>
-            <div className="alert alert--error" style={{ marginTop: 18 }}>
-              {failure}
-            </div>
-          </>
-        ) : (
-          <AdminCatalog songs={songs} initialQuery={query} initialFields={fieldIds} />
-        )}
+        <AdminCatalog
+          initialSongs={songs}
+          revision={revision}
+          loadError={failure}
+          initialQuery={query}
+          initialFields={fieldIds}
+        />
       </div>
     </main>
   );

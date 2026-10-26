@@ -18,14 +18,22 @@ function normalize(value: string) {
   return foldAccents(value).toLocaleLowerCase('pt-BR');
 }
 
+const foldedCache = new WeakMap<object, { title: string; artist: string; lyrics: string }>();
+
 /** Folds title, artist and lyrics once, so each keystroke is only a substring check. */
 export function prepareLibrary<T extends LibraryFields>(songs: T[]): PreparedSong<T>[] {
-  return songs.map((song) => ({
-    song,
-    title: normalize(song.title),
-    artist: normalize(song.artist),
-    lyrics: normalize(song.lyrics ?? ''),
-  }));
+  return songs.map((song) => {
+    let folded = foldedCache.get(song);
+    if (!folded) {
+      folded = {
+        title: normalize(song.title),
+        artist: normalize(song.artist),
+        lyrics: normalize(song.lyrics ?? ''),
+      };
+      foldedCache.set(song, folded);
+    }
+    return { song, title: folded.title, artist: folded.artist, lyrics: folded.lyrics };
+  });
 }
 
 /** Accent-insensitive substring match on the selected catalog fields. */

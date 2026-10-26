@@ -324,6 +324,7 @@ export default function HomeCatalog({
   showKeyFilter = true,
   showReviewFilter = false,
   admin = false,
+  pending = false,
   search,
   emptyNoQuery = {
     title: 'Nenhuma música cadastrada',
@@ -343,6 +344,8 @@ export default function HomeCatalog({
   showReviewFilter?: boolean;
   /** Biblioteca de Admin: habilita a cor verde de "letra revisada". Nunca na página pública. */
   admin?: boolean;
+  /** Catálogo ainda não chegou (nem do servidor, nem do cache local). */
+  pending?: boolean;
   /** Slot do painel de busca (SearchBox). Quando presente, monta o query builder. */
   search?: ReactNode;
   emptyNoQuery?: { title: string; hint: string };
@@ -526,6 +529,18 @@ export default function HomeCatalog({
   ) : (
     metaRow
   );
+
+  if (pending && songs.length === 0) {
+    return (
+      <>
+        {panel}
+        <div className="empty song-cache-loading" aria-busy="true">
+          <strong>Carregando…</strong>
+          <span className="small">Abrindo a biblioteca</span>
+        </div>
+      </>
+    );
+  }
 
   if (songs.length === 0) {
     if (!query) {

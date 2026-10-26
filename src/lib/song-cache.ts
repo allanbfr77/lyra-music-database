@@ -7,7 +7,9 @@ import type { Instrumento, Song } from '@/lib/types';
 
 export const SONG_CACHE_DB = 'lyra-song-cache';
 export const SONG_CACHE_STORE = 'songs';
-export const SONG_CACHE_VERSION = 1;
+/** Admin library snapshot. Same database so logout clears lyrics once. */
+export const CATALOG_CACHE_STORE = 'catalog';
+export const SONG_CACHE_VERSION = 2;
 
 export type CachedOverride = {
   key: string;
@@ -64,17 +66,24 @@ type ApiSong = {
   updated_at: string;
 };
 
-function openDb(): Promise<IDBDatabase> {
+export function openSongCacheDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(SONG_CACHE_DB, SONG_CACHE_VERSION);
     request.onerror = () => reject(request.error ?? new Error('Falha ao abrir o cache local.'));
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(SONG_CACHE_STORE)) {
         const store = db.createObjectStore(SONG_CACHE_STORE, { keyPath: 'slug' });
         store.createIndex('updated_at', 'updated_at', { unique: false });
         store.createIndex('id', 'id', { unique: true });
+      }
+      if (!db.objectStoreNames.contains(CATALOG_CACHE_STORE)) {
+        db.createObjectStore(CATALOG_CACHE_STORE, { keyPath: 'key' });
       }
     };
   });
@@ -90,7 +99,7 @@ function idbRequest<T>(request: IDBRequest<T>): Promise<T> {
 export async function getCachedSong(slug: string): Promise<CachedSongPayload | null> {
   if (typeof indexedDB === 'undefined') return null;
   try {
-    const db = await openDb();
+    const db = await openSongCacheDb();
     try {
       const tx = db.transaction(SONG_CACHE_STORE, 'readonly');
       const result = await idbRequest(tx.objectStore(SONG_CACHE_STORE).get(slug));
@@ -105,12 +114,27 @@ export async function getCachedSong(slug: string): Promise<CachedSongPayload | n
 
 export async function putCachedSong(payload: CachedSongPayload): Promise<void> {
   if (typeof indexedDB === 'undefined') return;
-  const db = await openDb();
+  const db = await openSongCacheDb();
   try {
     const tx = db.transaction(SONG_CACHE_STORE, 'readwrite');
     await idbRequest(tx.objectStore(SONG_CACHE_STORE).put(payload));
   } finally {
     db.close();
+  }
+}
+
+export async function deleteCachedSong(slug: string): Promise<void> {
+  if (!slug || typeof indexedDB === 'undefined') return;
+  try {
+    const db = await openSongCacheDb();
+    try {
+      const tx = db.transaction(SONG_CACHE_STORE, 'readwrite');
+      await idbRequest(tx.objectStore(SONG_CACHE_STORE).delete(slug));
+    } finally {
+      db.close();
+    }
+  } catch {
+    /* ignore */
   }
 }
 
@@ -127,14 +151,18 @@ export function isCacheStale(cached: CachedSongPayload, serverUpdatedAt: string)
   return Date.parse(cached.updated_at) < Date.parse(serverUpdatedAt);
 }
 
-/** Drops downloaded lyrics. Called on logout and when the login screen opens. */
+/** Drops downloaded lyrics and the admin library. Called on logout and on the login screen. */
 export async function clearSongCache(): Promise<void> {
   if (typeof indexedDB === 'undefined') return;
   try {
-    const db = await openDb();
+    const db = await openSongCacheDb();
     try {
-      const tx = db.transaction(SONG_CACHE_STORE, 'readwrite');
-      await idbRequest(tx.objectStore(SONG_CACHE_STORE).clear());
+      const stores = [SONG_CACHE_STORE, CATALOG_CACHE_STORE].filter((name) =>
+        db.objectStoreNames.contains(name)
+      );
+      if (!stores.length) return;
+      const tx = db.transaction(stores, 'readwrite');
+      await Promise.all(stores.map((name) => idbRequest(tx.objectStore(name).clear())));
     } finally {
       db.close();
     }
@@ -144,6 +172,8 @@ export async function clearSongCache(): Promise<void> {
 }
 
 export async function clearPrivateBrowserData(): Promise<void> {
+  const { discardCatalogMemory } = await import('@/lib/catalog-cache');
+  discardCatalogMemory();
   await Promise.all([clearSongCache(), clearPageCaches()]);
 }
 
