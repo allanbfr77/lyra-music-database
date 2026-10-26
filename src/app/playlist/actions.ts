@@ -127,14 +127,11 @@ export async function addPlaylistSong(input: {
 
     const { data: existing, error: existingError } = await supabase
       .from('playlist_items')
-      .select('id, title, song_id')
+      .select('id, title')
       .eq('culto_key', culto.key);
     if (existingError) return dbError(existingError.message);
 
-    const duplicate = (existing ?? []).some((row) => {
-      if (songId && row.song_id === songId) return true;
-      return titlesMatch(String(row.title ?? ''), title);
-    });
+    const duplicate = (existing ?? []).some((row) => titlesMatch(String(row.title ?? ''), title));
     if (duplicate) return fail('Essa música já está neste culto.');
 
     const { data: last, error: lastError } = await supabase
@@ -155,7 +152,10 @@ export async function addPlaylistSong(input: {
       section,
       position,
     });
-    if (error) return dbError(error.message);
+    if (error) {
+      if (error.code === '23505') return fail('Essa música já está neste culto.');
+      return dbError(error.message);
+    }
 
     revalidatePath('/playlist');
     return { ok: true };

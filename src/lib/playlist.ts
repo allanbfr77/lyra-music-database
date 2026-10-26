@@ -37,6 +37,7 @@ export type ManualPlaylistItem = {
   section: SectionId;
   songId: string | null;
   song: { slug: string; title: string; artist: string } | null;
+  createdAt: string;
 };
 
 export type PlaylistEntry = {
@@ -80,15 +81,41 @@ export function isPlaylistTableMissing(message: string): boolean {
   );
 }
 
+/**
+ * Same playlist name. Case, accents and punctuation do not create a new name.
+ * Different words stay different: "Deus de Obras" is not "Deus de Obras Completa".
+ */
 export function titlesMatch(left: string, right: string): boolean {
   const a = foldTitle(left);
   const b = foldTitle(right);
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const head = (value: string) => foldTitle((value.split(/\s[-–—]\s/)[0] ?? value).trim());
-  return head(left) === b || head(right) === a;
+  return a.length > 0 && a === b;
 }
 
+/** null, undefined and whitespace count as empty. A filled value stays as it is. */
+export function isBlank(value: string | null | undefined): boolean {
+  return typeof value !== 'string' || value.trim() === '';
+}
+
+/**
+ * Keeps the playlist value when it has text.
+ * Uses the source only to fill a blank. A blank source leaves the blank in place.
+ */
+export function complementText(current: string | null | undefined, incoming: string | null | undefined): string {
+  const kept = typeof current === 'string' ? current.trim() : '';
+  if (kept) return kept;
+  return typeof incoming === 'string' ? incoming.trim() : '';
+}
+
+const TOM_MAX = 12;
+
+/** Song key: an existing key is kept whole. A key copied from sync follows the form limit. */
+export function complementTom(current: string | null | undefined, incoming: string | null | undefined): string {
+  const kept = typeof current === 'string' ? current.trim() : '';
+  if (kept) return kept;
+  return complementText(current, incoming).slice(0, TOM_MAX);
+}
+
+/** Normalized name. public.playlist_name_key in SQL must stay aligned with this. */
 export function foldTitle(value: string): string {
   return value
     .normalize('NFD')
@@ -201,57 +228,59 @@ export function matchSong(name: string, index: Map<string, SongRef[]>): SongRef 
   return chooseSong(index.get(foldTitle(head)), name);
 }
 
-function namesOf(item: ManualPlaylistItem): string[] {
-  return [item.title, item.song?.title ?? ''].map((name) => name.trim()).filter(Boolean);
-}
-
-/** A mesma música, esteja ela no Tom Louvores ou numa inclusão manual. */
-export function dedupeManualItems(
-  items: ManualPlaylistItem[],
-  louvores: RemoteLouvor[],
-  songs: Map<string, SongRef[]>
-): ManualPlaylistItem[] {
-  const claimedNames = louvores.map((item) => item.nome);
-  const claimedIds = new Set<string>();
-  for (const item of louvores) {
-    const match = matchSong(item.nome, songs);
-    if (match) claimedIds.add(match.id);
-  }
-
-  const kept: ManualPlaylistItem[] = [];
-  for (const item of items) {
-    const names = namesOf(item);
-    const sameName = names.some((name) => claimedNames.some((other) => titlesMatch(name, other)));
-    const sameSong = Boolean(item.songId && claimedIds.has(item.songId));
-    if (sameName || sameSong) continue;
-    kept.push(item);
-    claimedNames.push(...names);
-    if (item.songId) claimedIds.add(item.songId);
-  }
-  return kept;
-}
-
-export function redundantManualIds(
-  items: ManualPlaylistItem[],
-  cultos: Pick<RemoteCulto, 'tipo' | 'data' | 'louvores'>[],
-  songs: Map<string, SongRef[]>
-): string[] {
-  const louvoresOf = new Map(cultos.map((culto) => [`${culto.tipo}@${culto.data}`, culto.louvores]));
-  const byKey = new Map<string, ManualPlaylistItem[]>();
-  for (const item of items) {
-    const group = byKey.get(item.cultoKey) ?? [];
-    group.push(item);
-    byKey.set(item.cultoKey, group);
-  }
-
-  const ids: string[] = [];
-  for (const [key, group] of byKey) {
-    const kept = new Set(dedupeManualItems(group, louvoresOf.get(key) ?? [], songs).map((item) => item.id));
-    for (const item of group) {
-      if (!kept.has(item.id)) ids.push(item.id);
+/**
+ * Keeps the earliest manual row for each name.
+ * A later insert with the same name is ignored and does not change the first row.
+ * Rows whose names differ are both kept, even when they point at the same bank song.
+ */
+function firstManualByName(items: ManualPlaylistItem[]): ManualPlaylistItem[] {
+  const ranked = [...items].sort((left, right) => {
+    const byTime = left.createdAt.localeCompare(right.createdAt);
+    if (byTime !== 0) return byTime;
+    return left.id.localeCompare(right.id);
+  });
+  const winnerIds = new Set<string>();
+  const seen = new Set<string>();
+  for (const item of ranked) {
+    const key = foldTitle(item.title);
+    if (key) {
+      if (seen.has(key)) continue;
+      seen.add(key);
     }
+    winnerIds.add(item.id);
   }
-  return ids;
+  return items.filter((item) => winnerIds.has(item.id));
+}
+
+/** First synced row for each name. Later copies of that name are ignored. */
+function firstRemoteByName(louvores: RemoteLouvor[]): Map<string, RemoteLouvor> {
+  const map = new Map<string, RemoteLouvor>();
+  for (const item of louvores) {
+    const key = foldTitle(item.nome);
+    if (!key || map.has(key)) continue;
+    map.set(key, item);
+  }
+  return map;
+}
+
+/**
+ * Synced songs already present under the same name are not added again.
+ * Their key can still fill a blank tom on the row that is already there.
+ * The reserved set is the names inserted first (manual rows). Among synced
+ * songs, the earlier entry in the source list wins.
+ */
+function firstRemoteIndexes(louvores: RemoteLouvor[], reserved: ReadonlySet<string>): Set<number> {
+  const seen = new Set(reserved);
+  const kept = new Set<number>();
+  louvores.forEach((item, index) => {
+    const key = foldTitle(item.nome);
+    if (key) {
+      if (seen.has(key)) return;
+      seen.add(key);
+    }
+    kept.add(index);
+  });
+  return kept;
 }
 
 function artistOf(value: string | null | undefined): string | null {
@@ -272,16 +301,50 @@ function remoteEntry(columnKey: string, item: RemoteLouvor, index: number, songs
   };
 }
 
-function manualEntry(item: ManualPlaylistItem): PlaylistEntry {
+function exactBankSong(name: string, index: Map<string, SongRef[]>): SongRef | null {
+  return chooseSong(index.get(foldTitle(name)), name);
+}
+
+function manualEntry(item: ManualPlaylistItem, songs: Map<string, SongRef[]>, tom: string): PlaylistEntry {
+  const linked = item.song;
+  const bank = linked ? null : exactBankSong(item.title, songs);
   return {
     id: item.id,
-    title: item.song?.title || item.title,
-    artist: artistOf(item.song?.artist),
-    tom: item.tom,
-    href: item.song ? `/musica/${item.song.slug}` : null,
+    title: linked?.title || item.title,
+    artist: artistOf(linked?.artist) || artistOf(bank?.artist),
+    tom,
+    href: linked ? `/musica/${linked.slug}` : bank ? `/musica/${bank.slug}` : null,
     manualId: item.id,
-    inBank: Boolean(item.song),
+    inBank: Boolean(linked || bank),
   };
+}
+
+export type TomFill = { id: string; tom: string; previous: string };
+
+/** Manual rows whose key is blank and whose same-named sync row has a key. */
+export function emptyTomFills(
+  items: ManualPlaylistItem[],
+  cultos: Pick<RemoteCulto, 'tipo' | 'data' | 'louvores'>[]
+): TomFill[] {
+  const louvoresOf = new Map(cultos.map((culto) => [`${culto.tipo}@${culto.data}`, culto.louvores]));
+  const byKey = new Map<string, ManualPlaylistItem[]>();
+  for (const item of items) {
+    const group = byKey.get(item.cultoKey) ?? [];
+    group.push(item);
+    byKey.set(item.cultoKey, group);
+  }
+
+  const fills: TomFill[] = [];
+  for (const [key, group] of byKey) {
+    const remotes = firstRemoteByName(louvoresOf.get(key) ?? []);
+    for (const item of firstManualByName(group)) {
+      if (!isBlank(item.tom)) continue;
+      const tom = complementTom(item.tom, remotes.get(foldTitle(item.title))?.tom);
+      if (!tom) continue;
+      fills.push({ id: item.id, tom, previous: item.tom });
+    }
+  }
+  return fills;
 }
 
 function columnFrom(input: {
@@ -294,12 +357,26 @@ function columnFrom(input: {
   songs: Map<string, SongRef[]>;
   now: number;
 }): PlaylistColumn {
-  const manual = dedupeManualItems(input.manual, input.culto?.louvores ?? [], input.songs);
+  const manual = firstManualByName(input.manual);
+  const reserved = new Set<string>();
+  for (const item of manual) {
+    const key = foldTitle(item.title);
+    if (key) reserved.add(key);
+  }
+  const louvores = input.culto?.louvores ?? [];
+  const remoteByName = firstRemoteByName(louvores);
+  const remoteKept = firstRemoteIndexes(louvores, reserved);
   const sections: PlaylistSectionBlock[] = SECTIONS.map((section) => {
-    const remote = (input.culto?.louvores ?? []).flatMap((item, index) =>
-      sectionOf(item) === section.id ? [remoteEntry(input.key, item, index, input.songs)] : []
+    const remote = louvores.flatMap((item, index) =>
+      sectionOf(item) === section.id && remoteKept.has(index)
+        ? [remoteEntry(input.key, item, index, input.songs)]
+        : []
     );
-    const added = manual.filter((item) => item.section === section.id).map(manualEntry);
+    const added = manual
+      .filter((item) => item.section === section.id)
+      .map((item) =>
+        manualEntry(item, input.songs, complementTom(item.tom, remoteByName.get(foldTitle(item.title))?.tom))
+      );
     return { id: section.id, label: section.label, showLabel: false, items: [...remote, ...added] };
   }).filter((section) => section.items.length > 0);
 
@@ -315,20 +392,17 @@ function columnFrom(input: {
     if (!value || taken.some((other) => titlesMatch(other, value))) return;
     taken.push(value);
   };
-  for (const item of input.culto?.louvores ?? []) claim(item.nome);
-  for (const item of manual) {
-    for (const name of namesOf(item)) claim(name);
-  }
-  for (const section of sections) {
-    for (const item of section.items) claim(item.title);
-  }
+  louvores.forEach((item, index) => {
+    if (remoteKept.has(index)) claim(item.nome);
+  });
+  for (const item of manual) claim(item.title);
 
   return {
     key: input.key,
     title: input.title,
     subtitle: input.subtitle,
     dateLabel: shortDate(input.date),
-    ministrante: input.culto?.ministrante.trim() || 'A definir',
+    ministrante: complementText('', input.culto?.ministrante) || 'A definir',
     cancelado: Boolean(input.culto?.cancelado),
     updatedLabel: formatUpdated(input.culto?.atualizadoEm ?? null, input.now),
     countLabel: louvorCount(total),

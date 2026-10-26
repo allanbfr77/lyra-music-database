@@ -2,14 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import PlaylistBoard from '@/components/PlaylistBoard';
-import { deleteManualItems, loadManualItems, loadSongRefs } from '@/lib/playlist-db';
+import { fillEmptyManualToms, loadManualItems, loadSongRefs } from '@/lib/playlist-db';
 import {
   PLAYLIST_MIGRATION_HINT,
   buildPlaylistColumns,
   buildSongIndex,
   defaultServiceDate,
+  emptyTomFills,
   formatPlaylistDate,
-  redundantManualIds,
   shiftIsoDate,
 } from '@/lib/playlist';
 import { TOM_LOUVORES_URL, isIsoDate, loadRemoteCultos } from '@/lib/tom-louvores';
@@ -38,14 +38,10 @@ export default async function PlaylistPage({
   ]);
 
   const songIndex = buildSongIndex(songs);
-  let manualItems = manual.ok ? manual.items : [];
-  if (remote.ok && manual.ok && manualItems.length > 0) {
-    const redundant = redundantManualIds(manualItems, remote.cultos, songIndex);
-    if (redundant.length > 0) {
-      await deleteManualItems(redundant);
-      const drop = new Set(redundant);
-      manualItems = manualItems.filter((item) => !drop.has(item.id));
-    }
+  const manualItems = manual.ok ? manual.items : [];
+  if (remote.ok && manual.ok) {
+    const fills = emptyTomFills(manualItems, remote.cultos);
+    if (fills.length > 0) await fillEmptyManualToms(fills);
   }
 
   const columns = buildPlaylistColumns(

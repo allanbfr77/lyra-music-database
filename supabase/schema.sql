@@ -120,6 +120,35 @@ create index if not exists playlist_items_culto_idx
 comment on table public.playlist_items is
   'Músicas adicionadas manualmente a um culto. A playlist do Tom Louvores é lida ao vivo e não fica nesta tabela.';
 
+-- Same name key as foldTitle in src/lib/playlist.ts.
+-- Case, accents and punctuation do not make a second song.
+-- "Deus de Obras" and "Deus de Obras Completa" stay different.
+create or replace function public.playlist_name_key(value text)
+returns text
+language sql
+immutable
+parallel safe
+as $$
+  select btrim(
+    regexp_replace(
+      lower(
+        translate(
+          btrim(coalesce(value, '')),
+          'ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝŸáàâãäåéèêëíìîïóòôõöúùûüçñýÿ',
+          'AAAAAAEEEEIIIIOOOOOUUUUCNYYaaaaaaeeeeiiiiooooouuuucnyy'
+        )
+      ),
+      '[^a-z0-9]+',
+      ' ',
+      'g'
+    )
+  );
+$$;
+
+create unique index if not exists playlist_items_nome_unico_idx
+  on public.playlist_items (culto_key, public.playlist_name_key(title))
+  where public.playlist_name_key(title) <> '';
+
 -- ---------------------------------------------------------------------------
 -- updated_at automático
 -- ---------------------------------------------------------------------------

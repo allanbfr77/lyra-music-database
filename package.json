@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:chords": "node --experimental-strip-types scripts/test-chords.ts"
+    "test:chords": "node --experimental-strip-types scripts/test-chords.ts",
+    "test:playlist": "node --experimental-strip-types scripts/test-playlist-rule.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

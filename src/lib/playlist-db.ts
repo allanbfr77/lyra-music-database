@@ -25,7 +25,7 @@ export async function loadManualItems(date: string): Promise<
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('playlist_items')
-    .select('id, culto_key, title, tom, section, song_id, song:songs(slug, title, artist)')
+    .select('id, culto_key, title, tom, section, song_id, created_at, song:songs(slug, title, artist)')
     .like('culto_key', `%@${date}`)
     .order('position', { ascending: true })
     .order('created_at', { ascending: true });
@@ -46,6 +46,7 @@ export async function loadManualItems(date: string): Promise<
       tom?: unknown;
       section?: unknown;
       song_id?: unknown;
+      created_at?: unknown;
       song?: unknown;
     };
     if (typeof record.id !== 'string' || typeof record.culto_key !== 'string') return [];
@@ -60,6 +61,7 @@ export async function loadManualItems(date: string): Promise<
         section: parseSection(typeof record.section === 'string' ? record.section : null),
         songId: typeof record.song_id === 'string' ? record.song_id : null,
         song: asSong(record.song),
+        createdAt: typeof record.created_at === 'string' ? record.created_at : '',
       },
     ];
   });
@@ -67,11 +69,17 @@ export async function loadManualItems(date: string): Promise<
   return { ok: true, items };
 }
 
-/** Apaga inclusões manuais que repetem uma música já presente no mesmo culto. */
-export async function deleteManualItems(ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
+/** Writes a key only while the stored value is still the blank one we read. */
+export async function fillEmptyManualToms(updates: { id: string; tom: string; previous: string }[]): Promise<void> {
+  if (updates.length === 0) return;
   const supabase = await createClient();
-  await supabase.from('playlist_items').delete().in('id', ids);
+  await Promise.all(
+    updates.map(async (row) => {
+      const tom = row.tom.trim();
+      if (!tom) return;
+      await supabase.from('playlist_items').update({ tom }).eq('id', row.id).eq('tom', row.previous);
+    })
+  );
 }
 
 export async function loadSongRefs(): Promise<SongRef[]> {
