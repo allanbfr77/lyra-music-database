@@ -470,7 +470,14 @@ export type ApiPlaylistItem = {
   slug: string | null;
   tom: string;
   tema: (typeof API_TEMAS)[SectionId];
+  /** true quando o nome junta várias músicas ("A / B / C"): não é uma música única do banco. */
+  medley: boolean;
 };
+
+/** Medley = nomes separados por " / ". O sinal é de quem monta a lista, não do consumidor. */
+export function isMedley(name: string): boolean {
+  return /\s\/\s/.test(name);
+}
 
 export type ApiPlaylist = {
   id: string;
@@ -540,6 +547,7 @@ export function buildApiPlaylists(
         slug: entry.href ? entry.href.replace(/^\/musica\//, '') : null,
         tom: entry.tom,
         tema: API_TEMAS[section.id],
+        medley: isMedley(entry.title),
       }))
     );
     if (itens.length === 0) continue;

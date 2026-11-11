@@ -10,6 +10,7 @@ import {
   complementText,
   emptyTomFills,
   foldTitle,
+  isMedley,
   titlesMatch,
   type ManualPlaylistItem,
   type SongRef,
@@ -348,10 +349,11 @@ check(
   check('api: one playlist, empty and cancelled omitted', list.map((p) => p.id), [MANHA]);
   check('api: ministrante trimmed', list[0].ministrante, 'Ana');
   check('api: updated_at is the newest of culto and manual rows', list[0].updated_at, '2026-11-13T08:00:00.000Z');
+  check('medley: only names joined by " / "', [isMedley('A / B'), isMedley('Reacende a Chama / Vitorioso És'), isMedley('Tu És - Ao Vivo'), isMedley('Deus de Obras'), isMedley('24/7')], [true, true, false, false, false]);
   check('api: items, slug, tema', list[0].itens, [
-    { nome: 'Deus de Obras', slug: 'deus-de-obras', tom: 'G', tema: 'ABERTURA' },
-    { nome: 'Deus de Obras Completa', slug: 'deus-de-obras-completa', tom: 'Bb', tema: 'ABERTURA' },
-    { nome: 'Oferta Livre', slug: null, tom: '', tema: 'OFERTÓRIO' },
+    { nome: 'Deus de Obras', slug: 'deus-de-obras', tom: 'G', tema: 'ABERTURA', medley: false },
+    { nome: 'Deus de Obras Completa', slug: 'deus-de-obras-completa', tom: 'Bb', tema: 'ABERTURA', medley: false },
+    { nome: 'Oferta Livre', slug: null, tom: '', tema: 'OFERTÓRIO', medley: false },
   ]);
 }
 

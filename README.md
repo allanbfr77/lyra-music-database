@@ -257,8 +257,9 @@ Cultos cancelados ou sem músicas não aparecem.
       "ministrante": "Fulano",
       "updated_at": "2026-11-12T10:00:00.000Z",
       "itens": [
-        { "nome": "Galileu", "slug": "galileu", "tom": "G", "tema": "ABERTURA" },
-        { "nome": "Música fora do banco", "slug": null, "tom": "", "tema": "OFERTÓRIO" }
+        { "nome": "Galileu", "slug": "galileu", "tom": "G", "tema": "ABERTURA", "medley": false },
+        { "nome": "Música fora do banco", "slug": null, "tom": "", "tema": "OFERTÓRIO", "medley": false },
+        { "nome": "Música A / Música B / Música C", "slug": null, "tom": "D", "tema": "ABERTURA", "medley": true }
       ]
     }
   ],
@@ -269,6 +270,7 @@ Cultos cancelados ou sem músicas não aparecem.
 
 - `tipo`: o do Tom Louvores (`quarta`, `domingo_manha`, `domingo_noite`, ou o de um culto extra).
 - `itens` seguem a ordem da página `/playlist`; `tema` é `ABERTURA`, `OFERTÓRIO`, `PÓS-PALAVRA` ou `CEIA`.
+- `medley` é `true` quando o nome junta várias músicas separadas por ` / `. Não é uma música única do banco: `slug` vem `null` e o cliente **não** deve procurar por título parcial.
 - `slug` é o da música neste banco (o mesmo de `/api/v1/songs/{slug}`), ou `null` se ela não estiver publicada aqui.
 - As playlists vêm do Tom Louvores, lidas na hora. As músicas adicionadas à mão
   na página só entram se `SUPABASE_SERVICE_ROLE_KEY` estiver configurada no
