@@ -116,6 +116,14 @@ ${base}/api/v1/songs/galileu/chords/a?instrumento=violao`}</pre>
           <pre style={box}>{`${base}/api/v1/sync?since=2026-01-01T00:00:00Z`}</pre>
         </Endpoint>
 
+        <Endpoint method="GET" path="/api/v1/playlists?since={data}&limit={1-100}">
+          Playlists dos cultos. Cada item traz <code>nome</code>, <code>slug</code> (o mesmo de{' '}
+          <code>/api/v1/songs/{'{slug}'}</code>, ou <code>null</code>), <code>tom</code> e <code>tema</code>{' '}
+          (<code>ABERTURA</code>, <code>OFERTÓRIO</code>, <code>PÓS-PALAVRA</code> ou <code>CEIA</code>).
+          Paginação como no <code>sync</code>: <code>has_more</code> e <code>next_since</code>.
+          <pre style={box}>{`${base}/api/v1/playlists?since=2026-11-01T00:00:00Z&limit=50`}</pre>
+        </Endpoint>
+
         <div className="section-title">Endereços das páginas</div>
         <p className="muted small">
           {CHORDS_ENABLED

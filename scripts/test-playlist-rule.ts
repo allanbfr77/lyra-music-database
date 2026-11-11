@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  buildApiPlaylists,
   buildPlaylistColumns,
   buildSongIndex,
   complementText,
@@ -332,6 +333,27 @@ check(
   ]),
   []
 );
+
+{
+  const idx = buildSongIndex(bank);
+  const list = buildApiPlaylists(
+    [
+      { ...culto('domingo_manha', [louvor('Deus de Obras', 'G'), { ...louvor('Oferta Livre', ''), ofertorio: true }]), ministrante: ' Ana ', atualizadoEm: '2026-11-12T10:00:00Z' },
+      { ...culto('quarta', []), data: DATE },
+      { ...culto('domingo_noite', [louvor('X', 'A')]), cancelado: true },
+    ],
+    [manual({ id: 'm1', title: 'Deus de Obras Completa', tom: 'Bb', songId: 'song-completa', createdAt: '2026-11-13T08:00:00Z' })],
+    idx
+  );
+  check('api: one playlist, empty and cancelled omitted', list.map((p) => p.id), [MANHA]);
+  check('api: ministrante trimmed', list[0].ministrante, 'Ana');
+  check('api: updated_at is the newest of culto and manual rows', list[0].updated_at, '2026-11-13T08:00:00.000Z');
+  check('api: items, slug, tema', list[0].itens, [
+    { nome: 'Deus de Obras', slug: 'deus-de-obras', tom: 'G', tema: 'ABERTURA' },
+    { nome: 'Deus de Obras Completa', slug: 'deus-de-obras-completa', tom: 'Bb', tema: 'ABERTURA' },
+    { nome: 'Oferta Livre', slug: null, tom: '', tema: 'OFERTÓRIO' },
+  ]);
+}
 
 if (failures > 0) {
   console.error(`\n${failures} failed`);

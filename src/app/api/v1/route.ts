@@ -35,6 +35,7 @@ export async function GET() {
           }
         : {}),
       sync: `${base}/sync?since={iso8601}&limit={1-500}`,
+      playlists: `${base}/playlists?since={iso8601}&limit={1-100}`,
     },
     ...(CHORDS_ENABLED
       ? {

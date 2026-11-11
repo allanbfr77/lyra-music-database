@@ -457,3 +457,105 @@ export function buildPlaylistColumns(
 
   return columns;
 }
+
+export const API_TEMAS: Record<SectionId, 'ABERTURA' | 'OFERTÓRIO' | 'PÓS-PALAVRA' | 'CEIA'> = {
+  principal: 'ABERTURA',
+  ofertorio: 'OFERTÓRIO',
+  pos: 'PÓS-PALAVRA',
+  ceia: 'CEIA',
+};
+
+export type ApiPlaylistItem = {
+  nome: string;
+  slug: string | null;
+  tom: string;
+  tema: (typeof API_TEMAS)[SectionId];
+};
+
+export type ApiPlaylist = {
+  id: string;
+  tipo: string;
+  data: string;
+  ministrante: string;
+  updated_at: string;
+  itens: ApiPlaylistItem[];
+};
+
+const EPOCH = '1970-01-01T00:00:00.000Z';
+
+function isoOrNull(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? null : new Date(time).toISOString();
+}
+
+/**
+ * Playlists para a API v1: mesma montagem da página /playlist (mesma
+ * deduplicação, mesmos tons, mesma ordem das seções), uma por culto.
+ * Cultos cancelados e sem músicas ficam de fora.
+ * Ordenadas por updated_at crescente (desempate pelo id).
+ */
+export function buildApiPlaylists(
+  cultos: RemoteCulto[],
+  manual: ManualPlaylistItem[],
+  songs: Map<string, SongRef[]>
+): ApiPlaylist[] {
+  const byKey = new Map<string, RemoteCulto>();
+  for (const culto of cultos) byKey.set(cultoKey(culto.tipo, culto.data), culto);
+
+  // Cultos que só têm músicas manuais (ainda sem linha no Tom Louvores).
+  for (const item of manual) {
+    if (byKey.has(item.cultoKey)) continue;
+    const at = item.cultoKey.indexOf('@');
+    if (at <= 0) continue;
+    byKey.set(item.cultoKey, {
+      id: item.cultoKey,
+      tipo: item.cultoKey.slice(0, at),
+      data: item.cultoKey.slice(at + 1),
+      nome: null,
+      cancelado: false,
+      ministrante: '',
+      atualizadoEm: null,
+      louvores: [],
+    });
+  }
+
+  const result: ApiPlaylist[] = [];
+  for (const [key, culto] of byKey) {
+    if (culto.cancelado) continue;
+    const mine = manual.filter((item) => item.cultoKey === key);
+    const column = columnFrom({
+      key,
+      title: culto.nome ?? '',
+      subtitle: '',
+      date: culto.data,
+      culto,
+      manual: mine,
+      songs,
+      now: 0,
+    });
+    const itens = column.sections.flatMap((section) =>
+      section.items.map((entry) => ({
+        nome: entry.title,
+        slug: entry.href ? entry.href.replace(/^\/musica\//, '') : null,
+        tom: entry.tom,
+        tema: API_TEMAS[section.id],
+      }))
+    );
+    if (itens.length === 0) continue;
+
+    const stamps = [isoOrNull(culto.atualizadoEm), ...mine.map((item) => isoOrNull(item.createdAt))].filter(
+      (value): value is string => value !== null
+    );
+    result.push({
+      id: key,
+      tipo: culto.tipo,
+      data: culto.data,
+      ministrante: culto.ministrante.trim(),
+      updated_at: stamps.sort().at(-1) ?? EPOCH,
+      itens,
+    });
+  }
+
+  return result.sort((a, b) => a.updated_at.localeCompare(b.updated_at) || a.id.localeCompare(b.id));
+}

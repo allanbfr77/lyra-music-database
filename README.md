@@ -179,6 +179,7 @@ Esse endereço descreve todos os outros, então o programa se orienta sozinho.
 | GET | `/api/v1/songs/{slug}?include=all_keys` | Idem, com a cifra já transposta em todos os tons |
 | GET | `/api/v1/songs/{slug}/chords/{tom}` | Cifra num tom específico |
 | GET | `/api/v1/sync?since={iso}` | Só o que mudou desde a data informada |
+| GET | `/api/v1/playlists?since={iso}&limit={1-100}` | Playlists dos cultos (escalas), com `slug` da música neste banco |
 
 ### Exemplo — buscar
 
@@ -234,6 +235,44 @@ Guarde o `next_since` devolvido e mande-o na próxima chamada:
 ```
 GET /api/v1/sync?since=2026-01-01T00:00:00Z
 ```
+
+### Playlists dos cultos
+
+```
+GET /api/v1/playlists?since=2026-11-01T00:00:00Z&limit=50
+```
+
+Somente leitura, mesma chave Bearer. `since` (ISO 8601) filtra por `updated_at`;
+`limit` vai de 1 a 100 (padrão 100). A lista vem em ordem crescente de
+`updated_at`; se `has_more` for `true`, repita a chamada com `since = next_since`.
+Cultos cancelados ou sem músicas não aparecem.
+
+```json
+{
+  "playlists": [
+    {
+      "id": "domingo_manha@2026-11-15",
+      "tipo": "domingo_manha",
+      "data": "2026-11-15",
+      "ministrante": "Fulano",
+      "updated_at": "2026-11-12T10:00:00.000Z",
+      "itens": [
+        { "nome": "Galileu", "slug": "galileu", "tom": "G", "tema": "ABERTURA" },
+        { "nome": "Música fora do banco", "slug": null, "tom": "", "tema": "OFERTÓRIO" }
+      ]
+    }
+  ],
+  "has_more": false,
+  "next_since": "2026-11-12T10:00:00.000Z"
+}
+```
+
+- `tipo`: o do Tom Louvores (`quarta`, `domingo_manha`, `domingo_noite`, ou o de um culto extra).
+- `itens` seguem a ordem da página `/playlist`; `tema` é `ABERTURA`, `OFERTÓRIO`, `PÓS-PALAVRA` ou `CEIA`.
+- `slug` é o da música neste banco (o mesmo de `/api/v1/songs/{slug}`), ou `null` se ela não estiver publicada aqui.
+- As playlists vêm do Tom Louvores, lidas na hora. As músicas adicionadas à mão
+  na página só entram se `SUPABASE_SERVICE_ROLE_KEY` estiver configurada no
+  servidor (a tabela `playlist_items` é restrita a administradores).
 
 ---
 
